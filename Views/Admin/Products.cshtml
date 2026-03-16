@@ -1,0 +1,189 @@
+@model IEnumerable<PizzaDeli.Models.Product>
+@{
+    ViewData["Title"] = "Quản lý sản phẩm";
+    Layout = "_AdminLayout";
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    var categories = ViewBag.Categories as List<PizzaDeli.Models.Category> ?? new List<PizzaDeli.Models.Category>();
+}
+
+<div class="page-header">
+    <div class="ph-titles">
+        <h2>Sản phẩm của chúng tôi</h2>
+        <p>Danh sách thực đơn hiện tại trong hệ thống.</p>
+    </div>
+    <div class="ph-actions">
+        <a asp-action="ProductCreate" class="btn-pill primary add-btn">
+            <span class="material-symbols-outlined">add_circle</span>
+            Thêm sản phẩm mới
+        </a>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background: #dcfce7; color: #16a34a; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+<div class="product-list-container">
+    <!-- Toolbar: Search & Filter -->
+    <div class="pl-toolbar">
+        <form method="get" asp-action="Products" class="pl-search">
+            <span class="material-symbols-outlined search-icon">search</span>
+            <input type="text" name="searchQuery" value="@ViewBag.SearchQuery" placeholder="Tìm kiếm theo tên sản phẩm hoặc mã..." onchange="this.form.submit()" />
+        </form>
+        
+        <div class="pl-tabs-wrapper">
+            <div class="pl-tabs">
+                <a href="@Url.Action("Products")" class="pl-tab @(ViewBag.CurrentCategory == null ? "active" : "")">Tất cả</a>
+                @foreach(var cat in categories.Take(4))
+                {
+                    <a href="@Url.Action("Products", new { categoryId = cat.Id })" class="pl-tab @(ViewBag.CurrentCategory == cat.Id ? "active" : "")">@cat.Name</a>
+                }
+                @if (categories.Count > 4)
+                {
+                    <button class="pl-tab pl-tab-more" id="plTabMoreBtn" onclick="toggleCatDropdown()" title="Xem thêm">
+                        <span class="material-symbols-outlined" id="plTabMoreIcon">keyboard_arrow_down</span>
+                    </button>
+                }
+            </div>
+
+            @if (categories.Count > 4)
+            {
+                <div class="pl-tabs-dropdown" id="plTabsDropdown">
+                    <div class="pl-tabs-dropdown-grid">
+                        @foreach(var cat in categories.Skip(4))
+                        {
+                            <a href="@Url.Action("Products", new { categoryId = cat.Id })" class="pl-tab-dropdown-item @(ViewBag.CurrentCategory == cat.Id ? "active" : "")">@cat.Name</a>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+        
+        <button class="pl-filter-btn">
+            <span class="material-symbols-outlined">filter_list</span> Lọc nâng cao
+        </button>
+    </div>
+
+    <!-- Product Table -->
+    <div class="table-responsive">
+        <table class="pl-table">
+            <thead>
+                <tr>
+                    <th>HÌNH ẢNH</th>
+                    <th>TÊN SẢN PHẨM</th>
+                    <th>DANH MỤC</th>
+                    <th>GIÁ TIỀN</th>
+                    <th>TRẠNG THÁI</th>
+                    <th class="text-right">HÀNH ĐỘNG</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            <div class="pt-img" style="background-image: url('@(string.IsNullOrEmpty(item.ImageUrl) ? "/images/placeholder.jpg" : item.ImageUrl)');"></div>
+                        </td>
+                        <td>
+                            <div class="pt-name">@item.Name</div>
+                            <div class="pt-code">#@item.Id.Substring(0, 8).ToUpper()</div>
+                        </td>
+                        <td>
+                            <!-- Fake color logic per category ID for demo -->
+                            <span class="pt-cat @(item.CategoryId % 3 == 0 ? "cat-drinks" : item.CategoryId % 2 == 0 ? "cat-spaghetti" : "cat-pizza")">
+                                @(item.Category?.Name ?? "KHÁC")
+                            </span>
+                        </td>
+                        <td><span class="pt-price">@item.Price.ToString("N0")đ</span></td>
+                        <td>
+                            @if (item.IsAvailable)
+                            {
+                                <div class="pt-status status-in"><div class="dot green"></div> Còn hàng</div>
+                            }
+                            else
+                            {
+                                <div class="pt-status status-out"><div class="dot grey" style="background: #9ca3af;"></div> Hết hàng</div>
+                            }
+                        </td>
+                        <td class="text-right">
+                            <div class="pt-actions">
+                                <a asp-action="ProductEdit" asp-route-id="@item.Id" class="action-btn edit" title="Sửa"><span class="material-symbols-outlined">edit</span></a>
+                                <form asp-action="ProductDelete" asp-route-id="@item.Id" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?');">
+                                    <button type="submit" class="action-btn delete" title="Xóa"><span class="material-symbols-outlined">delete</span></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                
+                @if(!Model.Any())
+                {
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #999; padding: 2rem;">Chưa có sản phẩm nào.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pl-footer">
+        <div class="pl-info">
+            Hiển thị <strong>@(Model.Count())</strong> trong số <strong>@ViewBag.TotalProducts</strong> sản phẩm
+        </div>
+        <div class="pl-pagination">
+            @if (currentPage > 1)
+            {
+                <a href="@Url.Action("Products", new { page = currentPage - 1, searchQuery = ViewBag.SearchQuery, categoryId = ViewBag.CurrentCategory })" class="page-btn"><span class="material-symbols-outlined">chevron_left</span></a>
+            }
+            
+            @for (int i = 1; i <= totalPages; i++)
+            {
+                if (i == 1 || i == totalPages || Math.Abs(i - currentPage) <= 1)
+                {
+                     <a href="@Url.Action("Products", new { page = i, searchQuery = ViewBag.SearchQuery, categoryId = ViewBag.CurrentCategory })" class="page-btn @(i == currentPage ? "active" : "")">@i</a>
+                }
+                else if (Math.Abs(i - currentPage) == 2)
+                {
+                    <span class="page-dots">...</span>
+                }
+            }
+
+            @if (currentPage < totalPages)
+            {
+                <a href="@Url.Action("Products", new { page = currentPage + 1, searchQuery = ViewBag.SearchQuery, categoryId = ViewBag.CurrentCategory })" class="page-btn"><span class="material-symbols-outlined">chevron_right</span></a>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleCatDropdown() {
+        var dropdown = document.getElementById('plTabsDropdown');
+        var btn = document.getElementById('plTabMoreBtn');
+        if (!dropdown) return;
+        var isOpen = dropdown.classList.contains('open');
+        if (isOpen) {
+            dropdown.classList.remove('open');
+            btn.classList.remove('open');
+        } else {
+            dropdown.classList.add('open');
+            btn.classList.add('open');
+        }
+    }
+
+    // Đóng dropdown khi click ra ngoài
+    document.addEventListener('click', function (e) {
+        var wrapper = document.querySelector('.pl-tabs-wrapper');
+        var dropdown = document.getElementById('plTabsDropdown');
+        var btn = document.getElementById('plTabMoreBtn');
+        if (wrapper && dropdown && !wrapper.contains(e.target)) {
+            dropdown.classList.remove('open');
+            if (btn) btn.classList.remove('open');
+        }
+    });
+</script>

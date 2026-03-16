@@ -1,0 +1,120 @@
+@model PizzaDeli.Models.RegisterRequest
+@{
+    ViewData["Title"] = "Đăng ký - PizzaDeli";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/pizzadeli.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+</head>
+<body class="auth-body">
+    
+    <nav class="auth-navbar">
+        <a asp-controller="Home" asp-action="Index" class="auth-nav-logo">
+            <span class="material-symbols-outlined">local_pizza</span>
+            <span>PizzaDeli</span>
+        </a>
+        <a href="#" class="auth-nav-link">Help Center</a>
+    </nav>
+
+    <main class="auth-main">
+        <div class="auth-container">
+            <div class="auth-form-header">
+                <h1 class="auth-form-title" style="text-align: center;">Create Account</h1>
+                <p class="auth-form-sub" style="text-align: center;">Join PizzaDeli today for the best slices in town.</p>
+            </div>
+
+            @if (!string.IsNullOrEmpty(ViewBag.Error as string))
+            {
+                <div class="auth-alert auth-alert-error">
+                    <span class="material-symbols-outlined">error</span>
+                    @ViewBag.Error
+                </div>
+            }
+
+            <form method="post" asp-action="Register" asp-controller="Account">
+                @Html.AntiForgeryToken()
+
+                <div class="auth-field">
+                    <label for="name-input">FULL NAME</label>
+                    <div class="auth-input-wrap">
+                        <span class="material-symbols-outlined" style="position: absolute; left: 1rem; color: #a3a3a3; font-size: 1.25rem;">person</span>
+                        <input id="name-input" type="text" name="FullName" value="@Model?.FullName"
+                               placeholder="John Doe" style="padding-left: 2.75rem;" required />
+                    </div>
+                </div>
+
+                <div class="auth-field">
+                    <label for="email-input">EMAIL ADDRESS</label>
+                    <div class="auth-input-wrap">
+                        <span class="material-symbols-outlined" style="position: absolute; left: 1rem; color: #a3a3a3; font-size: 1.25rem;">mail</span>
+                        <input id="email-input" type="email" name="Email" value="@Model?.Email"
+                               placeholder="hello@example.com" style="padding-left: 2.75rem;" required />
+                    </div>
+                </div>
+
+                <div class="auth-field">
+                    <label for="pwd-input">PASSWORD</label>
+                    <div class="auth-input-wrap">
+                        <span class="material-symbols-outlined" style="position: absolute; left: 1rem; color: #a3a3a3; font-size: 1.25rem;">lock</span>
+                        <input id="pwd-input" type="password" name="Password"
+                               placeholder="••••••••" style="padding-left: 2.75rem;" required minlength="6" />
+                        <button type="button" class="pwd-toggle" onclick="togglePassword('pwd-input', this)" tabindex="-1">
+                            <span class="material-symbols-outlined">visibility</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="auth-field">
+                    <label for="pwd-confirm">CONFIRM PASSWORD</label>
+                    <div class="auth-input-wrap">
+                        <span class="material-symbols-outlined" style="position: absolute; left: 1rem; color: #a3a3a3; font-size: 1.25rem;">history</span>
+                        <input id="pwd-confirm" type="password" name="ConfirmPassword"
+                               placeholder="••••••••" style="padding-left: 2.75rem;" required minlength="6" />
+                    </div>
+                </div>
+
+                <div class="auth-options" style="justify-content: flex-start; margin-top: 1rem;">
+                    <label class="auth-remember">
+                        <input type="checkbox" name="agreeTerms" required />
+                        <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="auth-btn-submit">
+                    Create Account
+                </button>
+            </form>
+
+            <div class="auth-switch" style="margin-top: 2rem;">
+                Already have an account? <a asp-controller="Account" asp-action="Login">Log In</a>
+            </div>
+            
+            <footer class="auth-footer">
+                &copy; @DateTime.Now.Year PizzaDeli. All rights reserved.
+            </footer>
+        </div>
+    </main>
+
+<script>
+function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector('.material-symbols-outlined');
+    if (input.type === 'password') { 
+        input.type = 'text'; 
+        icon.textContent = 'visibility_off'; 
+    } else { 
+        input.type = 'password'; 
+        icon.textContent = 'visibility'; 
+    }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+@{
+    ViewData["Title"] = "Giỏ hàng của bạn";
+}
+
+<div class="container py-8" style="padding: 2rem 1.5rem;">
+    <div style="display: grid; grid-template-columns: 1fr 340px; gap: 2.5rem; max-width: 1200px; margin: 0 auto;">
+        
+        <!-- Cart Items list -->
+        <div>
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #f0ede9; padding-bottom: 1rem; margin-bottom: 2rem;">
+                <h1 style="font-size: 1.875rem; font-weight: 800; color: var(--slate-900);">Giỏ hàng <span style="font-size: 1.125rem; color: var(--slate-500); font-weight: 600;">(2 sản phẩm)</span></h1>
+                <a asp-controller="Home" asp-action="Index" style="color: var(--primary); font-weight: 600; text-decoration: none;">Thêm món ăn mới</a>
+            </div>
+
+            <!-- Item Dummy -->
+            <div style="display: flex; gap: 1.5rem; padding-bottom: 2rem; margin-bottom: 2rem; border-bottom: 1px solid #f0ede9;">
+                <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYCb4LE0U2GjQNzlmP9mznvYuE2nOCzUKVENsVxK_qTrnWd24zsrE0UtF4gWHfypWbCPE03J9wZgk_iiySCLFYFpo9Yov3Q9z9YzGcchdjeNEvgogTfH-OJFDTg0I9KDIicqFaBC1w7m-NDwwpITdIFUZD62Gyt8AzRvG3TkpXek05YTRd5H3cp-k2RLcVhGqawk6R0khv_Qsu3ndSCC1iiuNH-XabJTU8zvQeV0HNMSMEDXped5wJWeluITZM9R71m21Fvol9MMH1" 
+                     style="width: 120px; height: 120px; object-fit: cover; border-radius: 1rem;" />
+                <div style="flex: 1; display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <h3 style="font-size: 1.125rem; font-weight: 700;">Classic Margherita</h3>
+                        <span style="font-size: 1.25rem; font-weight: 800; color: var(--primary);">$12.99</span>
+                    </div>
+                    <p style="color: var(--slate-500); font-size: 0.875rem; margin-top: 0.25rem;">Cỡ vừa, Đế mỏng</p>
+                    <div style="margin-top: auto; display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 0.25rem;">
+                            <button style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; background: white; border-radius: 0.25rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">-</button>
+                            <span style="width: 40px; text-align: center; font-weight: 600; font-size: 0.9375rem;">1</span>
+                            <button style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; background: white; border-radius: 0.25rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">+</button>
+                        </div>
+                        <form asp-action="RemoveFromCart" asp-controller="Customer" method="post" onsubmit="event.preventDefault(); this.closest('div').remove();">
+                            <input type="hidden" name="cartItemId" value="123" />
+                            <button type="submit" style="display: flex; align-items: center; gap: 0.25rem; color: #ef4444; font-weight: 600; font-size: 0.875rem;">
+                                <span class="material-symbols-outlined" style="font-size: 1.125rem;">delete</span> Xóa
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Item Dummy 2 -->
+            <div style="display: flex; gap: 1.5rem; padding-bottom: 2rem; margin-bottom: 2rem; border-bottom: 1px solid #f0ede9;">
+                <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuD47P9bRzIinxqEBUu2gb0DDDr2MMrq_9tNRcoUoKO6NqzZgsD311YZ3WoWii_EPgrGdIvq4yodAlSJ13FFFcPRrHVWai46KLVY3KONZ1A0_gYP4KLrwjF8WcfrT6WRc-2UMau3Xcb1BMug3rOU6xuTPc7wXhQO-mHggCcxp0K8nyRDa_VuzwO9nlfrNY6sXOHMsFwO19l3czubtL4-vRodiTYpPkvf7RI2fm5gr4PGtS8bxvcddXDhvyuT-rlcLSZpvdNODRo7wNoM" 
+                     style="width: 120px; height: 120px; object-fit: cover; border-radius: 1rem;" />
+                <div style="flex: 1; display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <h3 style="font-size: 1.125rem; font-weight: 700;">Pepperoni Inferno</h3>
+                        <span style="font-size: 1.25rem; font-weight: 800; color: var(--primary);">$14.99</span>
+                    </div>
+                    <p style="color: var(--slate-500); font-size: 0.875rem; margin-top: 0.25rem;">Cỡ lớn, Thêm pepperoni</p>
+                    <div style="margin-top: auto; display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 0.25rem;">
+                            <button style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; background: white; border-radius: 0.25rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">-</button>
+                            <span style="width: 40px; text-align: center; font-weight: 600; font-size: 0.9375rem;">1</span>
+                            <button style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; background: white; border-radius: 0.25rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">+</button>
+                        </div>
+                        <form asp-action="RemoveFromCart" asp-controller="Customer" method="post" onsubmit="event.preventDefault(); this.closest('div').remove();">
+                            <input type="hidden" name="cartItemId" value="124" />
+                            <button type="submit" style="display: flex; align-items: center; gap: 0.25rem; color: #ef4444; font-weight: 600; font-size: 0.875rem;">
+                                <span class="material-symbols-outlined" style="font-size: 1.125rem;">delete</span> Xóa
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Checkout Summary -->
+        <div>
+            <div style="background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); position: sticky; top: 100px;">
+                <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem;">Tóm tắt đơn hàng</h2>
+                
+                <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 0.9375rem;">
+                    <span style="color: var(--slate-500);">Tạm tính</span>
+                    <span style="font-weight: 600;">$27.98</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 0.9375rem;">
+                    <span style="color: var(--slate-500);">Phí giao hàng</span>
+                    <span style="font-weight: 600; color: #16a34a;">Miễn phí</span>
+                </div>
+
+                <!-- Voucher Form mock -->
+                <div style="border-top: 1px solid #f0ede9; border-bottom: 1px solid #f0ede9; padding: 1rem 0; margin: 1rem 0;">
+                    <form asp-action="ApplyVoucher" method="post" style="display: flex; gap: 0.5rem;" onsubmit="event.preventDefault(); alert('Đã áp dụng mã Voucher (Mock)!');">
+                        <input type="text" name="code" placeholder="Mã giảm giá" style="flex: 1; padding: 0.625rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 0.875rem;" />
+                        <button type="submit" style="background: var(--slate-800); color: white; padding: 0 1rem; border-radius: 0.5rem; font-weight: 600; font-size: 0.875rem;">Áp dụng</button>
+                    </form>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem; font-size: 1.125rem;">
+                    <span style="font-weight: 700;">Tổng cộng</span>
+                    <span style="font-weight: 800; color: var(--primary); font-size: 1.5rem;">$27.98</span>
+                </div>
+
+                <a asp-controller="Customer" asp-action="Checkout" style="display: flex; justify-content: center; background: var(--primary); color: white; padding: 1rem; border-radius: 0.5rem; font-weight: 700; font-size: 1rem; text-decoration: none;">
+                    Tiến hành thanh toán
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

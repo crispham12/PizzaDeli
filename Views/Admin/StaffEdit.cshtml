@@ -1,0 +1,261 @@
+@model PizzaDeli.Models.User
+@{
+    ViewData["Title"] = "Cập nhật nhân viên";
+    Layout = "_AdminLayout";
+}
+
+<style>
+    /* Theo giao diện StaffCreate */
+    .stf-form-card {
+        background: #fff;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .stf-header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+    .stf-header h2 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 0.25rem;
+    }
+
+    .stf-header p {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin: 0;
+    }
+
+    .stf-avatar-section {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .stf-avatar-preview {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background-color: #f3f4f6;
+        border: 2px dashed #d1d5db;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .stf-avatar-preview .acc-avatar-img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    
+    .stf-avatar-preview .acc-avatar {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: 600;
+        font-size: 1.5rem;
+        border: none;
+    }
+
+    .stf-form-row {
+        display: flex;
+        gap: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .stf-fg {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stf-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+
+    .stf-input {
+        padding: 0.5rem 0.875rem;
+        font-size: 0.875rem;
+        color: #111827;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        transition: all 0.2s;
+        height: 20px;
+    }
+
+    .stf-input:focus {
+        outline: none;
+        border-color: #5C3D2E;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(92, 61, 46, 0.1);
+    }
+
+    .stf-input:disabled, .stf-input[readonly] {
+        background-color: #f3f4f6;
+        cursor: not-allowed;
+        color: #6b7280;
+    }
+
+    select.stf-input {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236b7280'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 20px;
+        padding: 0.5rem 2.5rem 0.5rem 0.875rem;
+        height: 38px;
+    }
+
+    .stf-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #f3f4f6;
+    }
+
+    .stf-btn-cancel {
+        padding: 0.625rem 1.5rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #4b5563;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .stf-btn-cancel:hover {
+        color: #111827;
+    }
+
+    .stf-btn-save {
+        padding: 0.625rem 2rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #fff;
+        background: #5C3D2E;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .stf-btn-save:hover {
+        background: #462c20;
+        transform: translateY(-1px);
+    }
+</style>
+
+@{
+    string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0][0].ToString().ToUpper();
+        return (parts[0][0].ToString() + parts[^1][0].ToString()).ToUpper();
+    }
+    string[] avColors = { "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ef4444", "#ec4899", "#14b8a6", "#f97316" };
+    string GetAvColor(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return avColors[0];
+        return avColors[Math.Abs(name.GetHashCode()) % avColors.Length];
+    }
+    string initials = GetInitials(Model.FullName);
+    string avColor = GetAvColor(Model.FullName);
+}
+
+<div class="stf-form-card">
+    <div class="stf-header">
+        <h2>Cập nhật nhân viên</h2>
+        <p>Thực hiện thay đổi chức vụ cho nhân viên hiện tại.</p>
+    </div>
+
+    <form asp-action="StaffEdit" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.Id" />
+
+        <div class="stf-avatar-section">
+            <div class="stf-avatar-preview" style="border-style: solid;">
+                @if (!string.IsNullOrEmpty(Model.Avatar))
+                {
+                    <img src="@Model.Avatar" class="acc-avatar-img" alt="@Model.FullName" />
+                }
+                else
+                {
+                    <div class="acc-avatar" style="background:@avColor;">@initials</div>
+                }
+            </div>
+            <div class="stf-avatar-info">
+                <h4>Ảnh đại diện (Khóa)</h4>
+                <p>Ảnh đại diện của nhân viên không thể thay đổi lúc này.</p>
+            </div>
+        </div>
+
+        <div class="stf-form-row">
+            <div class="stf-fg">
+                <label class="stf-label">Họ và tên</label>
+                <input class="stf-input" value="@Model.FullName" readonly />
+            </div>
+            <div class="stf-fg">
+                <label class="stf-label">Email công việc</label>
+                <input type="email" class="stf-input" value="@Model.Email" readonly />
+            </div>
+        </div>
+
+        <div class="stf-form-row">
+            <div class="stf-fg">
+                <label class="stf-label">Số điện thoại</label>
+                <input type="tel" class="stf-input" value="@Model.Phone" readonly />
+            </div>
+            <div class="stf-fg">
+                <label class="stf-label">Chức vụ</label>
+                <select name="role" class="stf-input" required>
+                    <!option value="Staff" @(Model.Role == "Staff" ? "selected" : "")>Nhân viên (Staff)</!option>
+                    <!option value="Admin" @(Model.Role == "Admin" ? "selected" : "")>Quản trị viên (Admin)</!option>
+                </select>
+            </div>
+        </div>
+
+        <div class="stf-form-row">
+            <div class="stf-fg">
+                <label class="stf-label">Ngày bắt đầu làm việc</label>
+                <input type="date" class="stf-input" value="@Model.CreatedAt.ToString("yyyy-MM-dd")" readonly />
+            </div>
+            <div class="stf-fg">
+                <label class="stf-label">Chi nhánh</label>
+                <input type="text" class="stf-input" value="Cửa hàng chính - Quận 1" readonly />
+            </div>
+        </div>
+        
+        <div class="stf-footer">
+            <a asp-action="Staff" class="stf-btn-cancel">Hủy bỏ</a>
+            <button type="submit" class="stf-btn-save">
+                Lưu thay đổi
+            </button>
+        </div>
+    </form>
+</div>

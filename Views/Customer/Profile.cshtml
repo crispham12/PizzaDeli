@@ -1,0 +1,78 @@
+@{
+    ViewData["Title"] = "Trang cá nhân của bạn";
+}
+
+<div class="container py-8" style="padding: 2rem 1.5rem;">
+    <div style="max-width: 800px; margin: 0 auto; background: white; border-radius: 1rem; padding: 2rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+        <h1 style="font-size: 1.875rem; font-weight: 800; color: var(--slate-900); margin-bottom: 1.5rem;">Thông tin tài khoản</h1>
+
+        @if (TempData["Success"] != null)
+        {
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span class="material-symbols-outlined">check_circle</span>
+                @TempData["Success"]
+            </div>
+        }
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+            <!-- Cập nhật thông tin cá nhân -->
+            <div>
+                <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem;">Hồ sơ cá nhân</h3>
+                <form asp-controller="Customer" asp-action="Profile" method="post">
+                    @Html.AntiForgeryToken()
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.5rem;">Họ và tên</label>
+                        <input type="text" name="fullName" value="@Context.Session.GetString("USER_NAME")" required
+                            style="width: 100%; padding: 0.75rem; border: 1.5px solid #e2e8f0; border-radius: 0.5rem;" />
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.5rem;">Email</label>
+                        <input type="email" value="@Context.Session.GetString("USER_EMAIL")" disabled
+                            style="width: 100%; padding: 0.75rem; border: 1.5px solid #e2e8f0; border-radius: 0.5rem; background: #f8fafc;" />
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.5rem;">Số điện thoại</label>
+                        <input type="text" name="phone" placeholder="Cập nhật số điện thoại"
+                            style="width: 100%; padding: 0.75rem; border: 1.5px solid #e2e8f0; border-radius: 0.5rem;" />
+                    </div>
+                    <button type="submit" style="background: var(--primary); color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 700; width: 100%;">
+                        Lưu thay đổi
+                    </button>
+                </form>
+            </div>
+
+            <!-- Đổi mật khẩu -->
+            <div>
+                <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem;">Đổi mật khẩu</h3>
+                <form asp-controller="Customer" asp-action="ChangePassword" method="post">
+                    @Html.AntiForgeryToken()
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.5rem;">Mật khẩu hiện tại</label>
+                        <input type="password" name="oldPassword" required
+                            style="width: 100%; padding: 0.75rem; border: 1.5px solid #e2e8f0; border-radius: 0.5rem;" />
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.5rem;">Mật khẩu mới</label>
+                        <input type="password" name="newPassword" required minlength="6"
+                            style="width: 100%; padding: 0.75rem; border: 1.5px solid #e2e8f0; border-radius: 0.5rem;" />
+                    </div>
+                    <button type="submit" style="background: var(--slate-800); color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 700; width: 100%;">
+                        Cập nhật mật khẩu
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div style="margin-top: 3rem; border-top: 1px solid #f0ede9; padding-top: 2rem;">
+            <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem;">Quản lý khác</h3>
+            <div style="display: flex; gap: 1rem;">
+                <a asp-controller="Customer" asp-action="Orders" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: var(--primary-05); color: var(--primary); border-radius: 0.5rem; font-weight: 600; text-decoration: none;">
+                    <span class="material-symbols-outlined">receipt_long</span> Lịch sử đơn hàng
+                </a>
+                <a asp-controller="Customer" asp-action="Vouchers" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: var(--primary-05); color: var(--primary); border-radius: 0.5rem; font-weight: 600; text-decoration: none;">
+                    <span class="material-symbols-outlined">local_activity</span> Voucher của tôi
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

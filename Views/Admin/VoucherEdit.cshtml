@@ -1,0 +1,212 @@
+@model PizzaDeli.Models.Voucher
+@{
+    ViewData["Title"] = "Chỉnh sửa mã giảm giá";
+    Layout = "_AdminLayout";
+    string currentDiscountType = Model.DiscountPercent.HasValue ? "percent" : "amount";
+    string currentDiscountValue = Model.DiscountPercent.HasValue 
+        ? Model.DiscountPercent.Value.ToString("0.##") 
+        : (Model.DiscountAmount.HasValue ? Model.DiscountAmount.Value.ToString("N0") : "");
+}
+
+<!-- Page Header -->
+<div class="form-page-header">
+    <div class="fph-left">
+        <div class="fph-breadcrumbs">
+            <a asp-action="Dashboard"><span class="material-symbols-outlined">home</span> Trang chủ</a>
+            <span>/</span>
+            <a asp-action="Promotions">Khuyến mãi</a>
+            <span>/</span>
+            <span style="color:#111;">Chỉnh sửa mã</span>
+        </div>
+        <div class="fph-titles">
+            <h2>Chỉnh sửa mã giảm giá</h2>
+            <p>Sửa đổi thông số cho chương trình khuyến mãi.</p>
+        </div>
+    </div>
+</div>
+
+<form id="voucherForm" asp-action="VoucherEdit" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+
+    <div class="vch-form-card">
+
+        <!-- === Row 1: Mã Voucher + Tên Voucher === -->
+        <div class="vch-form-row">
+            <div class="fg-group">
+                <label class="vch-label">Mã Voucher <span class="req">*</span></label>
+                <input asp-for="Code" class="vch-input" placeholder="VD: PIZZA2024"
+                       style="text-transform: uppercase;" required />
+            </div>
+            <div class="fg-group">
+                <label class="vch-label">Tên Voucher</label>
+                <input asp-for="Name" class="vch-input" placeholder="VD: Giảm giá hè rực rỡ" />
+            </div>
+        </div>
+
+        <!-- === Row 2: Loại giảm giá + Giá trị === -->
+        <div class="vch-form-row">
+            <div class="fg-group">
+                <label class="vch-label">Loại giảm giá</label>
+                <div class="vch-select-wrap">
+                    <select id="discountType" name="discountType" class="vch-input vch-select"
+                            onchange="updateDiscountUnit()">
+                        <!option value="percent" @(currentDiscountType == "percent" ? "selected" : "")>Phần trăm (%)</!option>
+                        <!option value="amount" @(currentDiscountType == "amount" ? "selected" : "")>Số tiền cố định (VNĐ)</!option>
+                    </select>
+                    <span class="material-symbols-outlined vch-select-arrow">expand_more</span>
+                </div>
+            </div>
+            <div class="fg-group">
+                <label class="vch-label">Giá trị giảm giá <span class="req">*</span></label>
+                <div class="vch-input-suffix">
+                    <input id="discountValue" type="text" class="vch-input" value="@currentDiscountValue"
+                           placeholder="0" inputmode="numeric" autocomplete="off" required />
+                    <!-- hidden fields cho 2 loại -->
+                    <input type="hidden" name="DiscountPercent" id="hPercent" value="@(Model.DiscountPercent?.ToString("0.##"))" />
+                    <input type="hidden" name="DiscountAmount" id="hAmount" value="@Model.DiscountAmount" />
+                    <span class="vch-suffix" id="discountUnit">@(currentDiscountType == "percent" ? "%" : "VNĐ")</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- === Row 3: Ngày bắt đầu + Ngày kết thúc === -->
+        <div class="vch-form-row">
+            <div class="fg-group">
+                <label class="vch-label">Ngày bắt đầu</label>
+                <div class="vch-input-suffix">
+                    <input asp-for="StartDate" type="date" class="vch-input" />
+                    <span class="material-symbols-outlined vch-date-icon">calendar_month</span>
+                </div>
+            </div>
+            <div class="fg-group">
+                <label class="vch-label">Ngày kết thúc</label>
+                <div class="vch-input-suffix">
+                    <input asp-for="ExpiryDate" type="date" class="vch-input" />
+                    <span class="material-symbols-outlined vch-date-icon">calendar_month</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- === Row 4: Trạng thái === -->
+        <div class="fg-group" style="margin-bottom: 0;">
+            <label class="vch-label">Trạng thái</label>
+            <label class="vch-toggle-wrap">
+                <input type="checkbox" id="isActiveToggle" name="IsActiveCb" value="true" @(Model.IsActive ? "checked" : "") />
+                <span class="vch-toggle"></span>
+                <span class="vch-toggle-label" id="toggleLabel">@(Model.IsActive ? "Đang hoạt động (Active)" : "Không hoạt động (Inactive)")</span>
+            </label>
+        </div>
+
+        <!-- === Divider + Optional section === -->
+        <div class="vch-divider">
+            <span class="material-symbols-outlined" style="font-size:1rem;color:#5C3D2E;vertical-align:middle;">info</span>
+            <span style="font-size:0.8125rem;font-weight:700;color:#374151;">Thông tin bổ sung (Tùy chọn)</span>
+        </div>
+
+        <div class="vch-form-row">
+            <div class="fg-group" style="margin-bottom:0;">
+                <label class="vch-label">Giới hạn sử dụng</label>
+                <input asp-for="MaxUses" type="number" class="vch-input" placeholder="Số lượng tối đa" min="0" />
+            </div>
+            <div class="fg-group" style="margin-bottom:0;">
+                <label class="vch-label">Đơn hàng tối thiểu</label>
+                <div class="vch-input-suffix">
+                    <input id="minOrderDisplay" type="text" class="vch-input" value="@(Model.MinOrderValue.ToString("N0"))"
+                           placeholder="0" inputmode="numeric" autocomplete="off" />
+                    <input type="hidden" name="MinOrderValue" id="minOrderHidden" value="@Model.MinOrderValue" />
+                    <span class="vch-suffix">VND</span>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- end vch-form-card -->
+
+    <!-- === Action Buttons === -->
+    <div class="vch-form-footer">
+        <a asp-action="Promotions" class="vch-btn-cancel">Hủy</a>
+        <button type="submit" class="vch-btn-save">
+            <span class="material-symbols-outlined">save</span>
+            Lưu thay đổi
+        </button>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+    // --- Auto-format tiền ---
+    function formatMoney(input) {
+        var raw = input.value.replace(/\D/g, '');
+        input.value = raw.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        return raw;
+    }
+
+    // Cập nhật đơn vị và chế độ format khi đổi loại giảm
+    function updateDiscountUnit() {
+        var type = document.getElementById('discountType').value;
+        var unit = (type === 'percent') ? '%' : 'VNĐ';
+        document.getElementById('discountUnit').textContent = unit;
+        // Reset giá trị khi đổi loại nếu muốn
+        document.getElementById('discountValue').value = '';
+    }
+
+    // Lắng nghe input giá trị giảm giá
+    document.getElementById('discountValue').addEventListener('input', function () {
+        var type = document.getElementById('discountType').value;
+        if (type === 'amount') {
+            // Chỉ format khi là tiền cố định
+            formatMoney(this);
+        } else {
+            // Phần trăm: chỉ cho phép số và dấu chấm
+            this.value = this.value.replace(/[^\d.]/g, '');
+        }
+    });
+
+    // Lắng nghe input đơn hàng tối thiểu
+    var minOrderDisplay = document.getElementById('minOrderDisplay');
+    var minOrderHidden  = document.getElementById('minOrderHidden');
+    minOrderDisplay.addEventListener('input', function () {
+        var raw = formatMoney(this);
+        minOrderHidden.value = raw || '0';
+    });
+
+    // Trước khi submit: gán vào hidden input đúng field
+    document.getElementById('voucherForm').addEventListener('submit', function (e) {
+        var type = document.getElementById('discountType').value;
+        // Xóa cả dấu chấm (format VNĐ) lẫn dấu phẩy
+        var raw = document.getElementById('discountValue').value
+            .replace(/[.,]/g, '').trim() || '0';
+        // Với phần trăm, cho phép số thập phân dùng dấu chấm
+        if (type === 'percent') {
+            var pctRaw = document.getElementById('discountValue').value
+                .replace(/[^\d.]/g, '').trim() || '0';
+            document.getElementById('hPercent').value = pctRaw;
+            document.getElementById('hAmount').value  = '';
+        } else {
+            document.getElementById('hAmount').value  = raw;
+            document.getElementById('hPercent').value = '';
+        }
+        // Đảm bảo min order – loại bỏ tất cả dấu phân cách
+        var minRaw = minOrderDisplay.value.replace(/[.,]/g, '').trim() || '0';
+        minOrderHidden.value = minRaw;
+    });
+
+    // Toggle label
+    document.getElementById('isActiveToggle').addEventListener('change', function () {
+        document.getElementById('toggleLabel').textContent =
+            this.checked ? 'Đang hoạt động (Active)' : 'Không hoạt động (Inactive)';
+    });
+
+    // Tự động uppercase mã voucher
+    document.querySelector('input[name="Code"]').addEventListener('input', function () {
+        var pos = this.selectionStart;
+        this.value = this.value.toUpperCase();
+        this.setSelectionRange(pos, pos);
+    });
+    
+    // Khởi tạo format ban đầu cho minOrder
+    if(minOrderDisplay.value) {
+        formatMoney(minOrderDisplay);
+    }
+</script>
+}

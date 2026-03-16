@@ -1,0 +1,188 @@
+@model IEnumerable<PizzaDeli.Models.Voucher>
+@{
+    ViewData["Title"] = "Quản lý khuyến mãi";
+    Layout = "_AdminLayout";
+    int currentPage   = ViewBag.CurrentPage  ?? 1;
+    int totalPages    = ViewBag.TotalPages   ?? 1;
+    int totalVouchers = ViewBag.TotalVouchers ?? 0;
+    var currentStatus = ViewBag.CurrentStatus as string ?? "all";
+    var searchQuery   = ViewBag.SearchQuery  as string ?? "";
+
+    var now = DateTime.Now;
+
+    // Xác định trạng thái hiển thị
+    (string label, string cssClass) GetStatus(PizzaDeli.Models.Voucher v)
+    {
+        bool expired = v.ExpiryDate.HasValue && v.ExpiryDate < now;
+        if (!v.IsActive || expired) return ("Expired", "status-expired");
+
+        // Còn trong vòng 7 ngày
+        if (v.ExpiryDate.HasValue && (v.ExpiryDate.Value - now).TotalDays <= 7)
+            return ("Expiring soon", "status-expiring");
+
+        return ("Active", "status-active");
+    }
+
+    string GetDiscountText(PizzaDeli.Models.Voucher v)
+    {
+        if (v.DiscountPercent.HasValue && v.DiscountPercent > 0)
+            return v.DiscountPercent.Value.ToString("0.##") + "%";
+        if (v.DiscountAmount.HasValue && v.DiscountAmount > 0)
+            return v.DiscountAmount.Value.ToString("N0") + "đ";
+        return "—";
+    }
+}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="ph-titles">
+        <h2>Quản lý khuyến mãi</h2>
+        <p>Quản lý các chương trình ưu đãi và mã giảm giá của cửa hàng.</p>
+    </div>
+    <div class="ph-actions">
+        <a asp-action="VoucherCreate" class="btn-pill primary add-btn">
+            <span class="material-symbols-outlined">add_circle</span>
+            Thêm voucher mới
+        </a>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:#dcfce7;color:#16a34a;padding:1rem;border-radius:8px;margin-bottom:1rem;font-weight:600;font-size:.875rem;">
+        <span class="material-symbols-outlined" style="vertical-align:middle;font-size:1.125rem;margin-right:.5rem;">check_circle</span>
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+<div class="product-list-container">
+
+    <!-- Toolbar -->
+    <div class="ord-toolbar">
+        <form method="get" asp-action="Promotions" class="pl-search" style="flex: 0 0 360px; max-width: 360px;">
+            <span class="material-symbols-outlined search-icon">search</span>
+            <input type="text" name="searchQuery" value="@searchQuery"
+                   placeholder="Tìm kiếm voucher..."
+                   onchange="this.form.submit()" />
+            <input type="hidden" name="status" value="@currentStatus" />
+        </form>
+
+        <div class="ord-status-tabs">
+            @{
+                var tabs = new[] {
+                    ("all",     "Tất cả"),
+                    ("active",  "Active"),
+                    ("expired", "Expired"),
+                };
+            }
+            @foreach (var (val, label) in tabs)
+            {
+                <a href="@Url.Action("Promotions", new { status = val, searchQuery })"
+                   class="ord-status-tab @(currentStatus == val ? "active" : "")"
+                   style="text-decoration:none;">@label</a>
+            }
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive">
+        <table class="pl-table vch-table">
+            <thead>
+                <tr>
+                    <th>CODE</th>
+                    <th>TÊN VOUCHER</th>
+                    <th>GIẢM GIÁ</th>
+                    <th>NGÀY BẮT ĐẦU</th>
+                    <th>NGÀY KẾT THÚC</th>
+                    <th style="text-align:center;">TRẠNG THÁI</th>
+                    <th style="text-align:right;">HÀNH ĐỘNG</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    var (sLabel, sClass) = GetStatus(item);
+                    <tr>
+                        <td><strong class="vch-code">@item.Code</strong></td>
+                        <td><span class="vch-name">@(string.IsNullOrEmpty(item.Name) ? "—" : item.Name)</span></td>
+                        <td><strong class="vch-discount">@GetDiscountText(item)</strong></td>
+                        <td><span class="vch-date">@(item.StartDate?.ToString("dd/MM/yyyy") ?? "—")</span></td>
+                        <td><span class="vch-date">@(item.ExpiryDate?.ToString("dd/MM/yyyy") ?? "—")</span></td>
+                        <td style="text-align:center;">
+                            <span class="vch-status @sClass">@sLabel</span>
+                        </td>
+                        <td style="text-align:right;">
+                            <div class="pt-actions" style="justify-content:flex-end; gap:0.25rem;">
+                                <a asp-action="VoucherEdit" asp-route-id="@item.Id" class="action-btn edit-icon" title="Sửa" style="text-decoration:none;">
+                                    <span class="material-symbols-outlined">edit</span>
+                                </a>
+                                <form asp-action="VoucherDelete" asp-route-id="@item.Id" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc muốn xóa khuyến mãi này?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="action-btn delete-icon" title="Xóa" style="border:none;background:none;padding:0;">
+                                        <span class="material-symbols-outlined">delete</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="7" style="text-align:center;color:#9ca3af;padding:3rem;font-size:.9375rem;">
+                            <span class="material-symbols-outlined" style="font-size:2.5rem;display:block;margin-bottom:.5rem;opacity:.4;">confirmation_number</span>
+                            Chưa có voucher nào.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="ord-footer">
+        <div class="ord-info">
+            Hiển thị
+            <strong>@((currentPage - 1) * 10 + 1)–@((currentPage - 1) * 10 + Model.Count())</strong>
+            của <strong>@totalVouchers</strong> voucher
+        </div>
+        <div class="pl-pagination">
+            @if (currentPage > 1)
+            {
+                <a href="@Url.Action("Promotions", new { page = currentPage - 1, searchQuery, status = currentStatus })" class="page-btn">
+                    <span class="material-symbols-outlined">chevron_left</span>
+                </a>
+            }
+            else
+            {
+                <button class="page-btn" disabled><span class="material-symbols-outlined">chevron_left</span></button>
+            }
+
+            @for (int i = 1; i <= totalPages; i++)
+            {
+                if (i == 1 || i == totalPages || Math.Abs(i - currentPage) <= 1)
+                {
+                    <a href="@Url.Action("Promotions", new { page = i, searchQuery, status = currentStatus })"
+                       class="page-btn @(i == currentPage ? "active" : "")">@i</a>
+                }
+                else if (Math.Abs(i - currentPage) == 2)
+                {
+                    <span class="page-dots">...</span>
+                }
+            }
+
+            @if (currentPage < totalPages)
+            {
+                <a href="@Url.Action("Promotions", new { page = currentPage + 1, searchQuery, status = currentStatus })" class="page-btn">
+                    <span class="material-symbols-outlined">chevron_right</span>
+                </a>
+            }
+            else
+            {
+                <button class="page-btn" disabled><span class="material-symbols-outlined">chevron_right</span></button>
+            }
+        </div>
+    </div>
+
+</div>

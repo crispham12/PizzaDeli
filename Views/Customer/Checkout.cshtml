@@ -1,0 +1,757 @@
+@{
+    ViewData["Title"] = "Thanh toán";
+}
+
+<style>
+/* Override Stepper Colors for sure */
+.step.active .step-label { color: var(--primary); font-weight: 700; }
+.step.active .step-icon {
+    background-color: var(--primary) !important;
+    color: #ffffff !important;
+}
+.step-icon { background-color: #f1f5f9; color: #94a3b8; }
+
+/* Checkout Tabs Payment */
+.payment-tabs {
+    display: flex;
+    gap: 1.5rem;
+    border-bottom: 2px solid #f1f5f9;
+    margin-bottom: 2rem;
+}
+.payment-tab {
+    padding: 0.75rem 0;
+    font-weight: 600;
+    color: var(--slate-500);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    font-size: 0.9375rem;
+}
+.payment-tab:hover { color: var(--slate-800); }
+.payment-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.payment-panel {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+.payment-panel.active { display: block; }
+
+.other-ways-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+.way-card {
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius);
+    padding: 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.way-card:hover, .way-card.selected {
+    border-color: var(--primary);
+    background: var(--primary-05);
+}
+.way-card input { display: none; }
+.way-card img { width: 32px; height: 32px; object-fit: contain; }
+.way-card span { font-size: 0.8125rem; font-weight: 600; color: var(--slate-800); }
+
+/* Review Style */
+.review-item-card {
+    background: #ffffff;
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+}
+.review-item-img {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius);
+    object-fit: cover;
+}
+.review-item-content { flex: 1; }
+.review-item-title { font-weight: 700; color: #1e293b; margin-bottom: 0.25rem; font-size: 1.1rem; }
+.review-item-meta { font-size: 0.85rem; color: #64748b; margin-bottom: 1rem; }
+.review-rating { display: flex; gap: 0.25rem; margin-bottom: 1rem; }
+.review-rating .material-symbols-outlined { color: var(--primary); cursor: pointer; font-variation-settings: 'FILL' 1; }
+.review-rating .material-symbols-outlined.empty { font-variation-settings: 'FILL' 0; }
+.review-textarea {
+    width: 100%;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius);
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    resize: vertical;
+    outline: none;
+}
+.review-textarea:focus { border-color: var(--primary); }
+
+.btn-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 1.5rem;
+    transition: color 0.2s;
+}
+.btn-back-link:hover { color: var(--primary); }
+
+@@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+</style>
+
+<div class="checkout-page bg-light-gray" style="padding-bottom: 4rem;">
+    <!-- Stepper Header -->
+    <div class="checkout-stepper-container">
+        <div class="container stepper-inner">
+            <div class="step active" id="stepperShipping">
+                <div class="step-icon"><span class="material-symbols-outlined">local_shipping</span></div>
+                <div class="step-label">Shipping</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step" id="stepperPayment">
+                <div class="step-icon"><span class="material-symbols-outlined">payments</span></div>
+                <div class="step-label">Payment</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step" id="stepperReview">
+                <div class="step-icon"><span class="material-symbols-outlined">check_circle</span></div>
+                <div class="step-label">Review</div>
+            </div>
+        </div>
+        <p class="step-subtitle" id="stepperSubtitle">Bước 1 trong 3: Nhập thông tin giao hàng của bạn</p>
+    </div>
+
+    <div class="container">
+        <!-- Nút Back Góc Trái (Chỉ hiện ở Step 1) -->
+        <a href="/" class="btn-back-link" id="btnHomeBack">
+            <span class="material-symbols-outlined" style="font-size: 1.25rem;">home</span>
+            Quay lại trang chủ
+        </a>
+        <!-- Nút Back lùi step (Hiện ở Step 2,3) -->
+        <button type="button" class="btn-back-link" id="btnGoBack" onclick="goBackStep()" style="display: none;">
+            <span class="material-symbols-outlined" style="font-size: 1.25rem;">arrow_back</span>
+            Back
+        </button>
+
+        <div class="checkout-layout">
+            <!-- Cột trái: Form thông tin -->
+            <div class="checkout-main">
+                <form id="checkoutForm" method="post" action="/Customer/PlaceOrder">
+                    
+                    <!-- ========================================== -->
+                    <!-- BƯỚC 1: SHIPPING                           -->
+                    <!-- ========================================== -->
+                    <div id="step-shipping-content">
+                        <!-- Section 1: Shipping Info -->
+                        <div class="checkout-section">
+                            <h3 class="section-title">
+                                <span class="material-symbols-outlined">location_on</span>
+                                Thông tin giao hàng
+                            </h3>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Họ và tên</label>
+                                    <input type="text" name="fullName" id="fullName" class="form-control" placeholder="Nguyễn Văn A" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Số điện thoại</label>
+                                    <input type="tel" name="phone" id="phone" class="form-control" placeholder="0901234567" required>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label>Địa chỉ</label>
+                                    <input type="text" name="address" id="address" class="form-control" placeholder="123 Đường Pizza, Quận 1, TP HCM" required>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label>Ghi chú (Tùy chọn)</label>
+                                    <textarea name="notes" class="form-control" rows="3" placeholder="Ghi chú về cổng, toà nhà, hoặc hướng dẫn đặc biệt..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Delivery Method -->
+                        <div class="checkout-section">
+                            <h3 class="section-title">
+                                <span class="material-symbols-outlined">speed</span>
+                                Phương thức giao hàng
+                            </h3>
+                            <div class="radio-card-group">
+                                <label class="radio-card">
+                                    <input type="radio" name="deliveryMethod" value="standard" checked>
+                                    <div class="radio-card-content">
+                                        <div class="radio-card-header">
+                                            <div class="radio-radiobox"></div>
+                                            <div class="radio-title">Giao hàng tiêu chuẩn</div>
+                                        </div>
+                                        <div class="radio-desc">30 - 45 phút • 15.000 ₫</div>
+                                    </div>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="deliveryMethod" value="express">
+                                    <div class="radio-card-content">
+                                        <div class="radio-card-header">
+                                            <div class="radio-radiobox"></div>
+                                            <div class="radio-title">Giao hàng siêu tốc</div>
+                                        </div>
+                                        <div class="radio-desc">15 - 20 phút • 35.000 ₫</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ========================================== -->
+                    <!-- BƯỚC 2: PAYMENT                            -->
+                    <!-- ========================================== -->
+                    <div id="step-payment-content" style="display: none;">
+                        <div class="checkout-section">
+                            <h3 class="section-title" style="margin-bottom: 0.5rem; color: #1e293b; font-size: 1.5rem;">Payment Selection</h3>
+                            <p style="color: var(--slate-500); font-size: 0.875rem; margin-bottom: 2rem;">Choose your preferred method to complete your order securely.</p>
+                            
+                            <!-- Custom Tabs Ngang -->
+                            <div class="payment-tabs">
+                                <div class="payment-tab active" data-target="panel-card">Credit/Debit Card</div>
+                                <div class="payment-tab" data-target="panel-ewallet">E-wallet</div>
+                                <div class="payment-tab" data-target="panel-bank">Bank Transfer</div>
+                                <div class="payment-tab" data-target="panel-cod">COD</div>
+                            </div>
+
+                            <!-- Input Ẩn Giá Trị Thực Để Gửi Lên Server -->
+                            <input type="hidden" name="paymentMethod" id="mainPaymentMethod" value="card">
+
+                            <!-- Form Tabs (Giả Lập) -->
+                            <div class="payment-panels">
+                                <!-- Panel: Card -->
+                                <div class="payment-panel active" id="panel-card">
+                                    <div class="form-grid">
+                                        <div class="form-group full-width">
+                                            <label>Name on Card</label>
+                                            <input type="text" class="form-control" placeholder="e.g. JOHN DOE">
+                                        </div>
+                                        <div class="form-group full-width">
+                                            <label>Card Number</label>
+                                            <!-- Icon input fake -->
+                                            <div style="position: relative;">
+                                                <input type="text" class="form-control" placeholder="0000 0000 0000 0000">
+                                                <span class="material-symbols-outlined" style="position:absolute; right: 1rem; top:0.75rem; color:#94a3b8;">credit_card</span>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Expiry Date</label>
+                                            <input type="text" class="form-control" placeholder="MM / YY">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>CVV</label>
+                                            <input type="text" class="form-control" placeholder="123">
+                                        </div>
+                                    </div>
+                                    <div style="margin-top:2rem; padding: 1rem; background: #f8fafc; border-radius: var(--radius); display:flex; gap: 1rem; color: var(--slate-500); font-size:0.75rem;">
+                                        <span class="material-symbols-outlined" style="color:#64748b;">shield</span>
+                                        <p>Your payment information is encrypted and processed through a secure gateway. We do not store your full card details on our servers.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Panel: E-wallet -->
+                                <div class="payment-panel" id="panel-ewallet">
+                                    <p style="font-weight: 600; margin-bottom: 1rem;">Choose your wallet:</p>
+                                    <div class="other-ways-grid" id="ewalletSelector">
+                                        <label class="way-card selected" onclick="selectEwallet('momo', this)">
+                                            <span class="material-symbols-outlined" style="color: #a82fa2; font-size: 2rem;">wallet</span>
+                                            <span>Momo</span>
+                                        </label>
+                                        <label class="way-card" onclick="selectEwallet('zalopay', this)">
+                                            <span class="material-symbols-outlined" style="color: #0068ff; font-size: 2rem;">qr_code_2</span>
+                                            <span>ZaloPay</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Panel: Bank -->
+                                <div class="payment-panel" id="panel-bank">
+                                    <p style="color: var(--slate-600); font-size: 0.875rem; line-height: 1.6;">
+                                        Please transfer the exact order amount to:<br>
+                                        <strong>Account No:</strong> 0123456789 - VCB<br>
+                                        <strong>Account Name:</strong> PIZZA DELI VN<br>
+                                        <strong>Message:</strong> (Your Phone Number)
+                                    </p>
+                                </div>
+
+                                <!-- Panel: COD -->
+                                <div class="payment-panel" id="panel-cod">
+                                    <div style="display:flex; flex-direction: column; align-items:center; color: var(--slate-600); padding: 2rem;">
+                                        <span class="material-symbols-outlined" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;">local_shipping</span>
+                                        <p style="text-align:center; font-weight: 500;">Pay with Cash upon delivery.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- ========================================== -->
+                    <!-- BƯỚC 3: REVIEW                             -->
+                    <!-- ========================================== -->
+                    <div id="step-review-content" style="display: none;">
+                        <h3 class="section-title" style="margin-bottom: 0.5rem; color: #1e293b; font-size: 1.5rem;">Review Your Items</h3>
+                        <p style="color: var(--slate-500); font-size: 0.875rem; margin-bottom: 2rem;">Your feedback helps us improve. Please rate and review the items from your order.</p>
+
+                        <div id="reviewItemsContainer">
+                            <!-- JS load items to review -->
+                        </div>
+                        
+                        <div style="text-align: right; margin-top: 1rem;">
+                            <!-- Fake button submit -->
+                            <button type="button" class="btn-back-link" onclick="window.location.href='/'" style="margin-right: 1.5rem; margin-bottom: 0;">Để sau</button>
+                            <button type="button" class="btn-place-order" style="display: inline-block; width: auto; padding: 0.75rem 2rem;" onclick="submitAllReviews()">Submit All Reviews</button>
+                        </div>
+                    </div>
+
+                    <!-- Dữ liệu ẩn giỏ hàng để gửi lên server -->
+                    <input type="hidden" name="cartJson" id="cartJsonInput" value="" />
+                    <input type="hidden" name="voucherCode" id="hiddenVoucherCode" value="" />
+                    <input type="hidden" name="shippingAddress" id="shippingAddressInput" value="" />
+                </form>
+            </div>
+
+            <!-- Cột phải: Order Summary -->
+            <div class="checkout-sidebar">
+                <div class="summary-card">
+                    <h3 class="summary-title">Order Summary</h3>
+                    
+                    <!-- Chứa danh sách SP bằng JS -->
+                    <div class="checkout-items" id="checkoutItemsList">
+                        <div class="text-center" style="padding: 1rem; color: #888;">Đang tải giỏ hàng...</div>
+                    </div>
+
+                    <!-- Voucher box -->
+                    <div class="voucher-box" id="step-voucher-box" style="display:flex; flex-direction: column; gap: 0.5rem; margin: 1.5rem 0; padding: 1.5rem 0; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; border-left:none; border-right:none; border-width: 1px 0;">
+                        <label style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; display:block;">VOUCHER CODE</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="text" id="voucherCode" placeholder="Enter code" style="flex: 1; border: 1px solid #e2e8f0; border-radius: 999px; padding: 0.625rem 1rem; outline: none; transition: border-color 0.2s; font-size: 0.875rem; color: #1e293b;">
+                            <button type="button" class="btn-apply-voucher" onclick="applyCheckoutVoucher()" style="background-color: var(--primary); color: white; border-radius: 999px; padding: 0.5rem 1.5rem; font-weight: 600; border: none; cursor: pointer; font-size: 0.875rem;">Apply</button>
+                        </div>
+                    </div>
+
+                    <div class="summary-totals">
+                        <div class="summary-row">
+                            <span>Subtotal</span>
+                            <span id="checkoutSubtotal">0 ₫</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Shipping Fee</span>
+                            <span id="checkoutShipping" style="color: #10b981; font-weight: 500;">Free</span>
+                        </div>
+                        <div class="summary-row discount-row" style="display:none;" id="checkoutDiscountRow">
+                            <span>Discount</span>
+                            <span id="checkoutDiscount" class="text-danger">0 ₫</span>
+                        </div>
+                        <div class="summary-row grand-total">
+                            <span style="font-size: 1.25rem;">Total</span>
+                            <span id="checkoutGrandTotal" class="primary-color text-bold" style="font-size: 1.25rem;">0 ₫</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button type="button" id="btnActionFlow" class="btn-place-order" onclick="gotoNextStep()" style="font-size: 1.05rem; padding: 1.15rem;">
+                        Continue to Payment <span class="material-symbols-outlined">chevron_right</span>
+                    </button>
+
+                    <!-- Success Popup Modal -->
+                    <div id="orderSuccessModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+                        <div style="background:#fff; border-radius:20px; padding:2.5rem 2rem; text-align:center; max-width:400px; width:90%; position:relative; box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+                            <div style="width:72px;height:72px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
+                                <span class="material-symbols-outlined" style="font-size:2.5rem;color:#16a34a;font-variation-settings:'FILL' 1;">check_circle</span>
+                            </div>
+                            <h2 style="font-size:1.5rem;font-weight:800;color:#1e293b;margin-bottom:0.5rem;">Đặt hàng thành công!</h2>
+                            <p style="color:#64748b;margin-bottom:0.25rem;">Đơn hàng của bạn đã được tiếp nhận.</p>
+                            <p id="successOrderCode" style="font-weight:700;color:#5c433b;font-size:1.1rem;margin-bottom:2rem;"></p>
+                            <button onclick="goToReviews()" style="background:#5c433b;color:#fff;border:none;border-radius:12px;padding:0.875rem 2rem;font-size:1rem;font-weight:700;cursor:pointer;width:100%;transition:background 0.2s;">
+                                <span class="material-symbols-outlined" style="vertical-align:middle;font-size:1.125rem;margin-right:0.4rem;">star</span>
+                                Xem & Đánh giá sản phẩm
+                            </button>
+                            <a href="/Customer/Orders" style="display:block;margin-top:1rem;color:#64748b;font-size:0.875rem;font-weight:600;text-decoration:none;">Xem đơn hàng của tôi →</a>
+                        </div>
+                    </div>
+                    
+                    <p class="secure-text" style="margin-top: 1rem;">
+                        <span class="material-symbols-outlined" style="vertical-align: middle; font-size: 0.85rem;">lock</span>
+                        Secure SSL Checkout
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentStep = 1; // 1: Shipping, 2: Payment
+        let currentDiscount = 0;
+
+        const SHIPPING_FEES = {
+            'standard': 15000,
+            'express': 35000
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            renderCheckoutItems();
+
+            // Tabs Logic
+            const tabs = document.querySelectorAll('.payment-tab');
+            const panels = document.querySelectorAll('.payment-panel');
+            const mainPaymentInput = document.getElementById('mainPaymentMethod');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    panels.forEach(p => p.classList.remove('active'));
+                    
+                    tab.classList.add('active');
+                    const target = tab.dataset.target;
+                    document.getElementById(target).classList.add('active');
+
+                    // Map logic cho server
+                    if(target === 'panel-card') mainPaymentInput.value = 'card';
+                    if(target === 'panel-ewallet') mainPaymentInput.value = 'momo'; // Default
+                    if(target === 'panel-bank') mainPaymentInput.value = 'bank';
+                    if(target === 'panel-cod') mainPaymentInput.value = 'cod';
+                });
+            });
+        });
+
+        function selectEwallet(wallet, el) {
+            document.querySelectorAll('#ewalletSelector .way-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            document.getElementById('mainPaymentMethod').value = wallet;
+        }
+
+        // Logic Lùi Bước
+        function goBackStep() {
+            if(currentStep === 2) {
+                // Đang ở Payment, quay lại Shipping
+                document.getElementById('step-payment-content').style.display = 'none';
+                document.getElementById('step-shipping-content').style.display = 'block';
+                
+                document.getElementById('stepperPayment').classList.remove('active');
+                document.getElementById('stepperSubtitle').textContent = 'Bước 1 trong 3: Nhập thông tin giao hàng của bạn';
+                document.getElementById('btnActionFlow').innerHTML = 'Continue to Payment <span class="material-symbols-outlined">chevron_right</span>';
+                
+                // Hiển thị lại nút Home, ẩn nút Back Step
+                document.getElementById('btnGoBack').style.display = 'none';
+                if(document.getElementById('btnHomeBack')) document.getElementById('btnHomeBack').style.display = 'inline-flex';
+                
+                currentStep = 1;
+
+            } else if(currentStep === 3) {
+                // Đang ở Review, quay lại Payment
+                document.getElementById('step-review-content').style.display = 'none';
+                document.getElementById('step-payment-content').style.display = 'block';
+                
+                document.getElementById('stepperReview').classList.remove('active');
+                document.getElementById('stepperSubtitle').textContent = 'Bước 2 trong 3: Lựa chọn Phương thức thanh toán';
+                document.getElementById('btnActionFlow').innerHTML = 'Continue to Review <span class="material-symbols-outlined">chevron_right</span>';
+                document.getElementById('btnActionFlow').style.display = 'block'; // Ensure button visible
+                currentStep = 2;
+            }
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        // Logic Chuyển Bước
+        function gotoNextStep() {
+            if (currentStep === 1) {
+                // Giao diện Shipping => Validate
+                const fName = document.getElementById('fullName');
+                const fPhone = document.getElementById('phone');
+                const fAddress = document.getElementById('address');
+                if (!fName.value || !fPhone.value || !fAddress.value) {
+                    alert('Bạn vui lòng điền đầy đủ Thông tin giao hàng!');
+                    fName.focus();
+                    return;
+                }
+
+                // Chuyển UI sang Payment
+                document.getElementById('step-shipping-content').style.display = 'none';
+                document.getElementById('step-payment-content').style.display = 'block';
+                
+                // Update Stepper
+                document.getElementById('stepperPayment').classList.add('active');
+                document.getElementById('stepperSubtitle').textContent = 'Bước 2 trong 3: Lựa chọn Phương thức thanh toán';
+                document.getElementById('btnActionFlow').innerHTML = 'Xác nhận <span class="material-symbols-outlined">check_circle</span>';
+                
+                // Hiện nút lùi step, giấu nút Home back
+                document.getElementById('btnGoBack').style.display = 'inline-flex';
+                if(document.getElementById('btnHomeBack')) document.getElementById('btnHomeBack').style.display = 'none';
+                
+                window.scrollTo({top: 0, behavior: 'smooth'});
+                currentStep = 2;
+
+            } else if (currentStep === 2) {
+                // Giao diện Payment => Đặt hàng ngay
+                submitOrder();
+                return;
+
+            } else if (currentStep === 3) {
+                // Đặt lại đơn: Check giỏ hàng và quay về bước 1
+                const cart = window.PizzaCart ? window.PizzaCart.getCart() : [];
+                if (cart.length === 0) {
+                    alert('Giỏ hàng trống. Mời bạn quay lại trang chủ chọn món!');
+                    window.location.href = '/';
+                    return;
+                }
+                
+                // Quay lùi UI về Step 1
+                document.getElementById('step-review-content').style.display = 'none';
+                document.getElementById('step-shipping-content').style.display = 'block';
+                
+                document.getElementById('stepperReview').classList.remove('active');
+                document.getElementById('stepperPayment').classList.remove('active');
+                document.getElementById('stepperSubtitle').textContent = 'Bước 1 trong 3: Nhập thông tin giao hàng của bạn';
+                document.getElementById('btnActionFlow').innerHTML = 'Continue to Payment <span class="material-symbols-outlined">chevron_right</span>';
+                
+                document.getElementById('btnGoBack').style.display = 'none';
+                if(document.getElementById('btnHomeBack')) document.getElementById('btnHomeBack').style.display = 'inline-flex';
+                
+                window.scrollTo({top: 0, behavior: 'smooth'});
+                currentStep = 1;
+            }
+        }
+
+        function buildReviewItems() {
+            const container = document.getElementById('reviewItemsContainer');
+            const cart = window.PizzaCart ? window.PizzaCart.getCart() : [];
+            let html = '';
+            
+            cart.forEach(item => {
+                html += `
+                <div class="review-item-card">
+                    <img src="${item.image || '/images/placeholder.png'}" class="review-item-img" onerror="this.src='/images/placeholder.png'">
+                    <div class="review-item-content">
+                        <div class="review-item-title">${item.name}</div>
+                        <div class="review-item-meta">Standard</div>
+                        <div class="review-rating data-stars">
+                            <span class="material-symbols-outlined star empty" style="color:#cbd5e1; font-variation-settings: 'FILL' 0; transition: color 0.2s;">star</span>
+                            <span class="material-symbols-outlined star empty" style="color:#cbd5e1; font-variation-settings: 'FILL' 0; transition: color 0.2s;">star</span>
+                            <span class="material-symbols-outlined star empty" style="color:#cbd5e1; font-variation-settings: 'FILL' 0; transition: color 0.2s;">star</span>
+                            <span class="material-symbols-outlined star empty" style="color:#cbd5e1; font-variation-settings: 'FILL' 0; transition: color 0.2s;">star</span>
+                            <span class="material-symbols-outlined star empty" style="color:#cbd5e1; font-variation-settings: 'FILL' 0; transition: color 0.2s;">star</span>
+                        </div>
+                        <label style="font-size: 0.75rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; display:block;">Your Review</label>
+                        <textarea class="review-textarea" rows="3" placeholder="Tell us what you liked or how we can improve..."></textarea>
+                    </div>
+                </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function attachStarRating() {
+            document.querySelectorAll('.data-stars').forEach(container => {
+                const stars = container.querySelectorAll('.star');
+                stars.forEach((star, index) => {
+                    star.addEventListener('click', () => {
+                        // Reset tắt màu toàn bộ sao
+                        stars.forEach(s => {
+                            s.classList.add('empty');
+                            s.style.color = '#cbd5e1';
+                            s.style.fontVariationSettings = "'FILL' 0";
+                        });
+                        // Bật vàng các sao từ đầu đến index
+                        for(let i=0; i<=index; i++) {
+                            stars[i].classList.remove('empty');
+                            stars[i].style.color = '#fbbf24'; // yellow highlight
+                            stars[i].style.fontVariationSettings = "'FILL' 1";
+                        }
+                    });
+                });
+            });
+        }
+
+        function submitAllReviews() {
+            alert('Đã gửi toàn bộ đánh giá của bạn. Cám ơn đã dùng bữa tại PizzaDeli!');
+            window.location.href = '/'; 
+        }
+
+        function renderCheckoutItems() {
+            const container = document.getElementById('checkoutItemsList');
+            if(!window.PizzaCart) {
+                 container.innerHTML = '<p>Không thể tải giỏ hàng.</p>';
+                 return;
+            }
+
+            const cart = window.PizzaCart.getCart();
+            if(!cart || cart.length === 0) {
+                container.innerHTML = '<p style="text-align:center; padding: 2rem;">Giỏ hàng trống. Mời bạn quay lại trang chủ chọn món.</p>';
+                document.getElementById('btnActionFlow').disabled = true;
+                return;
+            }
+
+            let html = '';
+            let subtotal = 0;
+            cart.forEach(item => {
+                const price = parseFloat(item.price) || 0;
+                const qty = parseInt(item.quantity) || 1;
+                subtotal += price * qty;
+                
+                html += `
+                <div class="c-item">
+                    <img src="${item.image || '/images/placeholder.png'}" class="c-item-img" onerror="this.src='/images/placeholder.png'">
+                    <div class="c-item-info">
+                        <div class="c-item-name" style="font-size: 0.85rem;">${item.name}</div>
+                        <div class="c-item-qty" style="font-size: 0.75rem; color:#64748b;">x${qty}</div>
+                    </div>
+                    <div class="c-item-price" style="font-size: 0.875rem; color:#1e293b;">${price.toLocaleString('vi-VN')} ₫</div>
+                </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            
+            // Tính phí
+            const shippingMethod = document.querySelector('input[name="deliveryMethod"]:checked').value;
+            const shippingFee = SHIPPING_FEES[shippingMethod] || 15000;
+            updateTotals(subtotal, shippingFee, currentDiscount);
+
+            // Gắn sự kiện thay đổi phương thức giao hàng
+            document.querySelectorAll('input[name="deliveryMethod"]').forEach(el => {
+                el.addEventListener('change', function() {
+                    updateTotals(subtotal, SHIPPING_FEES[this.value] || 15000, currentDiscount);
+                });
+            });
+        }
+
+        function updateTotals(subtotal, shipping, discount) {
+            document.getElementById('checkoutSubtotal').textContent = subtotal.toLocaleString('vi-VN') + ' ₫';
+            document.getElementById('checkoutShipping').textContent = shipping.toLocaleString('vi-VN') + ' ₫';
+            
+            const total = subtotal + shipping - discount;
+            document.getElementById('checkoutGrandTotal').textContent = Math.max(0, total).toLocaleString('vi-VN') + ' ₫';
+
+            if(discount > 0) {
+                const dRow = document.getElementById('checkoutDiscountRow');
+                dRow.style.display = 'flex';
+                document.getElementById('checkoutDiscount').textContent = '-' + discount.toLocaleString('vi-VN') + ' ₫';
+            }
+        }
+
+        async function applyCheckoutVoucher() {
+            const code = document.getElementById('voucherCode').value;
+            if(!code) return;
+            
+            // Tính subtotal hiện tại từ giỏ hàng để check min order value
+            const cart = window.PizzaCart ? window.PizzaCart.getCart() : [];
+            let subtotal = 0;
+            cart.forEach(item => {
+                subtotal += (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1);
+            });
+
+            try {
+                const response = await fetch('/Customer/ApplyVoucher', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ code: code, currentSubtotal: subtotal })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    currentDiscount = data.discount;
+                    document.getElementById('hiddenVoucherCode').value = code; // Send to backend when Complete
+                    alert(data.message);
+                    renderCheckoutItems(); // Re-render to update
+                } else {
+                    alert(data.message);
+                    currentDiscount = 0;
+                    document.getElementById('hiddenVoucherCode').value = '';
+                    renderCheckoutItems();
+                }
+            } catch(e) {
+                alert('Lỗi khi áp dụng mã giảm giá.');
+                console.error(e);
+            }
+        }
+
+        async function submitOrder() {
+            if(!window.PizzaCart) return;
+            const cart = window.PizzaCart.getCart();
+            if(cart.length === 0) {
+                alert('Giỏ hàng trống!');
+                return;
+            }
+
+            // Gom địa chỉ giao hàng
+            const fullName = document.getElementById('fullName')?.value || '';
+            const phone    = document.getElementById('phone')?.value    || '';
+            const address  = document.getElementById('address')?.value  || '';
+            const addrText = `${fullName} - ${phone} - ${address}`;
+
+            const paymentMethod = document.getElementById('mainPaymentMethod')?.value || 'COD';
+            const voucherCode   = document.getElementById('hiddenVoucherCode')?.value || '';
+
+            // Lấy token CSRF
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+            // Disable nút để tránh double click
+            const btn = document.getElementById('btnActionFlow');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite;display:inline-block;">progress_activity</span> Đang xử lý...';
+
+            try {
+                const formData = new FormData();
+                formData.append('__RequestVerificationToken', token);
+                formData.append('paymentMethod', paymentMethod);
+                formData.append('voucherCode', voucherCode);
+                formData.append('cartJson', JSON.stringify(cart));
+                formData.append('shippingAddress', addrText);
+
+                const res = await fetch('/Customer/PlaceOrder', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    // Xóa giỏ hàng localStorage
+                    window.localStorage.removeItem('pizzadeli_cart');
+                    if(window.PizzaCart && window.PizzaCart.clearCart) window.PizzaCart.clearCart();
+
+                    // Hiện popup thành công
+                    document.getElementById('successOrderCode').textContent = 'Mã đơn: #' + data.orderId;
+                    const modal = document.getElementById('orderSuccessModal');
+                    modal.style.display = 'flex';
+                } else {
+                    alert(data.message || 'Đặt hàng thất bại. Vui lòng thử lại!');
+                    btn.disabled = false;
+                    btn.innerHTML = 'Xác nhận <span class="material-symbols-outlined">check_circle</span>';
+                }
+            } catch(e) {
+                console.error(e);
+                alert('Lỗi kết nối. Vui lòng thử lại!');
+                btn.disabled = false;
+                btn.innerHTML = 'Xác nhận <span class="material-symbols-outlined">check_circle</span>';
+            }
+        }
+
+        function goToReviews() {
+            window.location.href = '/Customer/ProductReviews';
+        }
+    </script>
+}
+

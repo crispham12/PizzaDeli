@@ -1,0 +1,186 @@
+@model PizzaDeli.Models.Product
+@{
+    ViewData["Title"] = "Thêm sản phẩm mới";
+    Layout = "_AdminLayout";
+    var categories = ViewBag.Categories as List<PizzaDeli.Models.Category> ?? new List<PizzaDeli.Models.Category>();
+}
+
+<div class="form-page-header">
+    <div class="fph-left">
+        <div class="fph-breadcrumbs">
+            <a asp-action="Dashboard"><span class="material-symbols-outlined">home</span> Trang chủ</a>
+            <span>/</span>
+            <a asp-action="Products">Sản phẩm</a>
+            <span>/</span>
+            <span style="color: #111;">Thêm sản phẩm mới</span>
+        </div>
+        <div class="fph-titles">
+            <h2>Thêm sản phẩm mới</h2>
+            <p>Bổ sung thông tin và hình ảnh cho thực đơn PizzaDeli.</p>
+        </div>
+    </div>
+    <div class="fph-actions">
+        <a asp-action="Products" class="btn-pill secondary" style="background: #fff; border: 1px solid #d1d5db;">Hủy bỏ</a>
+        <button type="submit" form="productForm" class="btn-pill primary">Lưu thay đổi</button>
+    </div>
+</div>
+
+<form id="productForm" asp-action="ProductCreate" method="post" enctype="multipart/form-data">
+    <div class="form-grid">
+        <!-- Cột trái: Thông tin & Trạng thái -->
+        <div class="fg-left">
+            <!-- Block 1: Thông tin cơ bản -->
+            <div class="form-card">
+                <div class="fc-head">
+                    <span class="material-symbols-outlined" style="background: #5C3D2E; color: #fff; border-radius: 50%; padding: 4px; font-size: 1.125rem;">info</span>
+                    <h3>Thông tin cơ bản</h3>
+                </div>
+                <div class="fg-group">
+                    <label>Tên sản phẩm <span class="req">*</span></label>
+                    <input type="text" asp-for="Name" class="fg-input" placeholder="Ví dụ: Pizza Hải Sản Sốt Pesto" required />
+                </div>
+                <div class="fg-row-2">
+                    <div class="fg-group">
+                        <label>Danh mục</label>
+                        <select asp-for="CategoryId" class="fg-input" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23111%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 1rem top 50%; background-size: 0.65rem auto; appearance: none;">
+                            <option value="">-- Chọn danh mục --</option>
+                            @foreach (var cat in categories)
+                            {
+                                <option value="@cat.Id">@cat.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="fg-group">
+                        <label>Giá tiền (VNĐ) <span class="req">*</span></label>
+                        <div class="input-with-suffix">
+                            <input type="text" id="priceDisplay" class="fg-input"
+                                   placeholder="Nhập giá tiền"
+                                   inputmode="numeric"
+                                   autocomplete="off"
+                                   required />
+                            <input type="hidden" name="Price" id="priceHidden" />
+                            <span class="suffix">VNĐ</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="fg-group" style="margin-bottom: 0;">
+                    <label>Mô tả sản phẩm</label>
+                    <textarea asp-for="Description" class="fg-input" placeholder="Mô tả thành phần, hương vị của sản phẩm..."></textarea>
+                </div>
+            </div>
+
+            <!-- Block 2: Trạng thái -->
+            <div class="form-card">
+                <div class="fc-head">
+                    <span class="material-symbols-outlined" style="background: #5C3D2E; color: #fff; border-radius: 50%; padding: 4px; font-size: 1.125rem;">visibility</span>
+                    <h3>Trạng thái kinh doanh</h3>
+                </div>
+                <div class="status-radios">
+                    <label class="radio-item">
+                        <input type="radio" name="IsAvailable" value="true" checked />
+                        <span>Đang kinh doanh</span>
+                    </label>
+                    <label class="radio-item">
+                        <input type="radio" name="IsAvailable" value="false" />
+                        <span>Ngừng kinh doanh</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột phải: Ảnh & Note -->
+        <div class="fg-right">
+            <!-- Block 3: Hình ảnh -->
+            <div class="form-card">
+                <div class="fc-head">
+                    <span class="material-symbols-outlined" style="background: #5C3D2E; color: #fff; border-radius: 4px; padding: 4px; font-size: 1.125rem;">image</span>
+                    <h3>Hình ảnh</h3>
+                </div>
+                
+                <div class="img-dropzone" onclick="document.getElementById('uploadImage').click()">
+                    <span class="material-symbols-outlined dz-icon">cloud_upload</span>
+                    <h4>Click để tải ảnh lên</h4>
+                    <p>PNG, JPG (Tối đa 5MB)</p>
+                    <input type="file" id="uploadImage" name="uploadImage" accept="image/png, image/jpeg" style="display:none;" onchange="previewFile(this)" />
+                </div>
+
+                <div id="filePreviewArea" class="file-preview-card" style="display:none;">
+                    <div class="fpc-left">
+                        <img id="fpcThumb" src="" class="fpc-thumb" alt="Preview" />
+                        <div class="fpc-info">
+                            <span class="fpc-name" id="fpcName">pizza_preview.jpg</span>
+                            <span class="fpc-size" id="fpcSize">1.2 MB</span>
+                        </div>
+                    </div>
+                    <button type="button" class="fpc-del" onclick="removePreview()">
+                        <span class="material-symbols-outlined">delete</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Block 4: Tips -->
+            <div class="form-card tip-card">
+                <div class="fc-head" style="margin-bottom: 0.75rem;">
+                    <span class="material-symbols-outlined" style="color: #5C3D2E; margin-left: -2px; font-size: 1.25rem;">lightbulb</span>
+                    <h3 style="color: #5C3D2E;">Gợi ý từ PizzaDeli</h3>
+                </div>
+                <p>Sử dụng hình ảnh chất lượng cao và mô tả chi tiết để tăng tỉ lệ đặt hàng lên đến 40%. Hãy chắc chắn giá đã bao gồm VAT.</p>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+    function previewFile(input) {
+        if (input.files && input.files[0]) {
+            var file = input.files[0];
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                document.getElementById('filePreviewArea').style.display = 'flex';
+                document.getElementById('fpcThumb').src = e.target.result;
+                document.getElementById('fpcName').textContent = file.name;
+                var sizeKB = file.size / 1024;
+                if (sizeKB > 1024) {
+                    document.getElementById('fpcSize').textContent = (sizeKB / 1024).toFixed(1) + ' MB';
+                } else {
+                    document.getElementById('fpcSize').textContent = sizeKB.toFixed(1) + ' KB';
+                }
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+    
+    function removePreview() {
+        document.getElementById('uploadImage').value = "";
+        document.getElementById('filePreviewArea').style.display = 'none';
+        document.getElementById('fpcThumb').src = "";
+    }
+
+    // --- Auto-format giá tiền ---
+    var priceDisplay = document.getElementById('priceDisplay');
+    var priceHidden  = document.getElementById('priceHidden');
+
+    priceDisplay.addEventListener('input', function () {
+        // Lấy chỉ chữ số
+        var raw = this.value.replace(/\D/g, '');
+        // Format: thêm dấu . mỗi 3 chữ số
+        var formatted = raw.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        this.value = formatted;
+        // Lưu số thực vào hidden input
+        priceHidden.value = raw;
+    });
+
+    // Khi submit: đảm bảo hidden có giá trị
+    document.getElementById('productForm').addEventListener('submit', function (e) {
+        var raw = priceDisplay.value.replace(/\D/g, '');
+        if (!raw) {
+            e.preventDefault();
+            priceDisplay.focus();
+            priceDisplay.style.borderColor = '#ef4444';
+            return;
+        }
+        priceHidden.value = raw;
+    });
+</script>
+}

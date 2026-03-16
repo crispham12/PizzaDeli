@@ -1,0 +1,288 @@
+@model List<PizzaDeli.Models.Order>
+@{
+    ViewData["Title"] = "Đơn hàng của tôi";
+    Layout = "_Layout";
+}
+
+<style>
+    body { background: #faf9f8; }
+    
+    .orders-container {
+        max-width: 900px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+    .orders-header {
+        margin-bottom: 2rem;
+    }
+    .orders-header h1 {
+        font-size: 1.875rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+    .orders-header p {
+        color: #64748b;
+        font-size: 0.9375rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Success banner */
+    .success-banner {
+        background: #dcfce7; color: #15803d;
+        border-radius: 12px; padding: 1rem 1.5rem;
+        margin-bottom: 2rem; font-weight: 600;
+        display: flex; align-items: center; gap: 0.75rem;
+    }
+    
+    .o-tabs {
+        display: flex;
+        gap: 2rem;
+        border-bottom: 1px solid #e2e8f0;
+        overflow-x: auto;
+    }
+    .o-tab {
+        padding-bottom: 0.75rem;
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.9375rem;
+        cursor: pointer;
+        position: relative;
+        white-space: nowrap;
+    }
+    .o-tab.active {
+        color: #1e293b;
+    }
+    .o-tab.active::after {
+        content: ''; position: absolute;
+        bottom: -1px; left: 0; width: 100%; height: 2px;
+        background: #5c433b;
+    }
+    
+    .o-card {
+        background: #fff;
+        border-radius: 1.25rem;
+        padding: 1.5rem 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    }
+    
+    .o-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+    }
+    .o-top-left {
+        display: flex; align-items: center; gap: 1rem;
+    }
+    .o-icon-box {
+        width: 48px; height: 48px; border-radius: 50%;
+        background: #fdfaf8; color: #5c433b;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .o-top-title { font-weight: 800; font-size: 1.1rem; color: #1e293b; }
+    .o-top-date { font-size: 0.8rem; color: #94a3b8; margin-top: 0.2rem; }
+    .o-badge {
+        font-size: 0.75rem; font-weight: 700; border-radius: 6px;
+        padding: 0.25rem 0.5rem; text-transform: uppercase;
+        margin-left: 0.5rem; display: inline-block; transform: translateY(-2px);
+    }
+    .o-badge.pending    { background: #fef3c7; color: #d97706; }
+    .o-badge.processing { background: #f0f9ff; color: #0284c7; }
+    .o-badge.delivering { background: #dbeafe; color: #2563eb; }
+    .o-badge.completed  { background: #dcfce7; color: #16a34a; }
+    .o-badge.cancelled  { background: #fee2e2; color: #dc2626; }
+    
+    .o-top-right { text-align: right; }
+    .o-total-lbl { font-size: 0.8rem; color: #94a3b8; }
+    .o-total-price { font-size: 1.25rem; font-weight: 800; color: #5c433b; }
+    
+    .o-divider { border-top: 1px dashed #e2e8f0; margin: 1rem 0; }
+    
+    .o-item-row {
+        display: flex; justify-content: space-between;
+        font-size: 0.9375rem; color: #475569;
+        margin-bottom: 0.75rem;
+    }
+    .o-item-name { font-weight: 500; }
+    .o-item-price { color: #94a3b8; }
+    
+    .o-actions {
+        display: flex; justify-content: flex-end; gap: 1rem;
+        margin-top: 2rem;
+    }
+    .o-btn {
+        padding: 0.5rem 1.25rem;
+        border-radius: 999px; font-weight: 600; font-size: 0.875rem;
+        cursor: pointer; transition: all 0.2s; border: 1px solid #e2e8f0;
+        background: #fff; color: #475569; text-decoration: none;
+    }
+    .o-btn:hover { background: #f8fafc; }
+    
+    .o-btn-danger { color: #ef4444; border-color: #fee2e2; }
+    .o-btn-danger:hover { background: #fee2e2; }
+    
+    .o-btn-primary { background: #5c433b; color: #fff; border-color: #5c433b; }
+    .o-btn-primary:hover { background: #4a342e; color: #fff; }
+
+    .empty-orders {
+        text-align: center; padding: 4rem 0; color: #94a3b8;
+    }
+    .empty-orders .material-symbols-outlined { font-size: 4rem; opacity: 0.3; }
+    .empty-orders h3 { font-size: 1.25rem; font-weight: 700; color: #1e293b; margin: 1rem 0 0.5rem; }
+</style>
+
+<div class="orders-container">
+    <div class="orders-header">
+        <h1>Đơn hàng của tôi</h1>
+        <p>Theo dõi và quản lý lịch sử đặt hàng của bạn tại PizzaDeli</p>
+        
+        <div class="o-tabs">
+            <div class="o-tab active" onclick="filterOrders('all', this)">Tất cả</div>
+            <div class="o-tab" onclick="filterOrders('Pending', this)">Chờ xác nhận</div>
+            <div class="o-tab" onclick="filterOrders('Processing', this)">Đang xử lý</div>
+            <div class="o-tab" onclick="filterOrders('Delivering', this)">Đang giao</div>
+            <div class="o-tab" onclick="filterOrders('Completed', this)">Hoàn thành</div>
+            <div class="o-tab" onclick="filterOrders('Cancelled', this)">Đã hủy</div>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="success-banner">
+            <span class="material-symbols-outlined">check_circle</span>
+            @TempData["Success"]
+        </div>
+    }
+    
+    @if (Model == null || !Model.Any())
+    {
+        <div class="empty-orders">
+            <span class="material-symbols-outlined">receipt_long</span>
+            <h3>Chưa có đơn hàng nào</h3>
+            <p>Hãy đặt món ngay để thưởng thức hương vị PizzaDeli!</p>
+            <a href="/" class="o-btn o-btn-primary" style="display:inline-block; margin-top:1.5rem;">
+                Đặt hàng ngay
+            </a>
+        </div>
+    }
+    else
+    {
+        foreach (var order in Model)
+        {
+            var statusClass = order.Status?.ToLower() switch {
+                "pending"    => "pending",
+                "processing" => "processing",
+                "delivering" => "delivering",
+                "completed"  => "completed",
+                "cancelled"  => "cancelled",
+                _            => "pending"
+            };
+            var statusText = order.Status switch {
+                "Pending"    => "CHỜ XÁC NHẬN",
+                "Processing" => "ĐANG XỬ LÝ",
+                "Delivering" => "ĐANG GIAO HÀNG",
+                "Completed"  => "HOÀN THÀNH",
+                "Cancelled"  => "ĐÃ HỦY",
+                _            => order.Status?.ToUpper()
+            };
+            var iconName = order.Status switch {
+                "Pending"    => "assignment",
+                "Processing" => "restaurant",
+                "Delivering" => "two_wheeler",
+                "Completed"  => "check_circle",
+                "Cancelled"  => "cancel",
+                _            => "receipt_long"
+            };
+            var iconBg = order.Status switch {
+                "Pending"    => "background:#fef0cd; color:#b45309;",
+                "Processing" => "background:#f0f9ff; color:#0284c7;",
+                "Delivering" => "background:#eef2ff; color:#4338ca;",
+                "Completed"  => "background:#f0fdf4; color:#15803d;",
+                "Cancelled"  => "background:#fee2e2; color:#dc2626;",
+                _            => ""
+            };
+
+            <div class="o-card" data-status="@order.Status">
+                <div class="o-top">
+                    <div class="o-top-left">
+                        <div class="o-icon-box" style="@iconBg">
+                            <span class="material-symbols-outlined">@iconName</span>
+                        </div>
+                        <div>
+                            <div class="o-top-title">
+                                Mã đơn hàng: #@order.Id.Substring(0, 8).ToUpper()
+                                <span class="o-badge @statusClass">@statusText</span>
+                            </div>
+                            <div class="o-top-date">
+                                Ngày đặt: @order.OrderDate.ToString("dd/MM/yyyy • HH:mm")
+                                @if (!string.IsNullOrEmpty(order.ShippingAddress))
+                                {
+                                    <br /><span>📍 @order.ShippingAddress</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="o-top-right">
+                        <div class="o-total-lbl">Tổng tiền</div>
+                        <div class="o-total-price">@order.FinalAmount.ToString("N0")đ</div>
+                        @if (order.DiscountAmount > 0)
+                        {
+                            <div style="color:#16a34a; font-size:0.8rem;">Giảm: @order.DiscountAmount.ToString("N0")đ</div>
+                        }
+                    </div>
+                </div>
+                
+                <div class="o-divider"></div>
+                
+                @if (order.OrderDetails != null && order.OrderDetails.Any())
+                {
+                    foreach (var detail in order.OrderDetails)
+                    {
+                        <div class="o-item-row">
+                            <div class="o-item-name">@detail.Quantity x @(detail.Product?.Name ?? "Sản phẩm")</div>
+                            <div class="o-item-price">@((detail.UnitPrice * detail.Quantity).ToString("N0"))đ</div>
+                        </div>
+                    }
+                }
+                
+                <div class="o-actions">
+                    @if (order.Status == "Pending")
+                    {
+                        <form method="post" action="/Customer/CancelOrder" style="display:inline;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@order.Id" />
+                            <button type="submit" class="o-btn o-btn-danger"
+                                    onclick="return confirm('Bạn có chắc muốn hủy đơn này không?')">Hủy đơn</button>
+                        </form>
+                    }
+                    @if (order.Status == "Completed")
+                    {
+                        <a href="/Customer/ProductReviews" class="o-btn">Đánh giá sản phẩm</a>
+                    }
+                    <span class="o-btn" style="color:#64748b; cursor:default;">
+                        @(order.PaymentMethod ?? "COD")
+                    </span>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<script>
+    function filterOrders(status, tab) {
+        // Cập nhật tab active
+        document.querySelectorAll('.o-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        // Ẩn/hiện card
+        document.querySelectorAll('.o-card').forEach(card => {
+            if (status === 'all') {
+                card.style.display = '';
+            } else {
+                card.style.display = card.dataset.status === status ? '' : 'none';
+            }
+        });
+    }
+</script>

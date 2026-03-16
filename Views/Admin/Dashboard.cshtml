@@ -1,0 +1,301 @@
+@{
+    ViewData["Title"] = "Admin Dashboard";
+    Layout = "_AdminLayout";
+
+    int totalOrders    = ViewBag.TotalOrders    ?? 0;
+    decimal revToday   = ViewBag.RevenueToday   ?? 0m;
+    int totalProducts  = ViewBag.TotalProducts  ?? 0;
+    int totalCustomers = ViewBag.TotalCustomers ?? 0;
+
+    int ordersMonth    = ViewBag.OrdersThisMonth  ?? 0;
+    decimal revMonth   = ViewBag.RevenueThisMonth ?? 0m;
+    int pending        = ViewBag.OrdersPending    ?? 0;
+    int delivering     = ViewBag.OrdersDelivering ?? 0;
+    int completed      = ViewBag.OrdersCompleted  ?? 0;
+
+    int adminCount     = ViewBag.AdminCount ?? 0;
+    int staffCount     = ViewBag.StaffCount ?? 0;
+
+    var categories = ViewBag.Categories as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var activeVoucher = ViewBag.ActiveVoucher as PizzaDeli.Models.Voucher;
+}
+
+<!-- Stat Cards -->
+<div class="stat-grid mockup-stats">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon-wrapper bg-blue">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="color-blue">
+                    <path d="M8 7V5a4 4 0 0 1 8 0v2"/>
+                    <path d="M4 7h16l1 13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                </svg>
+            </div>
+        </div>
+        <div class="stat-bottom">
+            <span class="stat-label">Tổng đơn hàng</span>
+            <span class="stat-value">@totalOrders</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon-wrapper bg-brown"><span class="material-symbols-outlined color-brown">payments</span></div>
+        </div>
+        <div class="stat-bottom">
+            <span class="stat-label">Doanh thu hôm nay</span>
+            <span class="stat-value">@revToday.ToString("N0") <span class="stat-unit">VND</span></span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon-wrapper bg-orange"><span class="material-symbols-outlined color-orange">inventory_2</span></div>
+        </div>
+        <div class="stat-bottom">
+            <span class="stat-label">Sản phẩm</span>
+            <span class="stat-value">@totalProducts</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon-wrapper bg-purple"><span class="material-symbols-outlined color-purple">group</span></div>
+        </div>
+        <div class="stat-bottom">
+            <span class="stat-label">Khách hàng</span>
+            <span class="stat-value">@totalCustomers</span>
+        </div>
+    </div>
+</div>
+
+<!-- Quick actions -->
+<section class="dash-section pt-0">
+    <div class="section-header-line">
+        <h2>Thao tác nhanh</h2>
+        <div class="line"></div>
+    </div>
+    <div class="quick-actions-pills">
+        <a asp-controller="Admin" asp-action="ProductCreate" class="btn-pill primary">
+            <span class="material-symbols-outlined">add_circle</span>
+            Thêm sản phẩm
+        </a>
+        <a asp-controller="Admin" asp-action="Orders" class="btn-pill secondary">
+            <span class="material-symbols-outlined">assignment</span>
+            Đơn chờ xử lý
+        </a>
+        <a asp-controller="Admin" asp-action="Promotions" class="btn-pill secondary">
+            <span class="material-symbols-outlined">local_activity</span>
+            Tạo khuyến mãi
+        </a>
+        <a asp-controller="Admin" asp-action="Staff" class="btn-pill secondary">
+            <span class="material-symbols-outlined">person_add</span>
+            Thêm nhân viên
+        </a>
+    </div>
+</section>
+
+<!-- Functions Grid -->
+<section class="dash-section pt-0">
+    <div class="section-header-line">
+        <h2>Chức năng Admin</h2>
+        <div class="line"></div>
+    </div>
+    <div class="function-grid">
+        <div class="function-card">
+            <div class="fc-header">
+                <div class="fc-icon"><span class="material-symbols-outlined">bar_chart</span></div>
+                <div class="fc-title-group">
+                    <h3>Thống kê</h3>
+                    <p>Theo dõi hoạt động kinh doanh</p>
+                </div>
+            </div>
+            <div class="fc-body">
+                <div class="fc-row">
+                    <span>Tổng đơn hàng (Tháng)</span>
+                    <strong>@ordersMonth</strong>
+                </div>
+                <div class="fc-row">
+                    <span>Doanh thu (Tháng)</span>
+                    <strong>@revMonth.ToString("N0") <small>VNĐ</small></strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="function-card">
+            <div class="fc-header">
+                <div class="fc-icon"><span class="material-symbols-outlined">restaurant_menu</span></div>
+                <div class="fc-title-group">
+                    <h3>Quản lý sản phẩm</h3>
+                    <p>Chỉnh sửa thực đơn &amp; danh mục</p>
+                </div>
+            </div>
+            <div class="fc-body">
+                <div class="fc-tags">
+                    @{
+                        string[] tagClasses = { "orange", "green", "blue" };
+                        int catIdx = 0;
+                    }
+                    @foreach (var cat in categories)
+                    {
+                        <span class="tag @tagClasses[catIdx % 3]">@cat.Name (@cat.Count)</span>
+                        catIdx++;
+                    }
+                </div>
+                <p class="fc-desc">Cập nhật giá bán, hình ảnh và trạng thái còn hàng của các món ăn.</p>
+            </div>
+        </div>
+
+        <div class="function-card">
+            <div class="fc-header">
+                <div class="fc-icon"><span class="material-symbols-outlined">receipt_long</span></div>
+                <div class="fc-title-group">
+                    <h3>Quản lý đơn hàng</h3>
+                    <p>Theo dõi trạng thái giao hàng</p>
+                </div>
+            </div>
+            <div class="fc-body">
+                <ul class="fc-list-dot">
+                    <li><div class="dot yellow"></div> Chờ xác nhận (@pending)</li>
+                    <li><div class="dot blue"></div> Đang giao hàng (@delivering)</li>
+                    <li><div class="dot green"></div> Đã hoàn thành (@completed)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="function-card">
+            <div class="fc-header">
+                <div class="fc-icon"><span class="material-symbols-outlined">manage_accounts</span></div>
+                <div class="fc-title-group">
+                    <h3>Quản lý tài khoản</h3>
+                    <p>Quản lý thông tin khách hàng</p>
+                </div>
+            </div>
+            <div class="fc-body">
+                <p class="fc-desc">Xem danh sách người dùng, lịch sử đặt hàng và quản lý trạng thái tài khoản.</p>
+                <div class="fc-avatars">
+                    <div class="avatar-sm"><span class="material-symbols-outlined" style="font-size: 1.5rem; color: #999;">face</span></div>
+                    <div class="avatar-sm" style="background: #fed7aa;"><span class="material-symbols-outlined" style="font-size: 1.5rem; color: #ea580c;">face_3</span></div>
+                    <div class="avatar-sm" style="background: #bbf7d0;"><span class="material-symbols-outlined" style="font-size: 1.5rem; color: #16a34a;">face_6</span></div>
+                    <span class="avatar-count">+@totalCustomers</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="function-card">
+            <div class="fc-header">
+                <div class="fc-icon"><span class="material-symbols-outlined">badge</span></div>
+                <div class="fc-title-group">
+                    <h3>Quản lý nhân viên</h3>
+                    <p>Phân quyền &amp; vai trò</p>
+                </div>
+            </div>
+            <div class="fc-body">
+                <div class="fc-row spread-list">
+                    <span>Quản trị viên</span>
+                    <span class="pill-count">@adminCount</span>
+                </div>
+                <div class="fc-row spread-list">
+                    <span>Nhân viên</span>
+                    <span class="pill-count">@staffCount</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="function-card">
+            <div class="fc-header">
+                <div class="fc-icon"><span class="material-symbols-outlined">magic_button</span></div>
+                <div class="fc-title-group">
+                    <h3>Khuyến mãi</h3>
+                    <p>Mã giảm giá &amp; quà tặng</p>
+                </div>
+                @{
+                    var allVouchers = ViewBag.ActiveVouchers as IEnumerable<PizzaDeli.Models.Voucher>;
+                    var voucherList = allVouchers?.ToList() ?? new List<PizzaDeli.Models.Voucher>();
+                }
+                @if (voucherList.Count > 0)
+                {
+                    <span style="margin-left:auto; background:#f4ece6; color:#6b4632; font-size:0.75rem; font-weight:700; padding:0.2rem 0.6rem; border-radius:20px;">@voucherList.Count đang chạy</span>
+                }
+            </div>
+            <div class="fc-body" style="padding-top:0;">
+                @if (voucherList.Count > 0)
+                {
+                    <!-- Slides -->
+                    <div id="voucherCarousel" style="overflow:hidden; position:relative;">
+                        @for (int vi = 0; vi < voucherList.Count; vi++)
+                        {
+                            var v = voucherList[vi];
+                            string discountLabel;
+                            if (v.DiscountPercent.HasValue)
+                                discountLabel = "Giảm " + v.DiscountPercent.Value.ToString("0.##") + "%";
+                            else if (v.DiscountAmount.HasValue)
+                                discountLabel = "Giảm " + v.DiscountAmount.Value.ToString("N0") + " VNĐ";
+                            else
+                                discountLabel = "Khuyến mãi";
+
+                            <div class="voucher-slide" style="display:@(vi == 0 ? "block" : "none");">
+                                <div class="promo-box" style="border-left: 3px solid #6b4632;">
+                                    <div class="promo-header">
+                                        <strong style="font-size:0.9rem; letter-spacing:0.05em;">@v.Code</strong>
+                                        <span class="promo-status">ĐANG CHẠY</span>
+                                    </div>
+                                    <p style="margin:0.5rem 0 0.25rem 0; font-weight:600; color:#1f2937; font-size:0.875rem;">@discountLabel</p>
+                                    <p style="margin:0; color:#6b7280; font-size:0.8rem;">
+                                        Đơn tối thiểu @v.MinOrderValue.ToString("N0") VNĐ
+                                        @if (v.ExpiryDate.HasValue)
+                                        {
+                                            <text> · HSD: @v.ExpiryDate.Value.ToString("dd/MM/yyyy")</text>
+                                        }
+                                        @if (v.MaxUses.HasValue)
+                                        {
+                                            <text> · Tối đa @v.MaxUses lượt</text>
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    @if (voucherList.Count > 1)
+                    {
+                        <!-- Navigation bar -->
+                        <div style="display:flex; align-items:center; justify-content:center; gap:0.625rem; margin-top:0.875rem;">
+                            <button onclick="voucherNav(-1)" title="Voucher trước"
+                                style="width:30px;height:30px;border-radius:50%;border:1px solid #e5e7eb;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#374151;font-size:1.1rem;line-height:1;transition:background 0.15s;"
+                                onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='#fff'">&#8249;</button>
+
+                            <span id="voucherPageIndicator"
+                                style="min-width:28px;height:28px;border-radius:14px;background:#5c3d2e;color:#fff;font-size:0.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 8px;">
+                                1 / @voucherList.Count
+                            </span>
+
+                            <button onclick="voucherNav(1)" title="Voucher tiếp"
+                                style="width:30px;height:30px;border-radius:50%;border:1px solid #e5e7eb;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#374151;font-size:1.1rem;line-height:1;transition:background 0.15s;"
+                                onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='#fff'">&#8250;</button>
+                        </div>
+
+                        <script>
+                            (function() {
+                                var current = 0;
+                                var slides = document.querySelectorAll('#voucherCarousel .voucher-slide');
+                                var total = slides.length;
+                                var indicator = document.getElementById('voucherPageIndicator');
+                                window.voucherNav = function(dir) {
+                                    slides[current].style.display = 'none';
+                                    current = (current + dir + total) % total;
+                                    slides[current].style.display = 'block';
+                                    indicator.textContent = (current + 1) + ' / ' + total;
+                                };
+                            })();
+                        </script>
+                    }
+                }
+                else
+                {
+                    <p class="fc-desc" style="color:#9ca3af; margin-top:0.5rem;">Chưa có khuyến mãi nào đang chạy.</p>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+
+
+

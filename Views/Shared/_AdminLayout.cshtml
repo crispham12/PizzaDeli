@@ -1,0 +1,120 @@
+@{
+    var uname = Context.Session.GetString("USER_NAME") ?? "Admin";
+    var uemail = Context.Session.GetString("USER_EMAIL") ?? "admin@pizzadeli.vn";
+
+    // Determine active menu based on context
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - PizzaDeli Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+
+<div class="dash-page">
+    <!-- Sidebar -->
+    <aside class="dash-sidebar">
+        <div class="dash-logo-area">
+            <div class="dash-logo-icon"><span class="material-symbols-outlined">local_pizza</span></div>
+            <div class="dash-logo-text">
+                <span class="logo-title">PizzaDeli</span>
+                <span class="logo-subtitle">Admin Dashboard</span>
+            </div>
+        </div>
+
+        <nav class="dash-nav">
+            <a asp-controller="Admin" asp-action="Dashboard" class="dash-nav-item @(action == "Dashboard" ? "active" : "")">
+                <span class="material-symbols-outlined">grid_view</span> Tổng quan
+            </a>
+            <a asp-controller="Admin" asp-action="Products" class="dash-nav-item @(action == "Products" || action == "ProductCreate" || action == "ProductEdit" ? "active" : "")">
+                <span class="material-symbols-outlined">restaurant_menu</span> Sản phẩm
+            </a>
+            <a asp-controller="Admin" asp-action="Categories" class="dash-nav-item @(action == "Categories" ? "active" : "")">
+                <span class="material-symbols-outlined">category</span> Danh mục
+            </a>
+            <a asp-controller="Admin" asp-action="Orders" class="dash-nav-item @(action == "Orders" ? "active" : "")">
+                <span class="material-symbols-outlined">local_shipping</span> Đơn hàng
+            </a>
+            <a asp-controller="Admin" asp-action="Promotions" class="dash-nav-item @(action == "Promotions" ? "active" : "")">
+                <span class="material-symbols-outlined">sell</span> Khuyến mãi
+            </a>
+            <a asp-controller="Admin" asp-action="Statistics" class="dash-nav-item @(action == "Statistics" ? "active" : "")">
+                <span class="material-symbols-outlined">bar_chart</span> Thống kê
+            </a>
+
+            <div class="dash-nav-title">HỆ THỐNG</div>
+
+            <a asp-controller="Admin" asp-action="Accounts" class="dash-nav-item @(action == "Accounts" ? "active" : "")">
+                <span class="material-symbols-outlined">person</span> Tài khoản
+            </a>
+            <a asp-controller="Admin" asp-action="Staff" class="dash-nav-item @(action == "Staff" ? "active" : "")">
+                <span class="material-symbols-outlined">badge</span> Nhân viên
+            </a>
+        </nav>
+
+        <div class="dash-sidebar-footer">
+            <div class="dash-today">
+                <span class="today-label">HÔM NAY</span>
+                <span class="today-date" id="sidebar-date">...</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="dash-main">
+        <header class="dash-header">
+            <div class="header-title">
+                <span class="material-symbols-outlined">trending_up</span>
+                <h1>Tổng quan hệ thống</h1>
+            </div>
+            
+            <div class="header-actions">
+                <div class="header-user">
+                    <div class="user-avatar">
+                        <span class="material-symbols-outlined">person</span>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-role">Quản trị viên</span>
+                        <span class="user-email">@uemail</span>
+                    </div>
+                </div>
+                <a asp-controller="Account" asp-action="Logout" class="header-icon-btn" title="Đăng xuất">
+                    <span class="material-symbols-outlined">logout</span>
+                </a>
+                <div class="header-divider"></div>
+                <button class="header-icon-btn has-badge" title="Thông báo">
+                    <span class="material-symbols-outlined">notifications</span>
+                </button>
+                <button class="header-icon-btn" title="Cài đặt">
+                    <span class="material-symbols-outlined">settings</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="dash-content-scroll">
+            @RenderBody()
+            
+            <div class="dash-footer-text">
+                &copy; 2024 PizzaDeli. Hệ thống quản lý chuyên nghiệp cho chuỗi nhà hàng Pizza.
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    document.getElementById('sidebar-date').textContent = dd + '/' + mm + '/' + yyyy;
+</script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

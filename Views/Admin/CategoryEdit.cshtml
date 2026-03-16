@@ -1,0 +1,76 @@
+@model PizzaDeli.Models.Category
+@{
+    ViewData["Title"] = "Chỉnh sửa danh mục";
+    Layout = "_AdminLayout";
+}
+
+<div class="form-page-header">
+    <div class="fph-left">
+        <div class="fph-breadcrumbs">
+            <a asp-action="Dashboard"><span class="material-symbols-outlined">home</span> Trang chủ</a>
+            <span>/</span>
+            <a asp-action="Categories">Danh mục</a>
+            <span>/</span>
+            <span style="color: #111;">Chỉnh sửa danh mục</span>
+        </div>
+        <div class="fph-titles">
+            <h2>Chỉnh sửa danh mục</h2>
+            <p>Sửa đổi tên và trạng thái của danh mục @Model.Name.</p>
+        </div>
+    </div>
+    <div class="fph-actions">
+        <a asp-action="Categories" class="btn-pill secondary" style="background: #fff; border: 1px solid #d1d5db;">Hủy bỏ</a>
+        <button type="submit" form="categoryForm" class="btn-pill primary">Lưu thay đổi</button>
+    </div>
+</div>
+
+<form id="categoryForm" asp-action="CategoryEdit" method="post">
+    <input type="hidden" asp-for="Id" />
+    <div class="form-grid">
+        <!-- Cột trái: Thông tin -->
+        <div class="fg-left">
+            <div class="form-card">
+                <div class="fc-head">
+                    <span class="material-symbols-outlined" style="background: #5C3D2E; color: #fff; border-radius: 50%; padding: 4px; font-size: 1.125rem;">category</span>
+                    <h3>Thông tin danh mục</h3>
+                </div>
+                <div class="fg-group">
+                    <label>Tên danh mục <span class="req">*</span></label>
+                    <input type="text" asp-for="Name" class="fg-input" placeholder="Ví dụ: Khai vị & Ăn nhẹ" required />
+                </div>
+                <div class="fg-group">
+                    <label>Mô tả ngắn</label>
+                    <textarea asp-for="Description" class="fg-input" placeholder="Khoai tây chiên, cánh gà nướng, bánh tỏi..."></textarea>
+                </div>
+            </div>
+            
+            <div class="form-card">
+                <div class="fc-head">
+                    <span class="material-symbols-outlined" style="background: #5C3D2E; color: #fff; border-radius: 50%; padding: 4px; font-size: 1.125rem;">visibility</span>
+                    <h3>Trạng thái danh mục</h3>
+                </div>
+                <div class="status-radios">
+                    <label class="radio-item">
+                        <input type="radio" asp-for="IsActive" value="true" />
+                        <span>Active</span>
+                    </label>
+                    <label class="radio-item">
+                        <input type="radio" asp-for="IsActive" value="false" />
+                        <span>Inactive</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột phải: Form Note -->
+        <div class="fg-right">
+            <div class="form-card tip-card">
+                <div class="fc-head" style="margin-bottom: 0.75rem;">
+                    <span class="material-symbols-outlined" style="color: #5C3D2E; margin-left: -2px; font-size: 1.25rem;">lightbulb</span>
+                    <h3 style="color: #5C3D2E;">Lưu ý hệ thống</h3>
+                </div>
+                <p>Nếu bạn tắt (Inactive) danh mục này, tất cả các sản phẩm nằm trong danh mục sẽ không hiển thị trên giao diện người dùng mua hàng. Hãy cẩn thận khi điều chỉnh thao tác.</p>
+            </div>
+        </div>
+    </div>
+</form>

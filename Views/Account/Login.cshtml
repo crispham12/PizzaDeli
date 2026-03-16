@@ -1,0 +1,113 @@
+@model PizzaDeli.Models.LoginRequest
+@{
+    ViewData["Title"] = "Đăng nhập - PizzaDeli";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/pizzadeli.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+</head>
+<body class="auth-body">
+    
+    <nav class="auth-navbar">
+        <a asp-controller="Home" asp-action="Index" class="auth-nav-logo">
+            <span class="material-symbols-outlined">local_pizza</span>
+            <span>PizzaDeli</span>
+        </a>
+        <a href="#" class="auth-nav-link">Help Center</a>
+    </nav>
+
+    <main class="auth-main">
+        <div class="auth-container">
+            <div class="auth-form-header">
+                <h1 class="auth-form-title" style="text-align: center;">Welcome Back</h1>
+                <p class="auth-form-sub" style="text-align: center;">Please enter your details to sign in</p>
+            </div>
+
+            @if (!string.IsNullOrEmpty(ViewBag.Error as string))
+            {
+                <div class="auth-alert auth-alert-error">
+                    <span class="material-symbols-outlined">error</span>
+                    @ViewBag.Error
+                </div>
+            }
+            @if (TempData["Success"] != null)
+            {
+                <div class="auth-alert auth-alert-success">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    @TempData["Success"]
+                </div>
+            }
+
+            <form method="post" asp-action="Login" asp-controller="Account">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@Context.Request.Query["returnUrl"]" />
+
+                <div class="auth-field">
+                    <label for="email-input">EMAIL</label>
+                    <div class="auth-input-wrap">
+                        <span class="material-symbols-outlined" style="position: absolute; left: 1rem; color: #a3a3a3; font-size: 1.25rem;">mail</span>
+                        <input id="email-input" type="email" name="Email" value="@Model?.Email"
+                               placeholder="michele@pizzadeli.com" style="padding-left: 2.75rem;" required autocomplete="email" />
+                    </div>
+                </div>
+
+                <div class="auth-field" style="margin-bottom: 0.75rem;">
+                    <label for="pwd-input">PASSWORD</label>
+                    <div class="auth-input-wrap">
+                        <span class="material-symbols-outlined" style="position: absolute; left: 1rem; color: #a3a3a3; font-size: 1.25rem;">lock</span>
+                        <input id="pwd-input" type="password" name="Password"
+                               placeholder="••••••••" style="padding-left: 2.75rem;" required autocomplete="current-password" />
+                        <button type="button" class="pwd-toggle" onclick="togglePassword('pwd-input', this)" tabindex="-1">
+                            <span class="material-symbols-outlined">visibility</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="auth-options">
+                    <label class="auth-remember">
+                        <input type="checkbox" name="RememberMe" />
+                        Remember me
+                    </label>
+                    <a href="#">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="auth-btn-submit">
+                    Sign In
+                </button>
+            </form>
+
+            <div class="auth-divider">OR</div>
+
+            <div class="auth-switch">
+                Don't have an account? <a asp-controller="Account" asp-action="Register">Sign up for free</a>
+            </div>
+            
+            <footer class="auth-footer">
+                &copy; @DateTime.Now.Year PizzaDeli. All rights reserved.
+            </footer>
+        </div>
+    </main>
+
+<script>
+function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector('.material-symbols-outlined');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.textContent = 'visibility_off';
+    } else {
+        input.type = 'password';
+        icon.textContent = 'visibility';
+    }
+}
+</script>
+</body>
+</html>

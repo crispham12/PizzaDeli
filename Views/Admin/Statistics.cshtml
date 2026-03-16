@@ -1,0 +1,308 @@
+@{
+    ViewData["Title"] = "Thống kê";
+    Layout = "_AdminLayout";
+
+    decimal totalRev = ViewBag.StatsRevenue    ?? 0m;
+    int     totalOrd = ViewBag.StatsOrders     ?? 0;
+    decimal aov      = ViewBag.StatsAOV        ?? 0m;
+    int     totalCus = ViewBag.StatsCustomers  ?? 0;
+
+    decimal revPct = ViewBag.StatRevenuePct   ?? 0m;
+    decimal ordPct = ViewBag.StatOrdersPct    ?? 0m;
+    decimal aovPct = ViewBag.StatAOVPct       ?? 0m;
+    decimal cusPct = ViewBag.StatCustomersPct ?? 0m;
+
+    string BadgeBg(decimal p)    => p > 0 ? "#dcfce7" : p < 0 ? "#fee2e2" : "#f3f4f6";
+    string BadgeColor(decimal p) => p > 0 ? "#10b981" : p < 0 ? "#ef4444" : "#6b7280";
+    string BadgeText(decimal p)  => (p > 0 ? "+" : "") + p.ToString("0.#") + "%";
+}
+
+<!-- Stat Cards -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:1.5rem; margin-top:2rem;">
+    <!-- Tổng doanh thu -->
+    <div style="background:#fff; border-radius:16px; padding:1.5rem; border:1px solid #f3f4f6; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem;">
+            <div style="width:48px; height:48px; border-radius:12px; background:#f4ece6; display:flex; align-items:center; justify-content:center;">
+                <span class="material-symbols-outlined" style="color:#6b4632; font-size:24px;">payments</span>
+            </div>
+            <div style="background:@BadgeBg(revPct); color:@BadgeColor(revPct); font-size:0.75rem; font-weight:700; padding:0.25rem 0.625rem; border-radius:12px;">
+                @BadgeText(revPct)
+            </div>
+        </div>
+        <div style="color:#6b7280; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Tổng doanh thu</div>
+        <div style="color:#1f2937; font-size:1.5rem; font-weight:700;">@totalRev.ToString("N0")đ</div>
+    </div>
+
+    <!-- Tổng đơn hàng -->
+    <div style="background:#fff; border-radius:16px; padding:1.5rem; border:1px solid #f3f4f6; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem;">
+            <div style="width:48px; height:48px; border-radius:12px; background:#f4ece6; display:flex; align-items:center; justify-content:center;">
+                <span class="material-symbols-outlined" style="color:#6b4632; font-size:24px;">shopping_cart</span>
+            </div>
+            <div style="background:@BadgeBg(ordPct); color:@BadgeColor(ordPct); font-size:0.75rem; font-weight:700; padding:0.25rem 0.625rem; border-radius:12px;">
+                @BadgeText(ordPct)
+            </div>
+        </div>
+        <div style="color:#6b7280; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Tổng đơn hàng</div>
+        <div style="color:#1f2937; font-size:1.5rem; font-weight:700;">@totalOrd.ToString("N0")</div>
+    </div>
+
+    <!-- Giá trị TB đơn -->
+    <div style="background:#fff; border-radius:16px; padding:1.5rem; border:1px solid #f3f4f6; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem;">
+            <div style="width:48px; height:48px; border-radius:12px; background:#f4ece6; display:flex; align-items:center; justify-content:center;">
+                <span class="material-symbols-outlined" style="color:#6b4632; font-size:24px;">receipt_long</span>
+            </div>
+            <div style="background:@BadgeBg(aovPct); color:@BadgeColor(aovPct); font-size:0.75rem; font-weight:700; padding:0.25rem 0.625rem; border-radius:12px;">
+                @BadgeText(aovPct)
+            </div>
+        </div>
+        <div style="color:#6b7280; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Giá trị TB đơn</div>
+        <div style="color:#1f2937; font-size:1.5rem; font-weight:700;">@aov.ToString("N0")đ</div>
+    </div>
+
+    <!-- Khách hàng mới -->
+    <div style="background:#fff; border-radius:16px; padding:1.5rem; border:1px solid #f3f4f6; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem;">
+            <div style="width:48px; height:48px; border-radius:12px; background:#f4ece6; display:flex; align-items:center; justify-content:center;">
+                <span class="material-symbols-outlined" style="color:#6b4632; font-size:24px;">person_add</span>
+            </div>
+            <div style="background:@BadgeBg(cusPct); color:@BadgeColor(cusPct); font-size:0.75rem; font-weight:700; padding:0.25rem 0.625rem; border-radius:12px;">
+                @BadgeText(cusPct)
+            </div>
+        </div>
+        <div style="color:#6b7280; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Khách hàng mới</div>
+        <div style="color:#1f2937; font-size:1.5rem; font-weight:700;">@totalCus.ToString("N0")</div>
+    </div>
+</div>
+
+
+<!-- Charts Section -->
+
+<section class="dash-section pt-0" style="margin-top: 2rem;">
+    <div style="display:grid; grid-template-columns:2fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
+        <!-- Line Chart -->
+        <div style="background:#fff; border-radius:16px; padding:1.5rem; box-shadow:0 1px 3px rgba(0,0,0,0.05); border:1px solid #f3f4f6;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+                <h3 style="margin:0; font-size:1.125rem; color:#1f2937;">Doanh thu theo thời gian</h3>
+                <div style="border:1px solid #e5e7eb; border-radius:20px; padding:0.375rem 0.875rem; background:#f9fafb; font-size:0.875rem; color:#4b5563; font-weight:500;">
+                    7 ngày qua <span class="material-symbols-outlined" style="font-size:1.125rem; vertical-align:middle; margin-left:0.25rem;">expand_more</span>
+                </div>
+            </div>
+            <div style="position:relative; height:280px; width:100%;">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Donut Chart -->
+        <div style="background:#fff; border-radius:16px; padding:1.5rem; box-shadow:0 1px 3px rgba(0,0,0,0.05); border:1px solid #f3f4f6; display:flex; flex-direction:column;">
+            <h3 style="margin:0 0 2rem 0; font-size:1.125rem; color:#1f2937;">Doanh thu theo danh mục</h3>
+            @if (ViewBag.DonutLabels != null && ViewBag.DonutLabels != "[]")
+            {
+                <div style="position:relative; height:180px; width:100%; display:flex; justify-content:center; align-items:center;">
+                    <canvas id="categoryChart"></canvas>
+                    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; pointer-events:none;">
+                        <div style="font-size:0.75rem; color:#6b7280; font-family:'Inter',sans-serif; margin-bottom:0.125rem; font-weight:500;">Tổng cộng</div>
+                        <div style="font-size:1.125rem; font-weight:600; color:#1f2937;">100%</div>
+                    </div>
+                </div>
+                <div id="categoryLegend" style="margin-top:2.5rem; display:flex; flex-direction:column; gap:0.875rem;"></div>
+            }
+            else
+            {
+                <div style="flex:1; display:flex; align-items:center; justify-content:center; color:#9ca3af; font-size:0.875rem; min-height:220px;">
+                    Chưa có dữ liệu
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Top Products -->
+    <div style="background:#fff; border-radius:16px; padding:0; box-shadow:0 1px 3px rgba(0,0,0,0.05); border:1px solid #f3f4f6;">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:1.5rem;">
+            <h3 style="margin:0; font-size:1.125rem; color:#1f2937;">Sản phẩm bán chạy nhất</h3>
+            <a href="@Url.Action("Products", "Admin")" style="color:#4b5563; font-size:0.875rem; text-decoration:none; font-weight:600;">Xem tất cả</a>
+        </div>
+        <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; min-width:600px; text-align:left;">
+                <thead>
+                    <tr style="border-bottom:1px solid #f3f4f6; color:#6b7280; font-size:0.75rem; text-transform:uppercase;">
+                        <th style="padding:0 1.5rem 1rem 1.5rem; font-weight:600;">Sản phẩm</th>
+                        <th style="padding:0 1rem 1rem 1rem; font-weight:600;">Danh mục</th>
+                        <th style="padding:0 1rem 1rem 1rem; font-weight:600;">Đã bán</th>
+                        <th style="padding:0 1rem 1rem 1rem; font-weight:600;">Doanh thu</th>
+                        <th style="padding:0 1.5rem 1rem 1rem; font-weight:600; text-align:right;">Xu hướng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (ViewBag.TopProducts != null)
+                    {
+                        var topProductsList = ViewBag.TopProducts as IEnumerable<dynamic>;
+                        if (topProductsList != null && topProductsList.Any())
+                        {
+                            int idx = 0;
+                            foreach (var p in topProductsList)
+                            {
+                                idx++;
+                                string trendIcon = idx <= 2 ? "trending_up" : "trending_flat";
+                                string trendColor = idx <= 2 ? "#10b981" : "#f59e0b"; // Green for top 2, yellow/orange for others
+
+                                <tr style="border-bottom:1px solid #f9fafb;">
+                                    <td style="padding:1rem 1.5rem;">
+                                        <div style="display:flex; align-items:center; gap:1rem;">
+                                            <img src="@p.ImageUrl" alt="@p.Name" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:1px solid #f3f4f6;" onerror="this.src='/images/no-image.png'" />
+                                            <div>
+                                                <div style="font-weight:600; color:#1f2937; font-size:0.875rem;">@p.Name</div>
+                                                <div style="font-size:0.75rem; color:#9ca3af;">@(idx <= 2 ? "Bestseller" : "Popular")</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style="padding:1rem; color:#6b7280; font-size:0.875rem; font-weight:500;">@p.Category</td>
+                                    <td style="padding:1rem; font-weight:600; color:#1f2937; font-size:0.875rem;">@p.Sold đơn</td>
+                                    <td style="padding:1rem; font-weight:700; color:#1f2937; font-size:0.875rem;">@((p.Revenue).ToString("N0"))đ</td>
+                                    <td style="padding:1rem 1.5rem; text-align:right;">
+                                        <span class="material-symbols-outlined" style="color:@trendColor; font-weight:bold; font-size:1.5rem;">@trendIcon</span>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" style="padding:2rem; text-align:center; color:#9ca3af; font-size:0.875rem;">Chưa có dữ liệu sản phẩm bán chạy</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var chartLabels = @Html.Raw(ViewBag.ChartLabels ?? "[]");
+            var chartValues = @Html.Raw(ViewBag.ChartValues ?? "[]");
+
+            if (chartLabels.length > 0) {
+                var ctxLine = document.getElementById('revenueChart').getContext('2d');
+                var gradient = ctxLine.createLinearGradient(0, 0, 0, 300);
+                gradient.addColorStop(0, 'rgba(107, 70, 50, 0.15)');
+                gradient.addColorStop(1, 'rgba(107, 70, 50, 0)');
+
+                new Chart(ctxLine, {
+                    type: 'line',
+                    data: {
+                        labels: chartLabels,
+                        datasets: [{
+                            data: chartValues,
+                            borderColor: '#6b4632',
+                            backgroundColor: gradient,
+                            borderWidth: 2.5,
+                            fill: true,
+                            tension: 0.45, // Đường con line uốn lượn mượt
+                            pointRadius: 0, 
+                            pointHoverRadius: 5,
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: '#6b4632',
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(0,0,0,0.8)',
+                                padding: 12,
+                                titleFont: { size: 13, family: 'Inter', weight: 400 },
+                                bodyFont: { size: 14, family: 'Inter', weight: 600 },
+                                cornerRadius: 8,
+                                displayColors: false,
+                                callbacks: {
+                                    label: function(ctx) { return ctx.parsed.y.toLocaleString('vi-VN') + ' đ'; }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false, drawBorder: false },
+                                ticks: { color: '#9ca3af', font: { size: 12, family: 'Inter, sans-serif', weight: 500 } }
+                            },
+                            y: {
+                                grid: { display: false, drawBorder: false },
+                                ticks: { display: false },
+                                border: { display: false } 
+                            }
+                        },
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    }
+                });
+            }
+
+            var donutLabels = @Html.Raw(ViewBag.DonutLabels ?? "[]");
+            var donutValues = @Html.Raw(ViewBag.DonutValues ?? "[]");
+
+            if (donutLabels.length > 0) {
+                var categoryChartCanvas = document.getElementById('categoryChart');
+                if (categoryChartCanvas) { // Add null check for the canvas element
+                    var ctxDonut = categoryChartCanvas.getContext('2d');
+                    var donutColors = ['#5c3d2e', '#a38a79', '#d6ccc2', '#f0eae3', '#e2d4c0'];
+                    
+                    new Chart(ctxDonut, {
+                        type: 'doughnut',
+                        data: {
+                            labels: donutLabels,
+                            datasets: [{
+                                data: donutValues,
+                                backgroundColor: donutColors,
+                                borderWidth: 2,
+                                borderColor: '#fff',
+                                hoverOffset: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '70%',
+                            layout: { padding: 10 },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0,0,0,0.8)',
+                                    padding: 12,
+                                    bodyFont: { size: 13, family: 'Inter' },
+                                    cornerRadius: 8,
+                                    callbacks: {
+                                        label: function(ctx) { return ' ' + ctx.parsed.toLocaleString('vi-VN') + ' đ'; }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    var totalVal = donutValues.reduce(function(a,b){return a+b;}, 0);
+                    var legendHtml = '';
+                    for(var i=0; i<donutLabels.length; i++) {
+                        var pct = totalVal > 0 ? Math.round((donutValues[i] / totalVal) * 100) : 0;
+                        legendHtml += '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+                                      '<div style="display:flex; align-items:center; gap:0.625rem;">' +
+                                      '<span style="width:10px; height:10px; border-radius:50%; background:' + donutColors[i % donutColors.length] + ';"></span>' +
+                                      '<span style="color:#6b7280; font-size:0.875rem; font-weight:500;">' + donutLabels[i] + '</span>' +
+                                      '</div>' +
+                                      '<div style="font-weight:700; color:#1f2937; font-size:0.875rem;">' + pct + '%</div>' +
+                                      '</div>';
+                    }
+                    var legendEl = document.getElementById('categoryLegend');
+                    if(legendEl) legendEl.innerHTML = legendHtml;
+                }
+            }
+        });
+    </script>
+}

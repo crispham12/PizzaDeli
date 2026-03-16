@@ -1,0 +1,303 @@
+@model PizzaDeli.Models.User
+@{
+    ViewData["Title"] = "Thêm nhân viên";
+    Layout = "_AdminLayout";
+}
+
+<style>
+    /* Styling specifically for Staff Form consistent with design */
+    .stf-form-card {
+        background: #fff;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .stf-header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+    .stf-header h2 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 0.25rem;
+    }
+
+    .stf-header p {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin: 0;
+    }
+
+    .stf-avatar-section {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .stf-avatar-preview {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background-color: #f3f4f6;
+        border: 2px dashed #d1d5db;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .stf-avatar-preview .material-symbols-outlined {
+        font-size: 40px;
+        color: #d1d5db;
+    }
+
+    .stf-camera-btn {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 32px;
+        height: 32px;
+        background-color: #5C3D2E;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid #fff;
+        cursor: pointer;
+    }
+    
+    .stf-camera-btn .material-symbols-outlined {
+        font-size: 16px !important;
+        color: white !important;
+    }
+
+    .stf-avatar-info h4 {
+        margin: 0 0 0.25rem 0;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: #111827;
+    }
+    
+    .stf-avatar-info p {
+        margin: 0 0 0.5rem 0;
+        font-size: 0.8125rem;
+        color: #6b7280;
+        line-height: 1.4;
+    }
+
+    .stf-upload-btn {
+        display: inline-block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #5C3D2E;
+        cursor: pointer;
+    }
+
+    .stf-form-row {
+        display: flex;
+        gap: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .stf-fg {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stf-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+
+    .stf-req {
+        color: #ef4444;
+    }
+
+    .stf-input {
+        padding: 0.5rem 0.875rem;
+        font-size: 0.875rem;
+        color: #111827;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        transition: all 0.2s;
+        height: 20px;
+    }
+
+    .stf-input:focus {
+        outline: none;
+        border-color: #5C3D2E;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(92, 61, 46, 0.1);
+    }
+
+    .stf-input:disabled, .stf-input[readonly] {
+        background-color: #f3f4f6;
+        cursor: not-allowed;
+        color: #6b7280;
+    }
+
+    select.stf-input {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236b7280'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 20px;
+        padding: 0.5rem 2.5rem 0.5rem 0.875rem;
+        height: 38px;
+    }
+
+    .stf-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #f3f4f6;
+    }
+
+    .stf-btn-cancel {
+        padding: 0.625rem 1.5rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #4b5563;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .stf-btn-cancel:hover {
+        color: #111827;
+    }
+
+    .stf-btn-save {
+        padding: 0.625rem 2rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #fff;
+        background: #5C3D2E;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .stf-btn-save:hover {
+        background: #462c20;
+        transform: translateY(-1px);
+    }
+</style>
+
+<div class="stf-form-card">
+    <div class="stf-header">
+        <h2>Thông tin nhân viên</h2>
+        <p>Vui lòng điền đầy đủ các thông tin bắt buộc dưới đây.</p>
+    </div>
+
+    <form asp-action="StaffCreate" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+
+        <div class="stf-avatar-section">
+            <div class="stf-avatar-preview" id="avatarPreviewBox">
+                <span class="material-symbols-outlined" id="avatarIcon">person</span>
+                <img id="avatarImg" src="" style="display:none; width:100%; height:100%; border-radius:50%; object-fit:cover;" />
+                
+                <div class="stf-camera-btn" onclick="document.getElementById('uploadImage').click()">
+                    <span class="material-symbols-outlined">photo_camera</span>
+                </div>
+            </div>
+            <div class="stf-avatar-info">
+                <h4>Ảnh đại diện nhân viên</h4>
+                <p>Tải lên ảnh chân dung rõ nét. Định dạng hỗ trợ: JPG, PNG.<br />Dung lượng tối đa 2MB.</p>
+                <label for="uploadImage" class="stf-upload-btn">Chọn file ảnh</label>
+                <input type="file" id="uploadImage" name="uploadImage" accept="image/jpeg, image/png" style="display:none;" onchange="previewImage(event)" />
+            </div>
+        </div>
+
+        <div class="stf-form-row">
+            <div class="stf-fg">
+                <label class="stf-label">Họ và tên <span class="stf-req">*</span></label>
+                <input asp-for="FullName" class="stf-input" placeholder="Nguyễn Văn A" required />
+            </div>
+            <div class="stf-fg">
+                <label class="stf-label">Email công việc <span class="stf-req">*</span></label>
+                <input asp-for="Email" type="email" class="stf-input" placeholder="email@pizzadeli.vn" required />
+            </div>
+        </div>
+
+        <div class="stf-form-row">
+            <div class="stf-fg">
+                <label class="stf-label">Số điện thoại <span class="stf-req">*</span></label>
+                <input asp-for="Phone" type="tel" class="stf-input" placeholder="090x xxx xxx" required />
+            </div>
+            <div class="stf-fg">
+                <label class="stf-label">Chức vụ <span class="stf-req">*</span></label>
+                <select asp-for="Role" class="stf-input" required>
+                    <option value="" disabled selected>Chọn vị trí</option>
+                    <option value="Staff">Nhân viên (Staff)</option>
+                    <option value="Admin">Quản trị viên (Admin)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="stf-form-row">
+            <div class="stf-fg">
+                <label class="stf-label">Ngày bắt đầu làm việc <span class="stf-req">*</span></label>
+                <input asp-for="CreatedAt" type="date" class="stf-input" required value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="stf-fg">
+                <label class="stf-label">Chi nhánh</label>
+                <input type="text" class="stf-input" value="Cửa hàng chính - Quận 1" readonly />
+            </div>
+        </div>
+        
+        <!-- Mật khẩu mặc định -->
+        <input type="hidden" asp-for="PasswordHash" value="Pizzadeli@123" />
+
+        <div class="stf-footer">
+            <a asp-action="Staff" class="stf-btn-cancel">Hủy bỏ</a>
+            <button type="submit" class="stf-btn-save">
+                Lưu nhân viên
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        function previewImage(event) {
+            var input = event.target;
+            var reader = new FileReader();
+            
+            reader.onload = function() {
+                var dataURL = reader.result;
+                var avatarImg = document.getElementById('avatarImg');
+                var avatarIcon = document.getElementById('avatarIcon');
+                
+                avatarImg.src = dataURL;
+                avatarImg.style.display = 'block';
+                avatarIcon.style.display = 'none';
+                
+                document.getElementById('avatarPreviewBox').style.borderStyle = 'solid';
+            };
+            
+            if (input.files && input.files[0]) {
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+}

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - PizzaDeli</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/pizzadeli.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+@{
+    var role   = Context.Session.GetString("USER_ROLE");
+    var uname  = Context.Session.GetString("USER_NAME");
+    var isAuth = !string.IsNullOrEmpty(role);
+}
+
+@* Dashboard pages dùng layout riêng (dash-page), chỉ render body *@
+@RenderBody()
+
+<script src="~/js/site.js?v=@DateTime.Now.Ticks"></script>
+@await RenderSectionAsync("Scripts", required: false)
+
+<!-- ============ Cart Drawer ============ -->
+<div class="cart-overlay" id="cartOverlay"></div>
+
+<aside class="cart-drawer" id="cartDrawer" aria-label="Giỏ hàng" role="dialog">
+
+    <!-- Header -->
+    <div class="cart-drawer-header">
+        <div class="cart-drawer-title">
+            <span class="material-symbols-outlined">shopping_cart</span>
+            Shopping Cart
+        </div>
+        <button class="cart-drawer-close" id="cartDrawerClose" aria-label="Đóng giỏ hàng">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+    </div>
+
+    <!-- Items list (scrollable) -->
+    <div class="cart-drawer-items" id="cartDrawerItems">
+        <!-- Empty state -->
+        <div class="cart-empty" id="cartEmptyState">
+            <span class="material-symbols-outlined">shopping_cart</span>
+            <p>Giỏ hàng trống</p>
+            <p class="cart-empty-hint">Thêm món ăn yêu thích vào giỏ nhé!</p>
+        </div>
+        <!-- Cart items rendered by JS -->
+    </div>
+
+    <!-- Footer (ẩn khi rỗng) -->
+    <div class="cart-drawer-footer" id="cartDrawerFooter" style="display:none;">
+        <div class="cart-footer-summary">
+            <div class="cart-summary-row">
+                <span>Subtotal</span>
+                <span id="drawerSubtotal">0 ₫</span>
+            </div>
+            <div class="cart-summary-row">
+                <span>Delivery Tax</span>
+                <span id="drawerTax">0 ₫</span>
+            </div>
+            <div class="cart-grand-total-row">
+                <span>Grand Total</span>
+                <span id="drawerTotalPrice">0 ₫</span>
+            </div>
+        </div>
+        <div class="cart-footer-actions">
+            <a href="/Customer/Checkout" class="btn-checkout" id="btnCheckout">
+                <span class="material-symbols-outlined">credit_card</span>
+                Checkout Now
+            </a>
+            <p class="cart-secure-text">
+                <span class="material-symbols-outlined">lock</span>
+                SECURE PAYMENT POWERED BY PIZZADELI
+            </p>
+        </div>
+    </div>
+</aside>
+
+<!-- Modal Chi Tiết Cấu Hình Pizza -->
+<div class="pizza-modal-overlay" id="pizzaDetailModal" style="display:none;">
+    <div class="pizza-modal-container">
+        <button class="pizza-modal-close" onclick="closePizzaModal()">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        
+        <div class="pizza-modal-left">
+            <img id="pzModalImg" src="/images/placeholder.png" alt="Pizza">
+        </div>
+        
+        <div class="pizza-modal-right">
+            <div class="pizza-modal-header">
+                <h2 id="pzModalName">...</h2>
+                <div class="pz-modal-rating">
+                    <span class="material-symbols-outlined">star</span>
+                    <span class="material-symbols-outlined">star</span>
+                    <span class="material-symbols-outlined">star</span>
+                    <span class="material-symbols-outlined">star</span>
+                    <span class="material-symbols-outlined">star</span>
+                    <span> 4.8 (128 reviews) &bull; <u><a href="/Customer/ProductReviews" style="color:var(--slate-800); text-decoration:none;">See Reviews</a></u> &rarr;</span>
+                </div>
+                <p id="pzModalDesc" class="pz-modal-desc">...</p>
+            </div>
+            
+            <div class="pz-modal-scroll-area">
+                <div class="pz-opt-group">
+                    <label class="pz-opt-label">ĐẾ BÁNH (CRUST)</label>
+                    <div class="pz-btn-group">
+                        <label class="pz-radio-btn active"><input type="radio" name="pz-crust" value="Thin" onclick="updatePzRadio(this)" checked> Thin</label>
+                        <label class="pz-radio-btn"><input type="radio" name="pz-crust" value="Medium" onclick="updatePzRadio(this)"> Medium</label>
+                        <label class="pz-radio-btn"><input type="radio" name="pz-crust" value="Thick" onclick="updatePzRadio(this)"> Thick</label>
+                    </div>
+                </div>
+
+                <div class="pz-opt-group">
+                    <label class="pz-opt-label">PHÔ MAI (CHEESE)</label>
+                    <div class="pz-btn-group">
+                        <label class="pz-radio-btn active"><input type="radio" name="pz-cheese" value="Mozzarella" onclick="updatePzRadio(this)" checked> Mozzarella</label>
+                        <label class="pz-radio-btn"><input type="radio" name="pz-cheese" value="Parmesan" onclick="updatePzRadio(this)"> Parmesan</label>
+                        <label class="pz-radio-btn"><input type="radio" name="pz-cheese" value="Cheddar" onclick="updatePzRadio(this)"> Cheddar</label>
+                    </div>
+                </div>
+
+                <div class="pz-opt-group">
+                    <label class="pz-opt-label">TOPPING (EXTRA)</label>
+                    <div class="pz-btn-group">
+                        <label class="pz-check-btn"><input type="checkbox" name="pz-topping" value="Pepperoni" onclick="updatePzCheck(this)"><div class="c-indicator"></div> Pepperoni</label>
+                        <label class="pz-check-btn"><input type="checkbox" name="pz-topping" value="Mushrooms" onclick="updatePzCheck(this)"><div class="c-indicator"></div> Mushrooms</label>
+                        <label class="pz-check-btn"><input type="checkbox" name="pz-topping" value="Onions" onclick="updatePzCheck(this)"><div class="c-indicator"></div> Onions</label>
+                        <label class="pz-check-btn"><input type="checkbox" name="pz-topping" value="Bell" onclick="updatePzCheck(this)"><div class="c-indicator"></div> Bell Peppers</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nút Action Cuối cùng -->
+            <div class="pz-modal-actions">
+                <div class="pz-qty-controls">
+                    <button type="button" onclick="changePzModalQty(-1)"><span class="material-symbols-outlined">remove</span></button>
+                    <span id="pzModalQty">1</span>
+                    <button type="button" onclick="changePzModalQty(1)"><span class="material-symbols-outlined">add</span></button>
+                </div>
+                <button type="button" class="btn-pz-add" id="btnPzModalAdd" onclick="confirmPzModalAdd()">
+                    <span class="material-symbols-outlined">shopping_cart</span>
+                    Add to Cart - <span id="pzModalPriceTotal"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+
+

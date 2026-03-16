@@ -1,0 +1,353 @@
+@model IEnumerable<PizzaDeli.Models.User>
+@{
+    ViewData["Title"] = "Quản lý tài khoản";
+    Layout = "_AdminLayout";
+    int currentPage   = ViewBag.CurrentPage  ?? 1;
+    int totalPages    = ViewBag.TotalPages   ?? 1;
+    int totalUsers    = ViewBag.TotalUsers   ?? 0;
+    var currentStatus = ViewBag.CurrentStatus as string ?? "all";
+    var searchQuery   = ViewBag.SearchQuery  as string ?? "";
+
+    string GetInitials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0][0].ToString().ToUpper();
+        return (parts[0][0].ToString() + parts[^1][0].ToString()).ToUpper();
+    }
+
+    string[] avColors = { "#f59e0b","#10b981","#3b82f6","#8b5cf6","#ef4444","#ec4899","#14b8a6","#f97316" };
+    string GetAvColor(string? name)
+    {
+        if (string.IsNullOrEmpty(name)) return avColors[0];
+        return avColors[Math.Abs(name.GetHashCode()) % avColors.Length];
+    }
+
+    (string label, string bg, string color) GetRole(string role) => role switch
+    {
+        "Admin"    => ("ADMIN",    "#f5f0ec", "#5C3D2E"),
+        "Staff"    => ("NHÂN VIÊN","#dbeafe", "#1d4ed8"),
+        "Customer" => ("KHÁCH HÀNG","#f3f4f6","#374151"),
+        _          => (role.ToUpper(), "#f3f4f6", "#6b7280")
+    };
+}
+
+<!-- =================== PAGE HEADER =================== -->
+<div class="page-header">
+    <div class="ph-titles">
+        <h2>Danh sách người dùng</h2>
+        <p>Xem và quản lý thông tin tài khoản trong hệ thống PizzaDeli.</p>
+    </div>
+    <div class="ph-actions">
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:#dcfce7;color:#16a34a;padding:1rem;border-radius:8px;margin-bottom:1rem;font-weight:600;font-size:.875rem;">
+        <span class="material-symbols-outlined" style="vertical-align:middle;font-size:1.125rem;margin-right:.5rem;">check_circle</span>
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+<div class="product-list-container">
+
+    <!-- Toolbar -->
+    <div class="acc-toolbar">
+        <div class="ord-status-tabs acc-tabs">
+            @foreach (var (val, lbl) in new[] { ("all","Tất cả"),("active","Hoạt động"),("locked","Bị khóa") })
+            {
+                <a href="@Url.Action("Accounts", new { status = val, searchQuery })"
+                   class="ord-status-tab @(currentStatus == val ? "active" : "")"
+                   style="text-decoration:none;">@lbl</a>
+            }
+        </div>
+        <form method="get" asp-action="Accounts" class="pl-search acc-search">
+            <span class="material-symbols-outlined search-icon">search</span>
+            <input type="text" name="searchQuery" value="@searchQuery"
+                   placeholder="Tìm theo Tên, Email hoặc ID..."
+                   onchange="this.form.submit()" />
+            <input type="hidden" name="status" value="@currentStatus" />
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive">
+        <table class="pl-table acc-table">
+            <thead>
+                <tr>
+                    <th style="width:100px;">ID</th>
+                    <th>NGƯỜI DÙNG</th>
+                    <th style="width:130px;">VAI TRÒ</th>
+                    <th style="width:130px;">NGÀY THAM GIA</th>
+                    <th style="width:130px;text-align:center;">TRẠNG THÁI</th>
+                    <th style="width:115px;text-align:right;">THAO TÁC</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model)
+                {
+                    var initials = GetInitials(user.FullName);
+                    var avColor  = GetAvColor(user.FullName);
+                    var (roleLabel, roleBg, roleColor) = GetRole(user.Role);
+                    var shortId  = "#USR-" + user.Id.Substring(0, 4).ToUpper();
+
+                    <tr>
+                        <td><span class="acc-id">@shortId</span></td>
+
+                        <td>
+                            <div class="acc-user">
+                                @if (!string.IsNullOrEmpty(user.Avatar))
+                                {
+                                    <img src="@user.Avatar" class="acc-avatar acc-avatar-img" alt="@user.FullName" />
+                                }
+                                else
+                                {
+                                    <div class="acc-avatar" style="background:@avColor;">@initials</div>
+                                }
+                                <div>
+                                    <div class="acc-name">@user.FullName</div>
+                                    <div class="acc-email">@user.Email</div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>
+                            <span class="acc-role-badge" style="background:@roleBg;color:@roleColor;">@roleLabel</span>
+                        </td>
+
+                        <td><span class="acc-date">@user.CreatedAt.ToString("dd/MM/yyyy")</span></td>
+
+                        <td style="text-align:center;">
+                            @if (user.IsActive)
+                            {
+                                <span class="acc-badge acc-badge-active"><span class="acc-dot green"></span>Hoạt động</span>
+                            }
+                            else
+                            {
+                                <span class="acc-badge acc-badge-locked"><span class="acc-dot red"></span>Bị khóa</span>
+                            }
+                        </td>
+
+                        <td style="text-align:right;">
+                            <div class="pt-actions" style="justify-content:flex-end;gap:0.25rem;">
+                                <!-- Nút Xem: nhúng toàn bộ data vào data-* -->
+                                <button class="action-btn acc-btn-view"
+                                        title="Xem chi tiết"
+                                        onclick="showUserModal(this)"
+                                        data-name="@user.FullName"
+                                        data-email="@user.Email"
+                                        data-phone="@(user.Phone ?? "Chưa cập nhật")"
+                                        data-role="@user.Role"
+                                        data-role-label="@roleLabel"
+                                        data-role-bg="@roleBg"
+                                        data-role-color="@roleColor"
+                                        data-avatar="@(user.Avatar ?? "")"
+                                        data-avcolor="@avColor"
+                                        data-initials="@initials"
+                                        data-joined="@user.CreatedAt.ToString("dd/MM/yyyy")"
+                                        data-address="@(user.Address ?? "")"
+                                        data-active="@user.IsActive.ToString().ToLower()">
+                                    <span class="material-symbols-outlined">visibility</span>
+                                </button>
+
+                                <!-- Khóa/Mở -->
+                                <form asp-action="AccountToggleLock" asp-route-id="@user.Id"
+                                      method="post" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit"
+                                            class="action-btn @(user.IsActive ? "acc-btn-lock" : "acc-btn-unlock")"
+                                            title="@(user.IsActive ? "Khóa tài khoản" : "Mở tài khoản")">
+                                        <span class="material-symbols-outlined">@(user.IsActive ? "lock" : "lock_open")</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="6" style="text-align:center;color:#9ca3af;padding:3rem;">
+                            <span class="material-symbols-outlined" style="font-size:2.5rem;display:block;margin-bottom:.5rem;opacity:.4;">manage_accounts</span>
+                            Chưa có tài khoản nào.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="ord-footer">
+        <div class="ord-info">
+            Hiển thị
+            <strong>@((currentPage - 1) * 10 + 1)–@((currentPage - 1) * 10 + Model.Count())</strong>
+            của <strong>@totalUsers</strong> tài khoản
+        </div>
+        <div class="pl-pagination">
+            @if (currentPage > 1)
+            {
+                <a href="@Url.Action("Accounts", new { page = currentPage - 1, searchQuery, status = currentStatus })" class="page-btn">
+                    <span class="material-symbols-outlined">chevron_left</span>
+                </a>
+            }
+            else { <button class="page-btn" disabled><span class="material-symbols-outlined">chevron_left</span></button> }
+
+            @for (int i = 1; i <= totalPages; i++)
+            {
+                if (i == 1 || i == totalPages || Math.Abs(i - currentPage) <= 1)
+                {
+                    <a href="@Url.Action("Accounts", new { page = i, searchQuery, status = currentStatus })"
+                       class="page-btn @(i == currentPage ? "active" : "")">@i</a>
+                }
+                else if (Math.Abs(i - currentPage) == 2) { <span class="page-dots">...</span> }
+            }
+
+            @if (currentPage < totalPages)
+            {
+                <a href="@Url.Action("Accounts", new { page = currentPage + 1, searchQuery, status = currentStatus })" class="page-btn">
+                    <span class="material-symbols-outlined">chevron_right</span>
+                </a>
+            }
+            else { <button class="page-btn" disabled><span class="material-symbols-outlined">chevron_right</span></button> }
+        </div>
+    </div>
+</div>
+
+<!-- =================== MODAL XEM CHI TIẾT =================== -->
+<div id="userDetailModal" class="umd-overlay" onclick="closeModalOutside(event)">
+    <div class="umd-panel">
+        <!-- Header -->
+        <div class="umd-header">
+            <span class="umd-title">Thông tin tài khoản</span>
+            <button class="umd-close" onclick="closeModal()" title="Đóng">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="umd-body">
+            <!-- Avatar + Name + Role -->
+            <div class="umd-profile">
+                <div class="umd-av-wrap">
+                    <div id="mdAvatar" class="umd-avatar"></div>
+                    <span id="mdStatusDot" class="umd-status-dot"></span>
+                </div>
+                <div class="umd-fullname" id="mdFullName">—</div>
+                <div class="umd-meta">
+                    <span id="mdRoleBadge" class="umd-role-badge"></span>
+                    <span class="umd-dot-sep">•</span>
+                    <span id="mdJoined" class="umd-joined"></span>
+                </div>
+            </div>
+
+            <!-- THÔNG TIN CƠ BẢN -->
+            <div class="umd-section-title">THÔNG TIN CƠ BẢN</div>
+            <div class="umd-info-list">
+                <div class="umd-info-row">
+                    <span class="umd-info-icon material-symbols-outlined">person</span>
+                    <div>
+                        <div class="umd-info-label">Họ và tên</div>
+                        <div class="umd-info-value" id="mdName2">—</div>
+                    </div>
+                </div>
+                <div class="umd-info-row">
+                    <span class="umd-info-icon material-symbols-outlined">mail</span>
+                    <div>
+                        <div class="umd-info-label">Địa chỉ Email</div>
+                        <div class="umd-info-value" id="mdEmail">—</div>
+                    </div>
+                </div>
+                <div class="umd-info-row">
+                    <span class="umd-info-icon material-symbols-outlined">call</span>
+                    <div>
+                        <div class="umd-info-label">Số điện thoại</div>
+                        <div class="umd-info-value" id="mdPhone">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ĐỊA CHỈ GIAO HÀNG (chỉ Customer) -->
+            <div id="mdAddressSection">
+                <div class="umd-section-title">ĐỊA CHỈ GIAO HÀNG</div>
+                <div class="umd-address-card">
+                    <span class="material-symbols-outlined umd-addr-icon">location_on</span>
+                    <div>
+                        <div class="umd-addr-title">Địa chỉ nhà</div>
+                        <div class="umd-addr-value" id="mdAddress">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="umd-footer">
+            <button class="umd-btn-back" onclick="closeModal()">Quay lại</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function showUserModal(btn) {
+        var data = btn.dataset;
+        // Avatar
+        var av = document.getElementById('mdAvatar');
+        if (data.avatar) {
+            av.innerHTML = '<img src="' + data.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+        } else {
+            av.textContent = data.initials;
+            av.style.background = data.avcolor;
+        }
+        // Status dot
+        var dot = document.getElementById('mdStatusDot');
+        dot.style.background = data.active === 'true' ? '#22c55e' : '#ef4444';
+
+        // Tên
+        document.getElementById('mdFullName').textContent = data.name;
+        document.getElementById('mdName2').textContent    = data.name;
+
+        // Role badge
+        var badge = document.getElementById('mdRoleBadge');
+        badge.textContent         = data.roleLabel;
+        badge.style.background    = data.roleBg;
+        badge.style.color         = data.roleColor;
+
+        // Ngày tham gia
+        document.getElementById('mdJoined').textContent = 'Tham gia ' + data.joined;
+
+        // Thông tin
+        document.getElementById('mdEmail').textContent = data.email;
+        document.getElementById('mdPhone').textContent = data.phone || 'Chưa cập nhật';
+
+        // Địa chỉ: ẩn nếu là Staff hoặc Admin
+        var addrSection = document.getElementById('mdAddressSection');
+        if (data.role === 'Customer') {
+            addrSection.style.display = 'block';
+            document.getElementById('mdAddress').textContent =
+                (data.address && data.address.trim() !== '') ? data.address : 'Chưa cập nhật';
+        } else {
+            addrSection.style.display = 'none';
+        }
+
+        // Mở modal
+        document.getElementById('userDetailModal').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        document.getElementById('userDetailModal').classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    function closeModalOutside(e) {
+        if (e.target.id === 'userDetailModal') closeModal();
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeModal();
+    });
+</script>
+}

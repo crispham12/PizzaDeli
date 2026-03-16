@@ -1,0 +1,500 @@
+@model IEnumerable<PizzaDeli.Models.User>
+@{
+    ViewData["Title"] = "Quản lý nhân viên";
+    Layout = "_AdminLayout";
+    int currentPage   = ViewBag.CurrentPage  ?? 1;
+    int totalPages    = ViewBag.TotalPages   ?? 1;
+    int totalStaff    = ViewBag.TotalStaff   ?? 0;
+    int workingStaff  = ViewBag.WorkingStaff ?? 0;
+    int leaveStaff    = ViewBag.LeaveStaff   ?? 0;
+    var currentStatus = ViewBag.CurrentStatus as string ?? "all";
+    var searchQuery   = ViewBag.SearchQuery  as string ?? "";
+
+    string GetInitials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0][0].ToString().ToUpper();
+        return (parts[0][0].ToString() + parts[^1][0].ToString()).ToUpper();
+    }
+
+    string[] avColors = { "#f59e0b","#10b981","#3b82f6","#8b5cf6","#ef4444","#ec4899","#14b8a6","#f97316" };
+    string GetAvColor(string? name)
+    {
+        if (string.IsNullOrEmpty(name)) return avColors[0];
+        return avColors[Math.Abs(name.GetHashCode()) % avColors.Length];
+    }
+}
+
+<style>
+    .staff-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .staff-stat-card {
+        background: #fff;
+        border: 1px solid #f3f4f6;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .ssc-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+    .ssc-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .ssc-icon.blue { background: #eff6ff; color: #3b82f6; }
+    .ssc-icon.green { background: #f0fdf4; color: #22c55e; }
+    .ssc-icon.red { background: #fef2f2; color: #ef4444; }
+    
+    .ssc-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+    }
+    .ssc-badge.up { background: #dcfce7; color: #15803d; }
+    .ssc-badge.neutral { background: #f3f4f6; color: #6b7280; }
+    .ssc-badge.down { background: #fee2e2; color: #b91c1c; }
+
+    .ssc-label {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-bottom: 0.5rem;
+    }
+    .ssc-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #111827;
+        line-height: 1;
+    }
+
+    .btn-brown {
+        background: #5c3d2e;
+        color: #fff;
+        border: none;
+        padding: 0.625rem 1.25rem;
+        border-radius: 9999px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        transition: 0.2s;
+    }
+    .btn-brown:hover {
+        background: #4a3125;
+        color: #fff;
+    }
+
+    .status-pill {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+    .status-active { background: #dcfce7; color: #16a34a; }
+    .status-leave { background: #ffedd5; color: #ea580c; }
+    .status-resigned { background: #fee2e2; color: #dc2626; }
+    
+    .role-pill {
+        background: #f3f4f6;
+        color: #374151;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .staff-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        background: #fff;
+        padding: 1rem;
+        border-radius: 12px;
+        border: 1px solid #f3f4f6;
+        gap: 1rem;
+    }
+    .staff-search {
+        position: relative;
+        flex: 1;
+        max-width: 500px;
+    }
+    .staff-search .material-symbols-outlined {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        font-size: 1.25rem;
+    }
+    .staff-search input {
+        width: 100%;
+        padding: 0.625rem 1rem 0.625rem 2.5rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        background: #f9fafb;
+    }
+    .staff-search input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        background: #fff;
+    }
+    .btn-filter {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: none;
+        border: none;
+        color: #6b7280;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+    }
+</style>
+
+<div class="page-header">
+    <div class="ph-titles">
+        <h2>Quản lý nhân viên</h2>
+        <p>Danh sách nhân viên hệ thống PizzaDeli</p>
+    </div>
+    <div class="ph-actions">
+        <a href="@Url.Action("StaffCreate")" class="btn-brown">
+            <span class="material-symbols-outlined">add</span>
+            Thêm nhân viên mới
+        </a>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:#dcfce7;color:#16a34a;padding:1rem;border-radius:8px;margin-bottom:1rem;font-weight:600;font-size:.875rem;">
+        <span class="material-symbols-outlined" style="vertical-align:middle;font-size:1.125rem;margin-right:.5rem;">check_circle</span>
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+<div class="staff-stats">
+    <div class="staff-stat-card">
+        <div class="ssc-top">
+            <div class="ssc-icon blue">
+                <span class="material-symbols-outlined">group</span>
+            </div>
+        </div>
+        <div>
+            <div class="ssc-label">Tổng nhân viên</div>
+            <div class="ssc-value">@totalStaff</div>
+        </div>
+    </div>
+    <div class="staff-stat-card">
+        <div class="ssc-top">
+            <div class="ssc-icon green">
+                <span class="material-symbols-outlined">work</span>
+            </div>
+        </div>
+        <div>
+            <div class="ssc-label">Đang làm việc</div>
+            <div class="ssc-value">@workingStaff</div>
+        </div>
+    </div>
+    <div class="staff-stat-card">
+        <div class="ssc-top">
+            <div class="ssc-icon red">
+                <span class="material-symbols-outlined">event_busy</span>
+            </div>
+        </div>
+        <div>
+            <div class="ssc-label">Nghỉ phép/Nghỉ việc</div>
+            <div class="ssc-value">@leaveStaff</div>
+        </div>
+    </div>
+</div>
+
+<div class="product-list-container" style="background:#fff;border-radius:12px;padding:0;overflow:hidden;">
+    <div class="staff-toolbar">
+        <form method="get" asp-action="Staff" class="staff-search">
+            <span class="material-symbols-outlined">search</span>
+            <input type="text" name="searchQuery" value="@searchQuery"
+                   placeholder="Tìm theo tên hoặc ID nhân viên..."
+                   onchange="this.form.submit()" />
+            <input type="hidden" name="status" value="@currentStatus" />
+        </form>
+        <button class="btn-filter">
+            <span class="material-symbols-outlined" style="font-size:1rem;">filter_list</span>
+            BỘ LỌC
+        </button>
+    </div>
+
+    <div class="table-responsive" style="padding: 0 1rem;">
+        <table class="pl-table acc-table" style="margin-bottom:0;">
+            <thead>
+                <tr>
+                    <th style="width:100px;">ID</th>
+                    <th>NHÂN VIÊN</th>
+                    <th style="width:130px;text-align:center;">CHỨC VỤ</th>
+                    <th style="width:150px;">SỐ ĐIỆN THOẠI</th>
+                    <th style="width:120px;text-align:center;">TRẠNG THÁI</th>
+                    <th style="width:120px;text-align:right;">THAO TÁC</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model)
+                {
+                    var initials = GetInitials(user.FullName);
+                    var avColor  = GetAvColor(user.FullName);
+                    var shortId  = "#EMP-" + user.Id.Substring(0, 4).ToUpper();
+                    
+                    var statusClass = user.IsActive ? "status-active" : "status-resigned";
+                    var statusText = user.IsActive ? "Active" : "Resigned";
+
+                    <tr>
+                        <td><span style="color:#9ca3af;font-size:0.875rem;">@shortId</span></td>
+
+                        <td>
+                            <div class="acc-user" style="display:flex;align-items:center;gap:0.75rem;">
+                                @if (!string.IsNullOrEmpty(user.Avatar))
+                                {
+                                    <img src="@user.Avatar" class="acc-avatar-img" alt="@user.FullName" style="width:40px;height:40px;border-radius:50%;object-fit:cover;" />
+                                }
+                                else
+                                {
+                                    <div class="acc-avatar" style="background:@avColor;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:0.875rem;">@initials</div>
+                                }
+                                <div>
+                                    <div style="font-weight:600;color:#111827;font-size:0.875rem;">@user.FullName</div>
+                                    <div style="color:#6b7280;font-size:0.8125rem;">@user.Email</div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td style="text-align:center;">
+                            <span class="role-pill">@(string.IsNullOrEmpty(user.Role) ? "Staff" : user.Role)</span>
+                        </td>
+
+                        <td><span style="color:#4b5563;font-size:0.875rem;">@(user.Phone ?? "Chưa có")</span></td>
+
+                        <td style="text-align:center;">
+                            <span class="status-pill @statusClass">@statusText</span>
+                        </td>
+
+                        <td style="text-align:right;">
+                            <div class="pt-actions" style="display:flex; align-items:center; justify-content:flex-end; gap:0.25rem;">
+                                <button class="action-btn acc-btn-view" title="Xem chi tiết"
+                                        onclick="showStaffModal(this)"
+                                        data-name="@user.FullName"
+                                        data-email="@user.Email"
+                                        data-phone="@(user.Phone ?? "Chưa cập nhật")"
+                                        data-role="@user.Role"
+                                        data-avatar="@(user.Avatar ?? "")"
+                                        data-avcolor="@avColor"
+                                        data-initials="@initials"
+                                        data-joined="@user.CreatedAt.ToString("dd/MM/yyyy")"
+                                        data-active="@user.IsActive.ToString().ToLower()">
+                                    <span class="material-symbols-outlined">visibility</span>
+                                </button>
+                                <a asp-action="StaffEdit" asp-route-id="@user.Id" class="action-btn" title="Sửa" style="color:#6b7280; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; background:#f3f4f6; border-radius:50%; border:none;">
+                                    <span class="material-symbols-outlined">edit</span>
+                                </a>
+                                <button class="action-btn" title="Xóa" style="color:#9ca3af;">
+                                    <span class="material-symbols-outlined">delete</span>
+                                </button>
+                            </div>
+
+                        </td>
+                    </tr>
+                }
+
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="6" style="text-align:center;color:#9ca3af;padding:3rem;">
+                            <span class="material-symbols-outlined" style="font-size:2.5rem;display:block;margin-bottom:.5rem;opacity:.4;">people</span>
+                            Không tìm thấy nhân viên nào.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="ord-footer" style="padding: 1rem 1.5rem; border-top: 1px solid #f3f4f6;">
+        <div class="ord-info" style="color:#6b7280;font-size:0.875rem;">
+            Hiển thị 
+            <strong>@((currentPage - 1) * 10 + 1)–@((currentPage - 1) * 10 + Model.Count())</strong>
+            trên tổng số <strong>@totalStaff</strong> nhân viên
+        </div>
+        <div class="pl-pagination">
+            @if (currentPage > 1)
+            {
+                <a href="@Url.Action("Staff", new { page = currentPage - 1, searchQuery, status = currentStatus })" class="page-btn">
+                    <span class="material-symbols-outlined" style="font-size:1.25rem;">chevron_left</span>
+                </a>
+            }
+            else { <button class="page-btn" disabled><span class="material-symbols-outlined" style="font-size:1.25rem;">chevron_left</span></button> }
+
+            @for (int i = 1; i <= totalPages; i++)
+            {
+                if (i == 1 || i == totalPages || Math.Abs(i - currentPage) <= 1)
+                {
+                    <a href="@Url.Action("Staff", new { page = i, searchQuery, status = currentStatus })"
+                       class="page-btn @(i == currentPage ? "active" : "")" style="@(i == currentPage ? "background:#5c3d2e;color:#fff;border-color:#5c3d2e;" : "")">@i</a>
+                }
+                else if (Math.Abs(i - currentPage) == 2) { <span class="page-dots">...</span> }
+            }
+
+            @if (currentPage < totalPages)
+            {
+                <a href="@Url.Action("Staff", new { page = currentPage + 1, searchQuery, status = currentStatus })" class="page-btn">
+                    <span class="material-symbols-outlined" style="font-size:1.25rem;">chevron_right</span>
+                </a>
+            }
+            else { <button class="page-btn" disabled><span class="material-symbols-outlined" style="font-size:1.25rem;">chevron_right</span></button> }
+        </div>
+    </div>
+</div>
+
+<!-- =================== MODAL XEM CHI TIẾT NHÂN VIÊN =================== -->
+<div id="staffDetailModal" class="umd-overlay" onclick="closeStaffModalOutside(event)">
+    <div class="umd-panel">
+        <!-- Header -->
+        <div class="umd-header">
+            <span class="umd-title">Thông tin nhân viên</span>
+            <button class="umd-close" onclick="closeStaffModal()" title="Đóng">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="umd-body">
+            <!-- Avatar + Name + Role -->
+            <div class="umd-profile">
+                <div class="umd-av-wrap">
+                    <div id="smdAvatar" class="umd-avatar"></div>
+                    <span id="smdStatusDot" class="umd-status-dot"></span>
+                </div>
+                <div class="umd-fullname" id="smdFullName">—</div>
+                <div class="umd-meta">
+                    <span id="smdRoleBadge" class="umd-role-badge"></span>
+                    <span class="umd-dot-sep">•</span>
+                    <span id="smdJoined" class="umd-joined"></span>
+                </div>
+            </div>
+
+            <!-- THÔNG TIN CƠ BẢN -->
+            <div class="umd-section-title">THÔNG TIN CƠ BẢN</div>
+            <div class="umd-info-list">
+                <div class="umd-info-row">
+                    <span class="umd-info-icon material-symbols-outlined">person</span>
+                    <div>
+                        <div class="umd-info-label">Họ và tên</div>
+                        <div class="umd-info-value" id="smdName">—</div>
+                    </div>
+                </div>
+                <div class="umd-info-row">
+                    <span class="umd-info-icon material-symbols-outlined">mail</span>
+                    <div>
+                        <div class="umd-info-label">Địa chỉ Email</div>
+                        <div class="umd-info-value" id="smdEmail">—</div>
+                    </div>
+                </div>
+                <div class="umd-info-row">
+                    <span class="umd-info-icon material-symbols-outlined">call</span>
+                    <div>
+                        <div class="umd-info-label">Số điện thoại</div>
+                        <div class="umd-info-value" id="smdPhone">—</div>
+                    </div>
+                </div>
+                <div class="umd-info-row">
+                    <span class="umd-info-icon material-symbols-outlined">badge</span>
+                    <div>
+                        <div class="umd-info-label">Ngày bắt đầu làm việc</div>
+                        <div class="umd-info-value" id="smdJoined2">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="umd-footer">
+            <button class="umd-btn-back" onclick="closeStaffModal()">Quay lại</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function showStaffModal(btn) {
+        var data = btn.dataset;
+
+        // Avatar
+        var av = document.getElementById('smdAvatar');
+        if (data.avatar) {
+            av.innerHTML = '<img src="' + data.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+        } else {
+            av.textContent = data.initials;
+            av.style.background = data.avcolor;
+        }
+
+        // Status dot
+        var dot = document.getElementById('smdStatusDot');
+        dot.style.background = data.active === 'true' ? '#22c55e' : '#ef4444';
+
+        // Tên
+        document.getElementById('smdFullName').textContent = data.name;
+        document.getElementById('smdName').textContent     = data.name;
+
+        // Role badge
+        var badge = document.getElementById('smdRoleBadge');
+        var roleColors = { 'Admin': { bg: '#f5f0ec', color: '#5C3D2E', label: 'Admin' }, 'Staff': { bg: '#dbeafe', color: '#1d4ed8', label: 'Nhân viên' } };
+        var rc = roleColors[data.role] || { bg: '#f3f4f6', color: '#374151', label: data.role };
+        badge.textContent      = rc.label;
+        badge.style.background = rc.bg;
+        badge.style.color      = rc.color;
+
+        // Ngày
+        document.getElementById('smdJoined').textContent  = 'Tham gia ' + data.joined;
+        document.getElementById('smdJoined2').textContent = data.joined;
+
+        // Thông tin
+        document.getElementById('smdEmail').textContent = data.email;
+        document.getElementById('smdPhone').textContent = data.phone || 'Chưa cập nhật';
+
+        // Mở modal
+        document.getElementById('staffDetailModal').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeStaffModal() {
+        document.getElementById('staffDetailModal').classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    function closeStaffModalOutside(e) {
+        if (e.target.id === 'staffDetailModal') closeStaffModal();
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeStaffModal();
+    });
+</script>
+}
