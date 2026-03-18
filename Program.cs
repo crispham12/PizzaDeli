@@ -94,4 +94,7 @@ using (var scope = app.Services.CreateScope())
     db.SaveChanges();
 }
 
+var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
+app.Urls.Add($"http://0.0.0.0:{port}");
+
 app.Run();
