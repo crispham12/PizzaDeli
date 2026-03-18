@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: pizzadeli
+    runtime: dotnet
+    buildCommand: dotnet publish -c Release -o out
+    startCommand: dotnet out/PizzaDeli.dll
