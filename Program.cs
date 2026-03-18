@@ -45,15 +45,16 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
+
 app.UseRouting();
 app.UseSession();          // must be BEFORE Authorization & routing
 app.UseAuthorization();
-app.MapStaticAssets();
 
+// Route MVC
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 // ---- Database Seeding ----
 using (var scope = app.Services.CreateScope())
@@ -94,7 +95,11 @@ using (var scope = app.Services.CreateScope())
     db.SaveChanges();
 }
 
-var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
-app.Urls.Add($"http://0.0.0.0:{port}");
+// ⚠️ Quan trọng: chỉ set port khi deploy (Render)
+if (!app.Environment.IsDevelopment())
+{
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
+    app.Urls.Add($"http://0.0.0.0:{port}");
+}
 
 app.Run();
