@@ -117,6 +117,21 @@
     from { transform: rotate(0deg); }
     to   { transform: rotate(360deg); }
 }
+
+/* Inline field error */
+.field-error {
+    display: block;
+    color: #ef4444;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-top: 0.3rem;
+    min-height: 1rem;
+    animation: fadeIn 0.2s ease;
+}
+.form-control.input-error {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
+}
 </style>
 
 <div class="checkout-page bg-light-gray" style="padding-bottom: 4rem;">
@@ -125,17 +140,17 @@
         <div class="container stepper-inner">
             <div class="step active" id="stepperShipping">
                 <div class="step-icon"><span class="material-symbols-outlined">local_shipping</span></div>
-                <div class="step-label">Shipping</div>
+                <div class="step-label">Giao hàng</div>
             </div>
             <div class="step-line"></div>
             <div class="step" id="stepperPayment">
                 <div class="step-icon"><span class="material-symbols-outlined">payments</span></div>
-                <div class="step-label">Payment</div>
+                <div class="step-label">Thanh toán</div>
             </div>
             <div class="step-line"></div>
             <div class="step" id="stepperReview">
                 <div class="step-icon"><span class="material-symbols-outlined">check_circle</span></div>
-                <div class="step-label">Review</div>
+                <div class="step-label">Xác nhận</div>
             </div>
         </div>
         <p class="step-subtitle" id="stepperSubtitle">Bước 1 trong 3: Nhập thông tin giao hàng của bạn</p>
@@ -145,7 +160,7 @@
         <!-- Nút Back Góc Trái (Chỉ hiện ở Step 1) -->
         <a href="/" class="btn-back-link" id="btnHomeBack">
             <span class="material-symbols-outlined" style="font-size: 1.25rem;">home</span>
-            Quay lại trang chủ
+           Quay lại trang chủ
         </a>
         <!-- Nút Back lùi step (Hiện ở Step 2,3) -->
         <button type="button" class="btn-back-link" id="btnGoBack" onclick="goBackStep()" style="display: none;">
@@ -157,7 +172,7 @@
             <!-- Cột trái: Form thông tin -->
             <div class="checkout-main">
                 <form id="checkoutForm" method="post" action="/Customer/PlaceOrder">
-                    
+                    @Html.AntiForgeryToken()
                     <!-- ========================================== -->
                     <!-- BƯỚC 1: SHIPPING                           -->
                     <!-- ========================================== -->
@@ -172,14 +187,17 @@
                                 <div class="form-group">
                                     <label>Họ và tên</label>
                                     <input type="text" name="fullName" id="fullName" class="form-control" placeholder="Nguyễn Văn A" required>
+                                    <span class="field-error" id="err-fullName"></span>
                                 </div>
                                 <div class="form-group">
                                     <label>Số điện thoại</label>
                                     <input type="tel" name="phone" id="phone" class="form-control" placeholder="0901234567" required>
+                                    <span class="field-error" id="err-phone"></span>
                                 </div>
                                 <div class="form-group full-width">
                                     <label>Địa chỉ</label>
                                     <input type="text" name="address" id="address" class="form-control" placeholder="123 Đường Pizza, Quận 1, TP HCM" required>
+                                    <span class="field-error" id="err-address"></span>
                                 </div>
                                 <div class="form-group full-width">
                                     <label>Ghi chú (Tùy chọn)</label>
@@ -224,15 +242,15 @@
                     <!-- ========================================== -->
                     <div id="step-payment-content" style="display: none;">
                         <div class="checkout-section">
-                            <h3 class="section-title" style="margin-bottom: 0.5rem; color: #1e293b; font-size: 1.5rem;">Payment Selection</h3>
-                            <p style="color: var(--slate-500); font-size: 0.875rem; margin-bottom: 2rem;">Choose your preferred method to complete your order securely.</p>
+                            <h3 class="section-title" style="margin-bottom: 0.5rem; color: #1e293b; font-size: 1.5rem;">Chọn phương thức thanh toán</h3>
+                            <p style="color: var(--slate-500); font-size: 0.875rem; margin-bottom: 2rem;">Chọn phương thức thanh toán bạn muốn để hoàn tất đơn hàng một cách an toàn.</p>
                             
                             <!-- Custom Tabs Ngang -->
                             <div class="payment-tabs">
-                                <div class="payment-tab active" data-target="panel-card">Credit/Debit Card</div>
-                                <div class="payment-tab" data-target="panel-ewallet">E-wallet</div>
-                                <div class="payment-tab" data-target="panel-bank">Bank Transfer</div>
-                                <div class="payment-tab" data-target="panel-cod">COD</div>
+                                <div class="payment-tab active" data-target="panel-card">Thẻ tín dụng/ghi nợ</div>
+                                <div class="payment-tab" data-target="panel-ewallet">Ví điện tử</div>
+                                <div class="payment-tab" data-target="panel-bank">Chuyển khoản</div>
+                                <div class="payment-tab" data-target="panel-cod">Tiền mặt (COD)</div>
                             </div>
 
                             <!-- Input Ẩn Giá Trị Thực Để Gửi Lên Server -->
@@ -244,35 +262,39 @@
                                 <div class="payment-panel active" id="panel-card">
                                     <div class="form-grid">
                                         <div class="form-group full-width">
-                                            <label>Name on Card</label>
-                                            <input type="text" class="form-control" placeholder="e.g. JOHN DOE">
+                                            <label>Tên chủ thẻ</label>
+                                            <input type="text" id="card-name" class="form-control" placeholder="VD: NGUYEN VAN A">
+                                            <span class="field-error" id="err-card-name"></span>
                                         </div>
                                         <div class="form-group full-width">
-                                            <label>Card Number</label>
+                                            <label>Số thẻ</label>
                                             <!-- Icon input fake -->
                                             <div style="position: relative;">
-                                                <input type="text" class="form-control" placeholder="0000 0000 0000 0000">
+                                                <input type="text" id="card-number" class="form-control" placeholder="0000 0000 0000 0000">
                                                 <span class="material-symbols-outlined" style="position:absolute; right: 1rem; top:0.75rem; color:#94a3b8;">credit_card</span>
                                             </div>
+                                            <span class="field-error" id="err-card-number"></span>
                                         </div>
                                         <div class="form-group">
-                                            <label>Expiry Date</label>
-                                            <input type="text" class="form-control" placeholder="MM / YY">
+                                            <label>Ngày hết hạn</label>
+                                            <input type="text" id="card-expiry" class="form-control" placeholder="MM / YY">
+                                            <span class="field-error" id="err-card-expiry"></span>
                                         </div>
                                         <div class="form-group">
-                                            <label>CVV</label>
-                                            <input type="text" class="form-control" placeholder="123">
+                                            <label>Mã CVV</label>
+                                            <input type="text" id="card-cvv" class="form-control" placeholder="123">
+                                            <span class="field-error" id="err-card-cvv"></span>
                                         </div>
                                     </div>
                                     <div style="margin-top:2rem; padding: 1rem; background: #f8fafc; border-radius: var(--radius); display:flex; gap: 1rem; color: var(--slate-500); font-size:0.75rem;">
                                         <span class="material-symbols-outlined" style="color:#64748b;">shield</span>
-                                        <p>Your payment information is encrypted and processed through a secure gateway. We do not store your full card details on our servers.</p>
+                                        <p>Thông tin thẻ của bạn được mã hóa và xử lý qua cổng thanh toán bảo mật. Chúng tôi không lưu trữ thông tin thẻ đầy đủ trên hệ thống.</p>
                                     </div>
                                 </div>
 
                                 <!-- Panel: E-wallet -->
                                 <div class="payment-panel" id="panel-ewallet">
-                                    <p style="font-weight: 600; margin-bottom: 1rem;">Choose your wallet:</p>
+                                    <p style="font-weight: 600; margin-bottom: 1rem;">Chọn ví của bạn:</p>
                                     <div class="other-ways-grid" id="ewalletSelector">
                                         <label class="way-card selected" onclick="selectEwallet('momo', this)">
                                             <span class="material-symbols-outlined" style="color: #a82fa2; font-size: 2rem;">wallet</span>
@@ -288,10 +310,10 @@
                                 <!-- Panel: Bank -->
                                 <div class="payment-panel" id="panel-bank">
                                     <p style="color: var(--slate-600); font-size: 0.875rem; line-height: 1.6;">
-                                        Please transfer the exact order amount to:<br>
-                                        <strong>Account No:</strong> 0123456789 - VCB<br>
-                                        <strong>Account Name:</strong> PIZZA DELI VN<br>
-                                        <strong>Message:</strong> (Your Phone Number)
+                                        Vui lòng chuyển khoản đúng số tiền của đơn hàng đến:<br>
+                                        <strong>Số tài khoản:</strong> 0123456789 - VCB<br>
+                                        <strong>Tên tài khoản:</strong> PIZZA DELI VN<br>
+                                        <strong>Nội dung CK:</strong> (Số điện thoại của bạn)
                                     </p>
                                 </div>
 
@@ -299,7 +321,7 @@
                                 <div class="payment-panel" id="panel-cod">
                                     <div style="display:flex; flex-direction: column; align-items:center; color: var(--slate-600); padding: 2rem;">
                                         <span class="material-symbols-outlined" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;">local_shipping</span>
-                                        <p style="text-align:center; font-weight: 500;">Pay with Cash upon delivery.</p>
+                                        <p style="text-align:center; font-weight: 500;">Thanh toán bằng tiền mặt khi nhận hàng.</p>
                                     </div>
                                 </div>
                             </div>
@@ -318,9 +340,8 @@
                         </div>
                         
                         <div style="text-align: right; margin-top: 1rem;">
-                            <!-- Fake button submit -->
-                            <button type="button" class="btn-back-link" onclick="window.location.href='/'" style="margin-right: 1.5rem; margin-bottom: 0;">Để sau</button>
-                            <button type="button" class="btn-place-order" style="display: inline-block; width: auto; padding: 0.75rem 2rem;" onclick="submitAllReviews()">Submit All Reviews</button>
+                            <button type="button" class="btn-back-link" onclick="window.location.href='/'" style="margin-right: 1.5rem; margin-bottom: 0;">Quay lại trang chủ</button>
+                            <button type="button" class="btn-place-order" style="display: inline-block; width: auto; padding: 0.75rem 2rem;" onclick="submitAllReviews()">Gửi tất cả đánh giá</button>
                         </div>
                     </div>
 
@@ -334,7 +355,15 @@
             <!-- Cột phải: Order Summary -->
             <div class="checkout-sidebar">
                 <div class="summary-card">
-                    <h3 class="summary-title">Order Summary</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3 class="summary-title" style="margin-bottom: 0;">Tóm tắt đơn hàng</h3>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <a href="javascript:goToAddMore()" id="btnSidebarAddMore" style="font-size: 0.85rem; font-weight: 600; color:var(--primary); text-decoration: none; padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--primary);">+ Đặt thêm món</a>
+                            <button type="button" onclick="reorderLatest()" id="btnSidebarReorder" title="Làm mới giỏ hàng theo đơn cũ" style="display: none; font-size: 0.85rem; font-weight: 600; color:#5c433b; align-items: center; justify-content: center; background: white; border: 1px solid #5c433b; padding: 0.25rem 0.5rem; border-radius: 6px; cursor: pointer;">
+                                <span class="material-symbols-outlined" style="font-size: 1.1rem; margin-right: 0.2rem;">replay</span> Đặt lại đơn
+                            </button>
+                        </div>
+                    </div>
                     
                     <!-- Chứa danh sách SP bằng JS -->
                     <div class="checkout-items" id="checkoutItemsList">
@@ -343,35 +372,35 @@
 
                     <!-- Voucher box -->
                     <div class="voucher-box" id="step-voucher-box" style="display:flex; flex-direction: column; gap: 0.5rem; margin: 1.5rem 0; padding: 1.5rem 0; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; border-left:none; border-right:none; border-width: 1px 0;">
-                        <label style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; display:block;">VOUCHER CODE</label>
+                        <label style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; display:block;">MÃ VOUCHER</label>
                         <div style="display: flex; gap: 0.5rem;">
-                            <input type="text" id="voucherCode" placeholder="Enter code" style="flex: 1; border: 1px solid #e2e8f0; border-radius: 999px; padding: 0.625rem 1rem; outline: none; transition: border-color 0.2s; font-size: 0.875rem; color: #1e293b;">
-                            <button type="button" class="btn-apply-voucher" onclick="applyCheckoutVoucher()" style="background-color: var(--primary); color: white; border-radius: 999px; padding: 0.5rem 1.5rem; font-weight: 600; border: none; cursor: pointer; font-size: 0.875rem;">Apply</button>
+                            <input type="text" id="voucherCode" placeholder="Nhập mã" style="flex: 1; border: 1px solid #e2e8f0; border-radius: 999px; padding: 0.625rem 1rem; outline: none; transition: border-color 0.2s; font-size: 0.875rem; color: #1e293b;">
+                            <button type="button" class="btn-apply-voucher" onclick="applyCheckoutVoucher()" style="background-color: var(--primary); color: white; border-radius: 999px; padding: 0.5rem 1.5rem; font-weight: 600; border: none; cursor: pointer; font-size: 0.875rem;">Dùng</button>
                         </div>
                     </div>
 
                     <div class="summary-totals">
                         <div class="summary-row">
-                            <span>Subtotal</span>
+                            <span>Tạm tính</span>
                             <span id="checkoutSubtotal">0 ₫</span>
                         </div>
                         <div class="summary-row">
-                            <span>Shipping Fee</span>
-                            <span id="checkoutShipping" style="color: #10b981; font-weight: 500;">Free</span>
+                            <span>Phí giao hàng</span>
+                            <span id="checkoutShipping" style="color: #10b981; font-weight: 500;">Miễn phí</span>
                         </div>
                         <div class="summary-row discount-row" style="display:none;" id="checkoutDiscountRow">
-                            <span>Discount</span>
+                            <span>Giảm giá</span>
                             <span id="checkoutDiscount" class="text-danger">0 ₫</span>
                         </div>
                         <div class="summary-row grand-total">
-                            <span style="font-size: 1.25rem;">Total</span>
+                            <span style="font-size: 1.25rem;">Tổng cộng</span>
                             <span id="checkoutGrandTotal" class="primary-color text-bold" style="font-size: 1.25rem;">0 ₫</span>
                         </div>
                     </div>
 
                     <!-- Action Button -->
                     <button type="button" id="btnActionFlow" class="btn-place-order" onclick="gotoNextStep()" style="font-size: 1.05rem; padding: 1.15rem;">
-                        Continue to Payment <span class="material-symbols-outlined">chevron_right</span>
+                        Tiếp tục thanh toán <span class="material-symbols-outlined">chevron_right</span>
                     </button>
 
                     <!-- Success Popup Modal -->
@@ -393,7 +422,7 @@
                     
                     <p class="secure-text" style="margin-top: 1rem;">
                         <span class="material-symbols-outlined" style="vertical-align: middle; font-size: 0.85rem;">lock</span>
-                        Secure SSL Checkout
+                        Thanh toán SSL bảo mật
                     </p>
                 </div>
             </div>
@@ -403,13 +432,29 @@
 
 @section Scripts {
     <script>
-        let currentStep = 1; // 1: Shipping, 2: Payment
+        let currentStep = 1; // 1: Shipping, 2: Payment, 3: Review
         let currentDiscount = 0;
+        let tempReviewItems = []; // Lưu lại dữ liệu để dùng cho Step 3
 
         const SHIPPING_FEES = {
             'standard': 15000,
             'express': 35000
         };
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const isBuyNowCheckout = urlParams.get('mode') === 'buynow';
+
+        // Lấy danh sách sản phẩm từ giỏ hàng thực
+        let CHECKOUT_ITEMS = [];
+        if (isBuyNowCheckout) {
+            const raw = sessionStorage.getItem('buynow_item');
+            if (raw) {
+                try { 
+                    CHECKOUT_ITEMS = JSON.parse(raw); 
+                    if (!Array.isArray(CHECKOUT_ITEMS)) CHECKOUT_ITEMS = [CHECKOUT_ITEMS];
+                } catch(e) { CHECKOUT_ITEMS = []; }
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
             renderCheckoutItems();
@@ -452,7 +497,7 @@
                 
                 document.getElementById('stepperPayment').classList.remove('active');
                 document.getElementById('stepperSubtitle').textContent = 'Bước 1 trong 3: Nhập thông tin giao hàng của bạn';
-                document.getElementById('btnActionFlow').innerHTML = 'Continue to Payment <span class="material-symbols-outlined">chevron_right</span>';
+                document.getElementById('btnActionFlow').innerHTML = 'Tiếp tục thanh toán <span class="material-symbols-outlined">chevron_right</span>';
                 
                 // Hiển thị lại nút Home, ẩn nút Back Step
                 document.getElementById('btnGoBack').style.display = 'none';
@@ -467,23 +512,65 @@
                 
                 document.getElementById('stepperReview').classList.remove('active');
                 document.getElementById('stepperSubtitle').textContent = 'Bước 2 trong 3: Lựa chọn Phương thức thanh toán';
-                document.getElementById('btnActionFlow').innerHTML = 'Continue to Review <span class="material-symbols-outlined">chevron_right</span>';
+                document.getElementById('btnActionFlow').innerHTML = 'Tiếp tục xác nhận <span class="material-symbols-outlined">chevron_right</span>';
                 document.getElementById('btnActionFlow').style.display = 'block'; // Ensure button visible
                 currentStep = 2;
             }
             window.scrollTo({top: 0, behavior: 'smooth'});
         }
 
+        // ---- Inline validation helpers ----
+        function showFieldError(inputEl, errId, message) {
+            inputEl.classList.add('input-error');
+            const span = document.getElementById(errId);
+            if (span) span.textContent = message;
+            // Tự xóa khi user gõ
+            inputEl.addEventListener('input', function clearOnType() {
+                clearFieldError(inputEl, errId);
+                inputEl.removeEventListener('input', clearOnType);
+            }, { once: true });
+        }
+
+        function clearFieldError(inputEl, errId) {
+            inputEl.classList.remove('input-error');
+            const span = document.getElementById(errId);
+            if (span) span.textContent = '';
+        }
+
+        function clearAllFieldErrors() {
+            [['fullName','err-fullName'],['phone','err-phone'],['address','err-address']].forEach(([id, errId]) => {
+                const el = document.getElementById(id);
+                if (el) clearFieldError(el, errId);
+            });
+        }
+
         // Logic Chuyển Bước
         function gotoNextStep() {
             if (currentStep === 1) {
-                // Giao diện Shipping => Validate
-                const fName = document.getElementById('fullName');
-                const fPhone = document.getElementById('phone');
+                // Validate inline
+                const fName    = document.getElementById('fullName');
+                const fPhone   = document.getElementById('phone');
                 const fAddress = document.getElementById('address');
-                if (!fName.value || !fPhone.value || !fAddress.value) {
-                    alert('Bạn vui lòng điền đầy đủ Thông tin giao hàng!');
-                    fName.focus();
+
+                clearAllFieldErrors();
+                let hasError = false;
+
+                if (!fAddress.value.trim()) {
+                    showFieldError(fAddress, 'err-address', 'Vui lòng nhập địa chỉ giao hàng.');
+                    hasError = true;
+                }
+                if (!fPhone.value.trim()) {
+                    showFieldError(fPhone, 'err-phone', 'Vui lòng nhập số điện thoại.');
+                    hasError = true;
+                }
+                if (!fName.value.trim()) {
+                    showFieldError(fName, 'err-fullName', 'Vui lòng nhập họ và tên.');
+                    hasError = true;
+                }
+                if (hasError) {
+                    // Scroll đến lỗi đầu tiên
+                    const firstErr = document.querySelector('.input-error');
+                    if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     return;
                 }
 
@@ -509,14 +596,6 @@
                 return;
 
             } else if (currentStep === 3) {
-                // Đặt lại đơn: Check giỏ hàng và quay về bước 1
-                const cart = window.PizzaCart ? window.PizzaCart.getCart() : [];
-                if (cart.length === 0) {
-                    alert('Giỏ hàng trống. Mời bạn quay lại trang chủ chọn món!');
-                    window.location.href = '/';
-                    return;
-                }
-                
                 // Quay lùi UI về Step 1
                 document.getElementById('step-review-content').style.display = 'none';
                 document.getElementById('step-shipping-content').style.display = 'block';
@@ -524,7 +603,7 @@
                 document.getElementById('stepperReview').classList.remove('active');
                 document.getElementById('stepperPayment').classList.remove('active');
                 document.getElementById('stepperSubtitle').textContent = 'Bước 1 trong 3: Nhập thông tin giao hàng của bạn';
-                document.getElementById('btnActionFlow').innerHTML = 'Continue to Payment <span class="material-symbols-outlined">chevron_right</span>';
+                document.getElementById('btnActionFlow').innerHTML = 'Tiếp tục thanh toán <span class="material-symbols-outlined">chevron_right</span>';
                 
                 document.getElementById('btnGoBack').style.display = 'none';
                 if(document.getElementById('btnHomeBack')) document.getElementById('btnHomeBack').style.display = 'inline-flex';
@@ -536,25 +615,25 @@
 
         function buildReviewItems() {
             const container = document.getElementById('reviewItemsContainer');
-            const cart = window.PizzaCart ? window.PizzaCart.getCart() : [];
+            const cart = tempReviewItems;
             let html = '';
             
             cart.forEach(item => {
                 html += `
-                <div class="review-item-card">
+                <div class="review-item-card" data-product-id="${item.id}">
                     <img src="${item.image || '/images/placeholder.png'}" class="review-item-img" onerror="this.src='/images/placeholder.png'">
                     <div class="review-item-content">
                         <div class="review-item-title">${item.name}</div>
-                        <div class="review-item-meta">Standard</div>
-                        <div class="review-rating data-stars">
-                            <span class="material-symbols-outlined star empty" style="color:#cbd5e1; font-variation-settings: 'FILL' 0; transition: color 0.2s;">star</span>
-                            <span class="material-symbols-outlined star empty" style="color:#cbd5e1; font-variation-settings: 'FILL' 0; transition: color 0.2s;">star</span>
-                            <span class="material-symbols-outlined star empty" style="color:#cbd5e1; font-variation-settings: 'FILL' 0; transition: color 0.2s;">star</span>
-                            <span class="material-symbols-outlined star empty" style="color:#cbd5e1; font-variation-settings: 'FILL' 0; transition: color 0.2s;">star</span>
-                            <span class="material-symbols-outlined star empty" style="color:#cbd5e1; font-variation-settings: 'FILL' 0; transition: color 0.2s;">star</span>
+                        <div class="review-item-meta">Chất lượng sản phẩm</div>
+                        <div class="review-rating data-stars" data-rating="0">
+                            <span class="material-symbols-outlined star empty" style="color:#cbd5e1; font-variation-settings: 'FILL' 0; transition: color 0.2s; cursor:pointer;" data-val="1">star</span>
+                            <span class="material-symbols-outlined star empty" style="color:#cbd5e1; font-variation-settings: 'FILL' 0; transition: color 0.2s; cursor:pointer;" data-val="2">star</span>
+                            <span class="material-symbols-outlined star empty" style="color:#cbd5e1; font-variation-settings: 'FILL' 0; transition: color 0.2s; cursor:pointer;" data-val="3">star</span>
+                            <span class="material-symbols-outlined star empty" style="color:#cbd5e1; font-variation-settings: 'FILL' 0; transition: color 0.2s; cursor:pointer;" data-val="4">star</span>
+                            <span class="material-symbols-outlined star empty" style="color:#cbd5e1; font-variation-settings: 'FILL' 0; transition: color 0.2s; cursor:pointer;" data-val="5">star</span>
                         </div>
-                        <label style="font-size: 0.75rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; display:block;">Your Review</label>
-                        <textarea class="review-textarea" rows="3" placeholder="Tell us what you liked or how we can improve..."></textarea>
+                        <label style="font-size: 0.75rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; display:block;">Nhận xét của bạn</label>
+                        <textarea class="review-textarea" rows="3" placeholder="Chia sẻ cảm nhận của bạn về món này..."></textarea>
                     </div>
                 </div>
                 `;
@@ -567,6 +646,7 @@
                 const stars = container.querySelectorAll('.star');
                 stars.forEach((star, index) => {
                     star.addEventListener('click', () => {
+                        container.dataset.rating = index + 1; // Lưu rating
                         // Reset tắt màu toàn bộ sao
                         stars.forEach(s => {
                             s.classList.add('empty');
@@ -584,32 +664,70 @@
             });
         }
 
-        function submitAllReviews() {
-            alert('Đã gửi toàn bộ đánh giá của bạn. Cám ơn đã dùng bữa tại PizzaDeli!');
-            window.location.href = '/'; 
+        async function submitAllReviews() {
+            const reviews = [];
+            const cards = document.querySelectorAll('.review-item-card');
+            cards.forEach(card => {
+                const pid = card.dataset.productId;
+                const starBox = card.querySelector('.data-stars');
+                const rating = parseInt(starBox.dataset.rating) || 0;
+                const content = card.querySelector('.review-textarea').value;
+                if(rating > 0) {
+                    reviews.push({ ProductId: pid, Rating: rating, Content: content });
+                }
+            });
+
+            if (reviews.length > 0) {
+                try {
+                    const btn = document.querySelector('.btn-place-order[onclick^="submitAllReviews"]');
+                    if(btn) btn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite;">progress_activity</span> Đang gửi...';
+
+                    await fetch('/Customer/SubmitMultipleReviews', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(reviews)
+                    });
+                } catch(e) {
+                }
+            }
+
+            alert('Đã gửi thành công đánh giá của bạn. Cảm ơn vì đã mua sắm tại PizzaDeli!');
+            if (window.PizzaCart) window.PizzaCart.renderCartDrawer();
+            window.location.href = '/Customer/Orders'; 
+        }
+
+        function goToAddMore() {
+            const modeQuery = isBuyNowCheckout ? '&mode=buynow' : '';
+            window.location.href = '/?addmore=1' + modeQuery;
         }
 
         function renderCheckoutItems() {
             const container = document.getElementById('checkoutItemsList');
-            if(!window.PizzaCart) {
-                 container.innerHTML = '<p>Không thể tải giỏ hàng.</p>';
-                 return;
+
+            // Load items from cart
+            if (!isBuyNowCheckout) {
+                if(!window.PizzaCart) {
+                    container.innerHTML = '<p>Không thể tải giỏ hàng.</p>';
+                    return;
+                }
+                CHECKOUT_ITEMS = window.PizzaCart.getCart();
             }
 
-            const cart = window.PizzaCart.getCart();
-            if(!cart || cart.length === 0) {
-                container.innerHTML = '<p style="text-align:center; padding: 2rem;">Giỏ hàng trống. Mời bạn quay lại trang chủ chọn món.</p>';
+            if (CHECKOUT_ITEMS.length === 0) {
+                container.innerHTML = '<p style="text-align:center; padding: 2rem;">Không có sản phẩm. Mời bạn quay lại trang chủ chọn món.</p>';
                 document.getElementById('btnActionFlow').disabled = true;
                 return;
             }
 
             let html = '';
             let subtotal = 0;
-            cart.forEach(item => {
+            CHECKOUT_ITEMS.forEach(item => {
                 const price = parseFloat(item.price) || 0;
                 const qty = parseInt(item.quantity) || 1;
                 subtotal += price * qty;
-                
+
                 html += `
                 <div class="c-item">
                     <img src="${item.image || '/images/placeholder.png'}" class="c-item-img" onerror="this.src='/images/placeholder.png'">
@@ -623,7 +741,7 @@
             });
 
             container.innerHTML = html;
-            
+
             // Tính phí
             const shippingMethod = document.querySelector('input[name="deliveryMethod"]:checked').value;
             const shippingFee = SHIPPING_FEES[shippingMethod] || 15000;
@@ -689,10 +807,44 @@
 
         async function submitOrder() {
             if(!window.PizzaCart) return;
-            const cart = window.PizzaCart.getCart();
+
+            // Lấy items theo mode
+            const cart = CHECKOUT_ITEMS;
             if(cart.length === 0) {
-                alert('Giỏ hàng trống!');
+                alert('Không có sản phẩm để thanh toán!');
                 return;
+            }
+            tempReviewItems = [...cart]; // Lưu lại cho bước 3
+
+
+            // Validate card fields nếu đang ở tab Card
+            const paymentMode = document.getElementById('mainPaymentMethod')?.value || '';
+            if (paymentMode === 'card') {
+                const cardFields = [
+                    { id: 'card-name',   errId: 'err-card-name',   msg: 'Vui lòng nhập tên chủ thẻ.' },
+                    { id: 'card-number', errId: 'err-card-number', msg: 'Vui lòng nhập số thẻ.' },
+                    { id: 'card-expiry', errId: 'err-card-expiry', msg: 'Vui lòng nhập ngày hết hạn.' },
+                    { id: 'card-cvv',    errId: 'err-card-cvv',    msg: 'Vui lòng nhập CVV.' },
+                ];
+                let cardError = false;
+                // Xóa lỗi cũ trước
+                cardFields.forEach(f => {
+                    const el = document.getElementById(f.id);
+                    if (el) clearFieldError(el, f.errId);
+                });
+                // Validate ngược lại để lỗi đầu tiên được focus
+                [...cardFields].reverse().forEach(f => {
+                    const el = document.getElementById(f.id);
+                    if (el && !el.value.trim()) {
+                        showFieldError(el, f.errId, f.msg);
+                        cardError = true;
+                    }
+                });
+                if (cardError) {
+                    const firstErr = document.querySelector('#panel-card .input-error');
+                    if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
             }
 
             // Gom địa chỉ giao hàng
@@ -728,9 +880,14 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    // Xóa giỏ hàng localStorage
-                    window.localStorage.removeItem('pizzadeli_cart');
-                    if(window.PizzaCart && window.PizzaCart.clearCart) window.PizzaCart.clearCart();
+                    if (isBuyNowCheckout) {
+                        // Chế độ mua ngay: chỉ xóa buynow_item
+                        sessionStorage.removeItem('buynow_item');
+                    } else {
+                        // Xóa giỏ hàng localStorage
+                        window.localStorage.removeItem('pizzadeli_cart');
+                        if(window.PizzaCart && window.PizzaCart.clearCart) window.PizzaCart.clearCart();
+                    }
 
                     // Hiện popup thành công
                     document.getElementById('successOrderCode').textContent = 'Mã đơn: #' + data.orderId;
@@ -750,7 +907,90 @@
         }
 
         function goToReviews() {
-            window.location.href = '/Customer/ProductReviews';
+            // Đóng Modal
+            const modal = document.getElementById('orderSuccessModal');
+            if (modal) modal.style.display = 'none';
+
+            window.localStorage.removeItem('pizzadeli_cart');
+
+            // Đổi UI sang Bước 3
+            const payContent = document.getElementById('step-payment-content');
+            if (payContent) payContent.style.display = 'none';
+            
+            const shipContent = document.getElementById('step-shipping-content');
+            if (shipContent) shipContent.style.display = 'none';
+            
+            const reviewContent = document.getElementById('step-review-content');
+            if (reviewContent) reviewContent.style.display = 'block';
+
+            // Cập nhật thanh Stepper
+            const stepReview = document.getElementById('stepperReview');
+            if (stepReview) stepReview.classList.add('active');
+            
+            const stepSubtle = document.getElementById('stepperSubtitle');
+            if (stepSubtle) stepSubtle.textContent = 'Bước 3 trong 3: Đánh giá sản phẩm của bạn';
+
+            // Ẩn các nút hành động
+            const btnActionFlow = document.getElementById('btnActionFlow');
+            if (btnActionFlow) btnActionFlow.style.display = 'none';
+            
+            const voucherBox = document.getElementById('step-voucher-box');
+            if (voucherBox) voucherBox.style.display = 'none';
+            
+            const btnGoBack = document.getElementById('btnGoBack');
+            if (btnGoBack) btnGoBack.style.display = 'none';
+            
+            const btnHomeBack = document.getElementById('btnHomeBack');
+            if (btnHomeBack) btnHomeBack.style.display = 'none';
+
+            // HIện Đặt lại đơn, ẩn đặt thêm món (vì chỉ bước 3 mới có Đặt lại đơn trên Tóm tắt)
+            const btnSidebarAddMore = document.getElementById('btnSidebarAddMore');
+            if (btnSidebarAddMore) btnSidebarAddMore.style.display = 'none';
+
+            const btnSidebarReorder = document.getElementById('btnSidebarReorder');
+            if (btnSidebarReorder) btnSidebarReorder.style.display = 'inline-flex';
+
+            currentStep = 3;
+            
+            // Xóa rỗng danh sách tổng kết giỏ hàng ở cột phải Sidebar
+            const checkoutItemsList = document.getElementById('checkoutItemsList');
+            if (checkoutItemsList) checkoutItemsList.innerHTML = '<p style="text-align:center; padding: 2rem;">Thanh toán thành công.</p>';
+
+            // Load rỗng lại UI của Cart
+            if (window.PizzaCart && window.PizzaCart.saveCart) {
+                window.PizzaCart.saveCart([]);
+                window.PizzaCart.renderCartDrawer();
+            }
+
+            // Render giao diện thẻ đánh giá
+            buildReviewItems();
+            attachStarRating();
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function reorderLatest() {
+            if (!confirm('Bạn có chắc muốn làm mới giỏ hàng bằng đơn hàng gần đây nhất của mình không?')) return;
+            
+            fetch('/Customer/GetLatestOrder')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.items && data.items.length > 0) {
+                    if (window.PizzaCart) {
+                        window.PizzaCart.saveCart(data.items);
+                        alert('Đã tải lại đơn hàng gần nhất thành công!');
+                        // Chuyển hướng về trang chủ addmore=1 hoặc load lại chính trang Checkout.
+                        // Bắt buộc bỏ param ?mode=buynow nếu đang có
+                        window.location.href = '/Customer/Checkout';
+                    }
+                } else {
+                    alert(data.message || 'Lỗi khi lấy thông tin đơn hàng cũ.');
+                }
+            })
+            .catch(err => {
+                alert('Có lỗi mạng khi truy xuất đơn hàng! Vui lòng thử lại.');
+                console.error(err);
+            });
         }
     </script>
 }

@@ -1,78 +1,514 @@
+@model PizzaDeli.Models.User
 @{
     ViewData["Title"] = "Trang cá nhân của bạn";
 }
 
-<div class="container py-8" style="padding: 2rem 1.5rem;">
-    <div style="max-width: 800px; margin: 0 auto; background: white; border-radius: 1rem; padding: 2rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
-        <h1 style="font-size: 1.875rem; font-weight: 800; color: var(--slate-900); margin-bottom: 1.5rem;">Thông tin tài khoản</h1>
+<style>
+    body {
+        background-color: #faf9f8;
+    }
+    .profile-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 2rem 1rem 4rem 1rem;
+        font-family: 'Inter', system-ui, sans-serif;
+    }
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #5c433b;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 0.95rem;
+        margin-bottom: 2rem;
+        transition: opacity 0.2s;
+    }
+    .btn-back:hover {
+        opacity: 0.8;
+    }
 
-        @if (TempData["Success"] != null)
-        {
-            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                <span class="material-symbols-outlined">check_circle</span>
-                @TempData["Success"]
-            </div>
+    .card-white {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 2.5rem;
+        box-shadow: 0 4px 25px rgba(0,0,0,0.04);
+        border: 1px solid #f8fafc;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .profile-header {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    .avatar-wrapper {
+        width: 130px;
+        height: 130px;
+        border-radius: 50%;
+        padding: 4px;
+        background: #fff;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        z-index: 1;
+    }
+    .avatar-img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .profile-info {
+        z-index: 1;
+    }
+    .profile-info h1 {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 0.25rem;
+    }
+    .profile-meta {
+        color: #64748b;
+        font-size: 1rem;
+        margin-bottom: 1.25rem;
+        font-weight: 500;
+    }
+    .profile-actions {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .btn-brown {
+        background: #5c433b;
+        color: #fff;
+        border: none;
+        padding: 0.6rem 1.25rem;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .btn-brown:hover {
+        background: #4a362f;
+    }
+    .badge-active {
+        background: #dcfce7;
+        color: #16a34a;
+        padding: 0.4rem 1.2rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+    }
+    
+    /* Pizza slice decoration */
+    .bg-icon {
+        position: absolute;
+        right: 2rem;
+        top: 50%;
+        transform: translateY(-50%) rotate(15deg);
+        width: 180px;
+        height: 180px;
+        opacity: 0.05;
+        pointer-events: none;
+    }
+
+    .layout-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group-flex {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.85rem 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        color: #1e293b;
+        outline: none;
+        transition: border-color 0.2s;
+        background: white;
+    }
+    .form-input:focus {
+        border-color: #5c433b;
+    }
+    .form-input:disabled, .form-input.readonly {
+        background-color: #f1f5f9;
+        color: #64748b;
+        border-color: #f1f5f9;
+    }
+
+    .input-with-btn {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-outline {
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        color: #475569;
+        padding: 0.85rem 1.25rem;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+    .btn-outline:hover {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+    }
+    
+    .btn-text {
+        background: none;
+        border: none;
+        color: #5c433b;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+
+    .radio-group {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 0.5rem;
+    }
+    .radio-label {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.95rem;
+        color: #1e293b;
+        cursor: pointer;
+        font-weight: 500;
+    }
+    .radio-label input[type="radio"] {
+        accent-color: #5c433b;
+        width: 18px;
+        height: 18px;
+    }
+
+    .btn-group {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 1.5rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #f1f5f9;
+    }
+    .btn-cancel {
+        background: none;
+        border: none;
+        color: #64748b;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+    }
+    .btn-save {
+        background: #5c433b;
+        color: #fff;
+        border: none;
+        padding: 0.85rem 2.5rem;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .btn-save:hover {
+        background: #4a362f;
+    }
+
+    .address-box {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-bottom: 1.25rem;
+        border: 1px solid #f1f5f9;
+    }
+    .address-map {
+        width: 100%;
+        border-radius: 12px;
+        height: 150px;
+        object-fit: cover;
+        background: #e2e8f0;
+    }
+    
+    .input-icon-wrapper {
+        position: relative;
+    }
+    .input-icon-wrapper .material-symbols-outlined {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #64748b;
+        pointer-events: none;
+    }
+
+    @@media (max-width: 768px) {
+        .layout-grid {
+            grid-template-columns: 1fr;
         }
+        .form-group-flex {
+            grid-template-columns: 1fr;
+        }
+        .profile-header {
+            flex-direction: column;
+            text-align: center;
+        }
+    }
+</style>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-            <!-- Cập nhật thông tin cá nhân -->
-            <div>
-                <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem;">Hồ sơ cá nhân</h3>
-                <form asp-controller="Customer" asp-action="Profile" method="post">
-                    @Html.AntiForgeryToken()
-                    <div style="margin-bottom: 1rem;">
-                        <label style="display: block; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.5rem;">Họ và tên</label>
-                        <input type="text" name="fullName" value="@Context.Session.GetString("USER_NAME")" required
-                            style="width: 100%; padding: 0.75rem; border: 1.5px solid #e2e8f0; border-radius: 0.5rem;" />
-                    </div>
-                    <div style="margin-bottom: 1rem;">
-                        <label style="display: block; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.5rem;">Email</label>
-                        <input type="email" value="@Context.Session.GetString("USER_EMAIL")" disabled
-                            style="width: 100%; padding: 0.75rem; border: 1.5px solid #e2e8f0; border-radius: 0.5rem; background: #f8fafc;" />
-                    </div>
-                    <div style="margin-bottom: 1rem;">
-                        <label style="display: block; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.5rem;">Số điện thoại</label>
-                        <input type="text" name="phone" placeholder="Cập nhật số điện thoại"
-                            style="width: 100%; padding: 0.75rem; border: 1.5px solid #e2e8f0; border-radius: 0.5rem;" />
-                    </div>
-                    <button type="submit" style="background: var(--primary); color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 700; width: 100%;">
-                        Lưu thay đổi
-                    </button>
-                </form>
+<div class="profile-container">
+    <a href="/" class="btn-back">
+        <span class="material-symbols-outlined">arrow_back</span>
+        Quay lại trang chủ
+    </a>
+
+    <!-- Profile Header Card -->
+    <div class="card-white" style="margin-bottom: 1.5rem; padding: 2rem;">
+        <svg class="bg-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C8.43 2 5.23 3.54 3.01 6L12 22L20.99 6C18.77 3.54 15.57 2 12 2ZM12 4.5C13.5 4.5 14.88 5 16.03 5.86L12 13.04L7.97 5.86C9.12 5 10.5 4.5 12 4.5ZM9.5 8C8.67 8 8 7.33 8 6.5C8 5.67 8.67 5 9.5 5C10.33 5 11 5.67 11 6.5C11 7.33 10.33 8 9.5 8ZM14.5 9C13.67 9 13 8.33 13 7.5C13 6.67 13.67 6 14.5 6C15.33 6 16 6.67 16 7.5C16 8.33 15.33 9 14.5 9Z"/>
+        </svg>
+
+        <div class="profile-header">
+            <div class="avatar-wrapper">
+                <img src="@(Model.Avatar ?? "/images/avatar-placeholder.jpg")" onerror="this.src='https://ui-avatars.com/api/?name=@Uri.EscapeDataString(Model.FullName ?? "U")&size=150&background=2C7E7B&color=fff'" class="avatar-img" alt="Avatar">
             </div>
-
-            <!-- Đổi mật khẩu -->
-            <div>
-                <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem;">Đổi mật khẩu</h3>
-                <form asp-controller="Customer" asp-action="ChangePassword" method="post">
-                    @Html.AntiForgeryToken()
-                    <div style="margin-bottom: 1rem;">
-                        <label style="display: block; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.5rem;">Mật khẩu hiện tại</label>
-                        <input type="password" name="oldPassword" required
-                            style="width: 100%; padding: 0.75rem; border: 1.5px solid #e2e8f0; border-radius: 0.5rem;" />
-                    </div>
-                    <div style="margin-bottom: 1rem;">
-                        <label style="display: block; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.5rem;">Mật khẩu mới</label>
-                        <input type="password" name="newPassword" required minlength="6"
-                            style="width: 100%; padding: 0.75rem; border: 1.5px solid #e2e8f0; border-radius: 0.5rem;" />
-                    </div>
-                    <button type="submit" style="background: var(--slate-800); color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 700; width: 100%;">
-                        Cập nhật mật khẩu
+            <div class="profile-info">
+                <h1>@(Model.FullName)</h1>
+                <div class="profile-meta">Thành viên từ: @Model.CreatedAt.ToString("MM/yyyy")</div>
+                <div class="profile-actions">
+                    <button class="btn-brown" onclick="alert('Chức năng đang xây dựng')">
+                        <span class="material-symbols-outlined" style="font-size: 1.2rem;">photo_camera</span>
+                        Đổi ảnh đại diện
                     </button>
-                </form>
-            </div>
-        </div>
-
-        <div style="margin-top: 3rem; border-top: 1px solid #f0ede9; padding-top: 2rem;">
-            <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem;">Quản lý khác</h3>
-            <div style="display: flex; gap: 1rem;">
-                <a asp-controller="Customer" asp-action="Orders" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: var(--primary-05); color: var(--primary); border-radius: 0.5rem; font-weight: 600; text-decoration: none;">
-                    <span class="material-symbols-outlined">receipt_long</span> Lịch sử đơn hàng
-                </a>
-                <a asp-controller="Customer" asp-action="Vouchers" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: var(--primary-05); color: var(--primary); border-radius: 0.5rem; font-weight: 600; text-decoration: none;">
-                    <span class="material-symbols-outlined">local_activity</span> Voucher của tôi
-                </a>
+                    <span class="badge-active">ACTIVE</span>
+                </div>
             </div>
         </div>
     </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+            <span class="material-symbols-outlined">check_circle</span>
+            @TempData["Success"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div style="background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+            <span class="material-symbols-outlined">error</span>
+            @TempData["Error"]
+        </div>
+    }
+
+    <div class="layout-grid">
+        <!-- Thông tin cá nhân form -->
+        <div class="card-white" style="padding: 2.25rem;">
+            <h2 class="section-title">
+                <span class="material-symbols-outlined" style="color: #5c433b;">person</span>
+                Thông tin cá nhân
+            </h2>
+
+            <form asp-controller="Customer" asp-action="Profile" method="post">
+                @Html.AntiForgeryToken()
+                
+                <div class="form-group-flex">
+                    <div>
+                        <label class="form-label">Họ và tên</label>
+                        <input type="text" name="fullName" class="form-input" value="@Model.FullName" placeholder="Nhập họ và tên" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Email (Chỉ đọc)</label>
+                        <div class="input-with-btn">
+                            <input type="text" class="form-input readonly" value="@Model.Email" readonly>
+                            <button type="button" class="btn-outline" onclick="toggleChangeEmail()">Đổi Mail</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group-flex">
+                    <div>
+                        <label class="form-label">Số điện thoại</label>
+                        <input type="tel" name="phone" class="form-input" placeholder="0901234567" value="@Model.Phone">
+                    </div>
+                    <div>
+                        <label class="form-label">Ngày sinh</label>
+                        <div class="input-icon-wrapper">
+                            <input type="date" name="dateOfBirth" class="form-input" value="@(Model.DateOfBirth?.ToString("yyyy-MM-dd"))">
+                            <span class="material-symbols-outlined">calendar_today</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label">Giới tính</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="gender" value="Nam" @(Model.Gender == "Nam" ? "checked" : "")> Nam
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="gender" value="Nu" @(Model.Gender == "Nu" ? "checked" : "")> Nữ
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="gender" value="Khac" @(Model.Gender == "Khac" ? "checked" : "")> Khác
+                        </label>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" class="btn-cancel" onclick="window.location.href='/'">Hủy</button>
+                    <button type="submit" class="btn-save">Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Sổ địa chỉ -->
+        <div class="card-white" style="padding: 2.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 class="section-title" style="margin-bottom: 0;">
+                    <span class="material-symbols-outlined" style="color: #5c433b;">location_on</span>
+                    Sổ địa chỉ
+                </h2>
+                <button type="button" class="btn-text" onclick="toggleAddressEdit()">Sửa</button>
+            </div>
+
+            <!-- Edit Address Container -->
+            <div id="addressInputContainer" style="display:none; margin-bottom: 1rem;">
+                <form asp-controller="Customer" asp-action="Profile" method="post" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    @Html.AntiForgeryToken()
+                    <!-- Giữ lại thông tin kia để POST không bị null nếu controller chưa bắt tốt optional. Tốt nhất post riêng address hoặc cho vào 1 form to. -->
+                    <!-- Tạm thời chỉ POST address, ở controller có if (!string.IsNullOrEmpty(address)) -->
+                    <input type="hidden" name="fullName" value="@Model.FullName" />
+                    <textarea name="address" class="form-input" rows="3" placeholder="Ví dụ: 123 Đường B, Phường N...">@Model.Address</textarea>
+                    <div style="text-align: right;">
+                        <button type="submit" class="btn-save" style="padding: 0.5rem 1rem;">Cập nhật</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="address-box">
+                <div style="font-weight: 800; color: #5c433b; margin-bottom: 0.25rem; font-size: 0.95rem;">Mặc định</div>
+                <div style="color: #64748b; font-size: 0.9rem; line-height: 1.5;">
+                    @(string.IsNullOrWhiteSpace(Model.Address) ? "Chưa cung cấp địa chỉ" : Model.Address)
+                </div>
+            </div>
+
+            <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=800" class="address-map" alt="Map Preview" style="opacity: 0.8; mix-blend-mode: multiply; filter: contrast(1.1) brightness(0.9);">
+        </div>
+    </div>
+    
+    <!-- Modal change email -->
+    <div id="changeEmailModal" style="display:none; margin-top:2rem; padding: 2.25rem; border-radius: 20px; background: white; border: 1px solid #f1f5f9; box-shadow: 0 4px 25px rgba(0,0,0,0.04);">
+        <h3 class="section-title">Đổi Email</h3>
+        <p style="color: #64748b; margin-bottom: 1.5rem; font-size: 0.95rem;">Bạn sẽ nhận được mã gồm 4 chữ số qua thông báo để xác minh đổi email.</p>
+        <form asp-controller="Customer" asp-action="ChangeEmail" method="post" style="max-width: 400px; display: flex; flex-direction: column; gap: 1.25rem;">
+            @Html.AntiForgeryToken()
+            <div>
+                <label class="form-label">Nhập Email mới</label>
+                <div style="display:flex; gap:0.5rem;">
+                    <input type="email" name="newEmail" id="newEmailInput" class="form-input" placeholder="nhapmailmoi@domain.com" required>
+                    <button type="button" class="btn-outline" onclick="requestVerificationCode()">Nhận mã</button>
+                </div>
+            </div>
+            <div>
+                <label class="form-label">Mã xác nhận (4 chữ số)</label>
+                <input type="text" name="verificationCode" class="form-input" maxlength="4" placeholder="Ví dụ: 1234" required pattern="\d{4}" title="Vui lòng nhập 4 chữ số">
+            </div>
+            <button type="submit" class="btn-save" style="align-self: flex-start;">Xác nhận đổi</button>
+        </form>
+    </div>
+
+    </div>
 </div>
+
+<script>
+    function toggleChangeEmail() {
+        var emailModal = document.getElementById('changeEmailModal');
+        if (emailModal.style.display === 'none' || emailModal.style.display === '') {
+            emailModal.style.display = 'block';
+            setTimeout(function() {
+                emailModal.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        } else {
+            emailModal.style.display = 'none';
+        }
+    }
+
+        function toggleAddressEdit() {
+            var container = document.getElementById('addressInputContainer');
+            if (container.style.display === 'none' || container.style.display === '') {
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        function requestVerificationCode() {
+            var emailObj = document.getElementById('newEmailInput');
+            var email = emailObj.value;
+            if (!email) {
+                alert('Vui lòng nhập Email mới trước!');
+                return;
+            }
+
+            fetch('/Customer/RequestVerificationCode', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({ newEmail: email })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Có lỗi xảy ra khi gọi đến máy chủ gửi email.');
+            });
+        }
+</script>

@@ -135,8 +135,16 @@
 
 <div class="orders-container">
     <div class="orders-header">
-        <h1>Đơn hàng của tôi</h1>
-        <p>Theo dõi và quản lý lịch sử đặt hàng của bạn tại PizzaDeli</p>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+            <div>
+                <h1 style="margin-bottom: 0.5rem;">Đơn hàng của tôi</h1>
+                <p style="margin-bottom: 0;">Theo dõi và quản lý lịch sử đặt hàng của bạn tại PizzaDeli</p>
+            </div>
+            <a href="/" class="o-btn" style="display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; font-weight: 600;">
+                <span class="material-symbols-outlined" style="font-size: 1.1rem;">home</span>
+                Quay lại trang chủ
+            </a>
+        </div>
         
         <div class="o-tabs">
             <div class="o-tab active" onclick="filterOrders('all', this)">Tất cả</div>

@@ -3,6 +3,9 @@ using PizzaDeli.Data;
 using System.Linq;
 using System;
 using Microsoft.EntityFrameworkCore;
+using System.Net;
+using System.Net.Mail;
+using Microsoft.AspNetCore.Http;
 
 namespace PizzaDeli.Controllers;
 
@@ -22,17 +25,118 @@ public class CustomerController : BaseController
     public IActionResult Profile()
     {
         var g = Guard(); if (g != null) return g;
-        return View();
+        var user = _context.Users.Find(CurrentUserId);
+        if (user == null) return NotFound();
+        return View(user);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Profile(string fullName, string phone)
+    public IActionResult Profile(string fullName, string phone, DateTime? dateOfBirth, string gender, string address)
     {
         var g = Guard(); if (g != null) return g;
-        // TODO: gọi API cập nhật thông tin
+        
+        var user = _context.Users.Find(CurrentUserId);
+        if (user == null) return NotFound();
+
+        user.FullName = fullName;
+        user.Phone = phone;
+        user.DateOfBirth = dateOfBirth;
+        user.Gender = gender;
+        if (!string.IsNullOrEmpty(address)) {
+            user.Address = address;
+        }
+
+        _context.SaveChanges();
+        
+        // Cập nhật lại session name
+        HttpContext.Session.SetString("USER_NAME", fullName);
+
         TempData["Success"] = "Cập nhật thông tin thành công!";
         return RedirectToAction("Profile");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult ChangeEmail(string newEmail, string verificationCode)
+    {
+        var g = Guard(); if (g != null) return g;
+        
+        var user = _context.Users.Find(CurrentUserId);
+        if (user == null) return NotFound();
+
+        var sessionCode = HttpContext.Session.GetString("VERIFICATION_CODE");
+        var targetEmail = HttpContext.Session.GetString("TARGET_EMAIL");
+
+        if (string.IsNullOrEmpty(sessionCode) || verificationCode != sessionCode || newEmail != targetEmail)
+        {
+            TempData["Error"] = "Mã xác nhận không hợp lệ hoặc không khớp Email!";
+            return RedirectToAction("Profile");
+        }
+
+        user.Email = newEmail;
+        _context.SaveChanges();
+
+        // Cập nhật session
+        HttpContext.Session.SetString("USER_EMAIL", newEmail);
+        TempData["Success"] = "Đổi email thành công!";
+        return RedirectToAction("Profile");
+    }
+
+    [HttpPost]
+    public IActionResult RequestVerificationCode(string newEmail)
+    {
+        var g = Guard(); if (g != null) return Json(new { success = false, message = "Chưa đăng nhập!" });
+        
+        if (string.IsNullOrWhiteSpace(newEmail))
+            return Json(new { success = false, message = "Email không hợp lệ!" });
+
+        var user = _context.Users.Find(CurrentUserId);
+        if (user == null) return Json(new { success = false, message = "Không tìm thấy người dùng." });
+
+        if (user.Email == newEmail)
+            return Json(new { success = false, message = "Email mới phải khác email hiện tại!"});
+
+        // Tạo mã ngẫu nhiên 4 số
+        Random rnd = new Random();
+        string code = rnd.Next(1000, 9999).ToString();
+
+        // Lưu session chuẩn bị xác thực
+        HttpContext.Session.SetString("VERIFICATION_CODE", code);
+        HttpContext.Session.SetString("TARGET_EMAIL", newEmail);
+
+        try 
+        {
+            // Thiết lập SMTP gửi mail thực tế 
+            // Demo dùng SMTP Của Google, lưu ý phải cung cấp App Password chuẩn bảo mật, ở đây tài khoản thật dùng để gửi
+            var client = new SmtpClient("smtp.gmail.com", 587)
+            {
+                EnableSsl = true,
+                UseDefaultCredentials = false,
+                Credentials = new NetworkCredential("phamanhkhoa56789@gmail.com", "ejff yemk uhwd wdtv") // Tránh vi phạm chính sách gửi mail spam, pass thật app smtp
+            };
+
+            var mailMessage = new MailMessage
+            {
+                From = new MailAddress("pizzadelidemo1@gmail.com", "PizzaDeli Security"),
+                Subject = "PizzaDeli - Xác nhận đổi Email",
+                Body = $"<h2>Yêu cầu thay đổi địa chỉ email của tài khoản {user.FullName}</h2><hr/>" +
+                       $"<p>Chào bạn,</p>" +
+                       $"<p>Đây là mã xác nhận thay đổi địa chỉ email (OTP) gồm 4 chữ số của bạn:</p>" +
+                       $"<h1 style='color: #16a34a; letter-spacing: 0.1em;'>{code}</h1>" +
+                       $"<p>Vui lòng tuyệt đối không tiết lộ mã này cho bất kỳ ai. Mã này sẽ áp dụng trói buộc cho email <b>{newEmail}</b>.</p>",
+                IsBodyHtml = true,
+            };
+            mailMessage.To.Add(newEmail);
+            client.Send(mailMessage);
+
+            return Json(new { success = true, message = "Mã xác nhận đã được gửi về email mới của bạn!" });
+        }
+        catch (Exception ex)
+        {
+            // Nếu lỗi do mạng hay SMTP thì sẽ fallback về cảnh báo
+            return Json(new { success = false, message = $"Gặp lỗi hệ thống gửi mail: {ex.Message}" });
+        }
     }
 
     [HttpPost]
@@ -40,7 +144,19 @@ public class CustomerController : BaseController
     public IActionResult ChangePassword(string oldPassword, string newPassword)
     {
         var g = Guard(); if (g != null) return g;
-        // TODO: gọi API đổi mật khẩu
+        
+        var user = _context.Users.Find(CurrentUserId);
+        if (user == null) return NotFound();
+
+        if (!BCrypt.Net.BCrypt.Verify(oldPassword, user.PasswordHash))
+        {
+            TempData["Error"] = "Mật khẩu hiện tại không đúng!";
+            return RedirectToAction("Profile");
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        _context.SaveChanges();
+
         TempData["Success"] = "Đổi mật khẩu thành công!";
         return RedirectToAction("Profile");
     }
@@ -140,14 +256,17 @@ public class CustomerController : BaseController
         // Thêm chi tiết đơn hàng
         foreach (var item in items)
         {
+            // Trích xuất ID gốc (với Pizza tuỳ chỉnh ID có dạng P001-Mỏng-Cheddar-Nấm)
+            var realId = item.Id.Contains("-") ? item.Id.Split('-')[0] : item.Id;
+
             // Kiểm tra sản phẩm tồn tại trong DB
-            var productExists = _context.Products.Any(p => p.Id == item.Id);
+            var productExists = _context.Products.Any(p => p.Id == realId);
             if (!productExists) continue;
 
             _context.OrderDetails.Add(new PizzaDeli.Models.OrderDetail
             {
                 OrderId   = order.Id,
-                ProductId = item.Id,
+                ProductId = realId,
                 Quantity  = item.Quantity,
                 UnitPrice = item.Price
             });
@@ -156,6 +275,36 @@ public class CustomerController : BaseController
         _context.SaveChanges();
 
         return Json(new { success = true, orderId = order.Id.Substring(0, 8).ToUpper() });
+    }
+
+    [HttpGet]
+    public IActionResult GetLatestOrder()
+    {
+        if (!IsLoggedIn) return Json(new { success = false, message = "Vui lòng đăng nhập" });
+
+        var latestOrder = _context.Orders
+            .Include(o => o.OrderDetails!)
+                .ThenInclude(d => d.Product)
+            .Where(o => o.UserId == CurrentUserId)
+            .OrderByDescending(o => o.OrderDate)
+            .FirstOrDefault();
+
+        if (latestOrder == null)
+            return Json(new { success = false, message = "Bạn chưa có đơn hàng nào." });
+
+        if (latestOrder.OrderDetails == null || latestOrder.OrderDetails.Count == 0)
+            return Json(new { success = false, message = "Đơn hàng rỗng." });
+
+        var items = latestOrder.OrderDetails.Select(od => new
+        {
+            id = od.Product?.Id ?? "",
+            name = od.Product?.Name ?? "",
+            price = od.UnitPrice,
+            quantity = od.Quantity,
+            image = od.Product?.ImageUrl ?? "/images/placeholder.png"
+        }).ToList();
+
+        return Json(new { success = true, items = items });
     }
 
     // ---- Lịch sử đơn hàng ----
@@ -231,13 +380,63 @@ public class CustomerController : BaseController
         return Json(new { success = true, discount = discountAmount, message = "Áp dụng mã giảm giá thành công!" });
     }
 
-    // ---- Bình luận ----
+    public class ReviewDto
+    {
+        public string ProductId { get; set; } = string.Empty;
+        public int Rating { get; set; }
+        public string Content { get; set; } = string.Empty;
+    }
+
     [HttpPost]
     public IActionResult AddComment(string productId, string content, int rating)
     {
         var g = Guard(); if (g != null) return g;
-        // TODO: gọi API thêm bình luận
+        
+        var realId = productId.Contains("-") ? productId.Split('-')[0] : productId;
+
+        var review = new PizzaDeli.Models.Review
+        {
+            UserId = CurrentUserId!,
+            ProductId = realId,
+            Rating = rating,
+            Comment = content ?? "",
+            CreatedAt = DateTime.Now,
+            IsHidden = false
+        };
+        _context.Reviews.Add(review);
+        _context.SaveChanges();
+
         return Json(new { success = true });
+    }
+
+    [HttpPost]
+    public IActionResult SubmitMultipleReviews([FromBody] List<ReviewDto> reviews)
+    {
+        var g = Guard(); if (g != null) return g;
+
+        if (reviews == null || !reviews.Any()) 
+            return Json(new { success = false });
+
+        foreach (var r in reviews)
+        {
+            var realId = r.ProductId.Contains("-") ? r.ProductId.Split('-')[0] : r.ProductId;
+            
+            if (r.Rating < 1 || r.Rating > 5) continue;
+
+            var review = new PizzaDeli.Models.Review
+            {
+                UserId = CurrentUserId!,
+                ProductId = realId,
+                Rating = r.Rating,
+                Comment = r.Content ?? "",
+                CreatedAt = DateTime.Now,
+                IsHidden = false
+            };
+            _context.Reviews.Add(review);
+        }
+
+        _context.SaveChanges();
+        return Json(new { success = true, message = "Cảm ơn bạn đã đánh giá!" });
     }
     
     [HttpGet]
@@ -261,7 +460,35 @@ public class CustomerController : BaseController
     {
         var product = _context.Products.Find(id);
         if (product == null) return NotFound();
-        return View(product);
+
+        var reviews = _context.Reviews
+            .Include(r => r.User)
+            .Where(r => r.ProductId == id && !r.IsHidden)
+            .OrderByDescending(r => r.CreatedAt)
+            .ToList();
+
+        ViewBag.Product = product;
+        return View(reviews);
+    }
+
+    /// <summary>API: Lấy điểm đánh giá trung bình + số lượng đánh giá của sản phẩm</summary>
+    [HttpGet]
+    public IActionResult GetProductRating(string productId)
+    {
+        if (string.IsNullOrWhiteSpace(productId))
+            return Json(new { avgRating = 0.0, count = 0 });
+
+        var reviews = _context.Reviews
+            .Where(r => r.ProductId == productId)
+            .ToList();
+
+        if (!reviews.Any())
+            return Json(new { avgRating = 0.0, count = 0 });
+
+        double avg = Math.Round(reviews.Average(r => r.Rating), 1);
+        int count  = reviews.Count;
+
+        return Json(new { avgRating = avg, count });
     }
 }
 

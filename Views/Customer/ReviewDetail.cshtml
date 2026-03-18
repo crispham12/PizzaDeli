@@ -1,325 +1,400 @@
-@model PizzaDeli.Models.Product
+@model List<PizzaDeli.Models.Review>
 @{
-    ViewData["Title"] = "Customer Reviews";
+    var product = ViewBag.Product as PizzaDeli.Models.Product;
+    ViewData["Title"] = "Đánh giá sản phẩm";
     Layout = "_Layout";
+
+    int totalReviews = Model != null ? Model.Count : 0;
+    double avgRating = totalReviews > 0 ? Model.Average(r => r.Rating) : 0;
+    
+    int count5 = totalReviews > 0 ? Model.Count(r => r.Rating == 5) : 0;
+    int count4 = totalReviews > 0 ? Model.Count(r => r.Rating == 4) : 0;
+    int count3 = totalReviews > 0 ? Model.Count(r => r.Rating == 3) : 0;
+    int count2 = totalReviews > 0 ? Model.Count(r => r.Rating == 2) : 0;
+    int count1 = totalReviews > 0 ? Model.Count(r => r.Rating == 1) : 0;
+    
+    double pct5 = totalReviews > 0 ? (count5 * 100.0 / totalReviews) : 0;
+    double pct4 = totalReviews > 0 ? (count4 * 100.0 / totalReviews) : 0;
+    double pct3 = totalReviews > 0 ? (count3 * 100.0 / totalReviews) : 0;
+    double pct2 = totalReviews > 0 ? (count2 * 100.0 / totalReviews) : 0;
+    double pct1 = totalReviews > 0 ? (count1 * 100.0 / totalReviews) : 0;
 }
 
 <style>
-    body { background: #faf9f8; }
+    body { background: #f8f6f4; }
     
-    .rv-container {
+    .rv-page-container {
         max-width: 900px;
-        margin: 2rem auto;
-        padding: 0 1rem;
-        background: transparent;
+        margin: 3rem auto;
+        padding: 0 1.5rem;
     }
-    
-    .btn-rv-back {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-weight: 600;
-        color: #475569;
-        text-decoration: none;
-        margin-bottom: 1.5rem;
-        transition: color 0.2s;
-    }
-    .btn-rv-back:hover { color: #1e293b; }
-    
-    .rv-product-box {
-        background: #fff;
-        border-radius: 1rem;
-        padding: 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 1.5rem;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-        margin-bottom: 2.5rem;
-    }
-    .rv-product-img {
-        width: 100px; height: 100px;
-        border-radius: 12px;
-        object-fit: cover;
-    }
-    .rv-product-info { flex: 1; }
-    .rv-product-title {
-        font-size: 1.5rem;
-        font-weight: 800;
-        color: #1e293b;
-        margin-bottom: 0.25rem;
-    }
-    .rv-product-desc {
-        color: #64748b;
-        font-size: 0.9375rem;
-        max-width: 600px;
-    }
-    .rv-btn-write {
-        background: #5c433b;
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        padding: 0.75rem 1.25rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s;
-    }
-    .rv-btn-write:hover { background: #4a342e; }
 
-    .rv-summary-area {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
+    .rv-header {
         margin-bottom: 2rem;
     }
-    .rv-summary-left h3 {
-        font-size: 1.5rem; font-weight: 800; color:#1e293b; margin-bottom: 1.5rem;
-    }
-    .rv-summary-score-box {
-        display: flex; align-items: baseline; gap: 1rem;
-    }
-    .rv-score-big { font-size: 4rem; font-weight: 800; color: #5c433b; line-height: 1; margin: 0;}
-    .rv-stars {
+    .rv-title {
+        font-size: 2rem;
+        font-weight: 800;
         color: #5c433b;
+        margin-bottom: 0.5rem;
+    }
+    .rv-subtitle {
+        color: #7a6b65;
+        font-size: 0.9375rem;
+    }
+
+    /* Overall Summary Box */
+    .rv-summary-box {
+        background: #fff;
+        border-radius: 1.5rem;
+        padding: 2.5rem;
+        display: flex;
+        align-items: center;
+        gap: 4rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    }
+
+    .rv-score-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex-shrink: 0;
+        min-width: 150px;
+    }
+    .rv-score-big {
+        font-size: 4.5rem;
+        font-weight: 800;
+        color: #5c433b;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+    .rv-stars {
+        display: flex;
+        gap: 0.2rem;
+        color: #f59e0b;
         font-Variation-Settings: 'FILL' 1;
-        font-size: 1.25rem;
-        display: flex; gap: 0.1rem;
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
     }
-    .rv-based-on { font-size: 0.875rem; color: #64748b; margin-top: 0.25rem; }
-    
-    .rv-summary-bars { width: 300px; margin-top: 3.5rem; }
+    .rv-score-count {
+        font-size: 0.875rem;
+        color: #9c8880;
+        font-weight: 500;
+    }
+
+    .rv-bars-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
     .rv-bar-row {
-        display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
     }
-    .rv-bar-num { font-size: 0.875rem; font-weight: 600; color: #475569; width:10px; }
+    .rv-bar-label {
+        font-weight: 700;
+        font-size: 0.875rem;
+        color: #5c433b;
+        width: 12px;
+    }
     .rv-bar-track {
         flex: 1;
-        height: 6px;
-        background: #e2e8f0;
+        height: 8px;
+        background: #f0ebe8;
         border-radius: 999px;
+        position: relative;
         overflow: hidden;
     }
     .rv-bar-fill {
-        height: 100%;
+        position: absolute;
+        top: 0; left: 0; height: 100%;
         background: #5c433b;
         border-radius: 999px;
     }
-    .rv-bar-pct { font-size: 0.875rem; color: #64748b; width: 35px; text-align:right;}
+    .rv-bar-pct {
+        font-size: 0.8125rem;
+        color: #9c8880;
+        width: 35px;
+        text-align: right;
+        font-weight: 500;
+    }
 
-    .rv-filter-tabs {
-        display: flex; gap: 2rem;
-        border-bottom: 1px solid #e2e8f0;
+    /* Filters */
+    .rv-filters {
+        display: flex;
+        gap: 0.75rem;
         margin-bottom: 2rem;
+        flex-wrap: wrap;
     }
-    .rv-tab {
-        padding-bottom: 0.75rem;
+    .rv-filter-btn {
+        background: #fff;
+        border: 1px solid #e0d8d4;
+        color: #5c433b;
+        padding: 0.5rem 1.25rem;
+        border-radius: 999px;
+        font-size: 0.875rem;
         font-weight: 600;
-        color: #94a3b8;
         cursor: pointer;
-        position: relative;
+        transition: all 0.2s;
     }
-    .rv-tab.active {
-        color: #1e293b;
-    }
-    .rv-tab.active::after {
-        content: ''; position: absolute;
-        bottom: -1px; left: 0; width: 100%; height: 2px;
+    .rv-filter-btn.active {
         background: #5c433b;
+        color: #fff;
+        border-color: #5c433b;
+    }
+    .rv-filter-btn:hover:not(.active) {
+        border-color: #5c433b;
     }
 
+    /* Review Item Card */
     .rv-item {
-        margin-bottom: 2.5rem;
-        padding-bottom: 2rem;
-        border-bottom: 1px solid #e2e8f0;
+        background: #fff;
+        border-radius: 1.25rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
     }
-    .rv-user {
-        display: flex; align-items: flex-start; justify-content: space-between;
+    .rv-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
         margin-bottom: 1rem;
     }
-    .rv-user-info { display: flex; gap: 1rem; align-items: center; }
+    .rv-item-user {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
     .rv-avatar {
-        width: 44px; height: 44px; border-radius: 50%; object-fit: cover;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: #f0ebe8;
     }
-    .rv-name { font-weight: 700; color: #1e293b; margin-bottom:0.1rem; }
-    .rv-date { font-size: 0.8rem; color: #94a3b8; }
-    .rv-stars-small { font-Variation-Settings: 'FILL' 1; color: #5c433b; font-size:1rem; display:flex; gap:0.1rem; }
-    
+    .rv-user-name {
+        font-weight: 700;
+        color: #1e1410;
+        font-size: 1rem;
+    }
+    .rv-user-sub {
+        font-size: 0.75rem;
+        color: #9c8880;
+    }
+    .rv-date {
+        font-size: 0.8125rem;
+        color: #bbb0ab;
+    }
+
+    .rv-item-stars {
+        display: flex;
+        gap: 0.15rem;
+        color: #f59e0b;
+        font-Variation-Settings: 'FILL' 1;
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+
     .rv-text {
-        font-size: 0.9375rem; color: #475569; line-height: 1.6; margin-bottom: 1.5rem;
+        font-size: 0.9375rem;
+        color: #3d2e27;
+        line-height: 1.6;
+        margin-bottom: 1.25rem;
     }
-    
+
+    /* Interaction Actions (Helpful, Reply) */
     .rv-actions {
-        display: flex; align-items: center; gap: 1.5rem;
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        border-top: 1px solid #f0ebe8;
+        padding-top: 1rem;
     }
     .rv-action-btn {
-        display: flex; align-items: center; gap: 0.4rem;
-        background: none; border: none; cursor: pointer;
-        color: #64748b; font-size: 0.875rem; font-weight: 600; transition: color 0.2s;
+        background: none;
+        border: none;
+        color: #7a6b65;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
         padding: 0;
+        transition: color 0.15s;
     }
-    .rv-action-btn:hover { color: #1e293b; }
-    .rv-action-btn .material-symbols-outlined { font-size: 1.1rem; }
-    
-    .rv-load-more {
-        display: flex; align-items: center; gap: 0.5rem; justify-content: center;
-        margin: 2rem auto;
-        background: #e2e8f0; border: none; border-radius: 999px;
-        padding: 0.75rem 1.5rem; font-weight: 600; color: #475569;
-        cursor: pointer; transition: background 0.2s;
+    .rv-action-btn .material-symbols-outlined {
+        font-size: 1.125rem;
+        font-Variation-Settings: 'FILL' 1;
     }
-    .rv-load-more:hover { background: #cbd5e1; }
+    .rv-action-btn:hover {
+        color: #5c433b;
+    }
+
+    /* Load More */
+    .btn-load-more {
+        display: block;
+        margin: 2.5rem auto 0;
+        background: transparent;
+        border: 1px solid #5c433b;
+        color: #5c433b;
+        padding: 0.75rem 2rem;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 0.9375rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-load-more:hover {
+        background: #5c433b;
+        color: #fff;
+    }
+
+    @@media (max-width: 600px) {
+        .rv-summary-box {
+            flex-direction: column;
+            gap: 2rem;
+            padding: 2rem 1.5rem;
+        }
+    }
 </style>
 
-<div class="rv-container">
-    <a href="/Customer/ProductReviews" class="btn-rv-back">
-        <span class="material-symbols-outlined">arrow_back</span>
-        Quay lại
-    </a>
-
-    <div class="rv-product-box">
-        <img src="@(Model?.ImageUrl ?? "/images/home/pizza1.jpg")" alt="@(Model?.Name ?? "Margherita Special")" class="rv-product-img" onerror="this.src='/images/placeholder.png'">
-        <div class="rv-product-info">
-            <h2 class="rv-product-title">@(Model?.Name ?? "Margherita Special")</h2>
-            <p class="rv-product-desc">@(Model?.Description ?? "Hand-tossed dough, San Marzano tomatoes, fresh buffalo mozzarella, and organic basil.")</p>
+<div class="rv-page-container">
+    <div class="rv-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+            <h1 class="rv-title" style="margin-bottom: 0.5rem;">Đánh giá sản phẩm</h1>
+            <p class="rv-subtitle" style="margin-bottom: 0;">Khám phá trải nghiệm thực tế từ cộng đồng yêu thích PizzaDeli</p>
         </div>
-        <button class="rv-btn-write" onclick="alert('Đánh giá của bạn sẽ được ghi nhận tại đây!')">Write a<br>Review</button>
+        <a href="/" style="display: inline-flex; align-items: center; gap: 0.5rem; background: #5c433b; color: #fff; padding: 0.5rem 1rem; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 0.875rem; transition: background 0.2s;">
+            <span class="material-symbols-outlined" style="font-size: 1.1rem;">home</span>
+            Quay lại trang chủ
+        </a>
     </div>
 
-    <div class="rv-summary-area">
-        <div class="rv-summary-left">
-            <h3>Customer Reviews</h3>
-            <div class="rv-summary-score-box">
-                <div class="rv-score-big">4.8</div>
-                <div>
-                    <div class="rv-stars">
+    <!-- Overall Summary Box -->
+    <div class="rv-summary-box">
+        <div class="rv-score-section">
+            <div class="rv-score-big">@avgRating.ToString("0.0")</div>
+            <div class="rv-stars">
+                @for(int i=1; i<=5; i++)
+                {
+                    if (avgRating >= i)
+                    {
                         <span class="material-symbols-outlined">star</span>
-                        <span class="material-symbols-outlined">star</span>
-                        <span class="material-symbols-outlined">star</span>
-                        <span class="material-symbols-outlined">star</span>
+                    }
+                    else if (avgRating >= i - 0.5)
+                    {
                         <span class="material-symbols-outlined">star_half</span>
+                    }
+                    else
+                    {
+                        <span class="material-symbols-outlined" style="font-Variation-Settings: 'FILL' 0; color: #e0d8d4;">star</span>
+                    }
+                }
+            </div>
+            <div class="rv-score-count">@totalReviews.ToString("N0") lượt đánh giá</div>
+        </div>
+
+        <div class="rv-bars-section">
+            <div class="rv-bar-row">
+                <div class="rv-bar-label">5</div>
+                <div class="rv-bar-track"><div class="rv-bar-fill" style="width: @(Math.Round(pct5))%"></div></div>
+                <div class="rv-bar-pct">@(Math.Round(pct5))%</div>
+            </div>
+            <div class="rv-bar-row">
+                <div class="rv-bar-label">4</div>
+                <div class="rv-bar-track"><div class="rv-bar-fill" style="width: @(Math.Round(pct4))%"></div></div>
+                <div class="rv-bar-pct">@(Math.Round(pct4))%</div>
+            </div>
+            <div class="rv-bar-row">
+                <div class="rv-bar-label">3</div>
+                <div class="rv-bar-track"><div class="rv-bar-fill" style="width: @(Math.Round(pct3))%"></div></div>
+                <div class="rv-bar-pct">@(Math.Round(pct3))%</div>
+            </div>
+            <div class="rv-bar-row">
+                <div class="rv-bar-label">2</div>
+                <div class="rv-bar-track"><div class="rv-bar-fill" style="width: @(Math.Round(pct2))%"></div></div>
+                <div class="rv-bar-pct">@(Math.Round(pct2))%</div>
+            </div>
+            <div class="rv-bar-row">
+                <div class="rv-bar-label">1</div>
+                <div class="rv-bar-track"><div class="rv-bar-fill" style="width: @(Math.Round(pct1))%"></div></div>
+                <div class="rv-bar-pct">@(Math.Round(pct1))%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="rv-filters">
+        <button class="rv-filter-btn active">Tất cả</button>
+        <button class="rv-filter-btn">5 sao</button>
+        <button class="rv-filter-btn">4 sao</button>
+        <button class="rv-filter-btn">3 sao</button>
+        <button class="rv-filter-btn">Có hình ảnh</button>
+    </div>
+
+    <!-- Review List -->
+    <div class="rv-list">
+        @if (Model != null && Model.Any())
+        {
+            foreach (var review in Model)
+            {
+                <div class="rv-item">
+                    <div class="rv-item-header">
+                        <div class="rv-item-user">
+                            <img src="/images/placeholder.png" alt="Avatar" class="rv-avatar" />
+                            <div>
+                                <div class="rv-user-name">@(review.User?.FullName ?? "Khách hàng")</div>
+                                <div class="rv-user-sub">Đã mua @(product != null ? product.Name : "Sản phẩm")</div>
+                            </div>
+                        </div>
+                        <div class="rv-date">@review.CreatedAt.ToString("dd/MM/yyyy")</div>
                     </div>
-                    <div class="rv-based-on">Based on 128 reviews</div>
+                    
+                    <div class="rv-item-stars">
+                        @for (int i = 0; i < 5; i++)
+                        {
+                            if (i < review.Rating)
+                            {
+                                <span class="material-symbols-outlined">star</span>
+                            }
+                            else
+                            {
+                                <span class="material-symbols-outlined" style="font-Variation-Settings: 'FILL' 0; color: #e0d8d4;">star</span>
+                            }
+                        }
+                    </div>
+
+                    <div class="rv-text">
+                        @review.Comment
+                    </div>
+
+                    <div class="rv-actions">
+                        <button class="rv-action-btn">
+                            <span class="material-symbols-outlined">thumb_up</span> Hữu ích (0)
+                        </button>
+                        <button class="rv-action-btn">
+                            <span class="material-symbols-outlined">chat_bubble</span> Phản hồi
+                        </button>
+                    </div>
                 </div>
+            }
+        }
+        else
+        {
+            <div style="text-align: center; padding: 3rem 0; color: #9c8880;">
+                <span class="material-symbols-outlined" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem;">speaker_notes_off</span>
+                <p>Chưa có đánh giá nào cho sản phẩm này.</p>
             </div>
-        </div>
-
-        <div class="rv-summary-bars">
-            <div class="rv-bar-row">
-                <div class="rv-bar-num">5</div>
-                <div class="rv-bar-track"><div class="rv-bar-fill" style="width: 75%"></div></div>
-                <div class="rv-bar-pct">75%</div>
-            </div>
-            <div class="rv-bar-row">
-                <div class="rv-bar-num">4</div>
-                <div class="rv-bar-track"><div class="rv-bar-fill" style="width: 15%"></div></div>
-                <div class="rv-bar-pct">15%</div>
-            </div>
-            <div class="rv-bar-row">
-                <div class="rv-bar-num">3</div>
-                <div class="rv-bar-track"><div class="rv-bar-fill" style="width: 5%"></div></div>
-                <div class="rv-bar-pct">5%</div>
-            </div>
-            <div class="rv-bar-row">
-                <div class="rv-bar-num">2</div>
-                <div class="rv-bar-track"><div class="rv-bar-fill" style="width: 3%"></div></div>
-                <div class="rv-bar-pct">3%</div>
-            </div>
-            <div class="rv-bar-row">
-                <div class="rv-bar-num">1</div>
-                <div class="rv-bar-track"><div class="rv-bar-fill" style="width: 2%"></div></div>
-                <div class="rv-bar-pct">2%</div>
-            </div>
-        </div>
+        }
     </div>
 
-    <div class="rv-filter-tabs">
-        <div class="rv-tab active">Most Recent</div>
-        <div class="rv-tab">Highest Rated</div>
-        <div class="rv-tab">Lowest Rated</div>
-    </div>
-
-    <div class="rv-item">
-        <div class="rv-user">
-            <div class="rv-user-info">
-                <img src="/images/home/user1.jpg" alt="Sarah Jenkins" class="rv-avatar" onerror="this.src='/images/placeholder.png'">
-                <div>
-                    <div class="rv-name">Sarah Jenkins</div>
-                    <div class="rv-date">Verified Purchase • 2 days ago</div>
-                </div>
-            </div>
-            <div class="rv-stars-small">
-                <span class="material-symbols-outlined">star</span>
-                <span class="material-symbols-outlined">star</span>
-                <span class="material-symbols-outlined">star</span>
-                <span class="material-symbols-outlined">star</span>
-                <span class="material-symbols-outlined">star</span>
-            </div>
-        </div>
-        <p class="rv-text">Best Margherita I've had in the city! The crust was perfectly charred and the mozzarella was so fresh. It arrived piping hot and much faster than expected. Highly recommend!</p>
-        <div class="rv-actions">
-            <button class="rv-action-btn">
-                <span class="material-symbols-outlined" style="font-Variation-Settings:'FILL' 1;">thumb_up</span> Helpful (12)
-            </button>
-            <button class="rv-action-btn">
-                <span class="material-symbols-outlined" style="font-Variation-Settings:'FILL' 1;">chat_bubble</span> Reply
-            </button>
-        </div>
-    </div>
-
-    <div class="rv-item">
-        <div class="rv-user">
-            <div class="rv-user-info">
-                <img src="/images/home/user2.jpg" alt="Marcus Thompson" class="rv-avatar" onerror="this.src='/images/placeholder.png'">
-                <div>
-                    <div class="rv-name">Marcus Thompson</div>
-                    <div class="rv-date">Verified Purchase • 1 week ago</div>
-                </div>
-            </div>
-            <div class="rv-stars-small">
-                <span class="material-symbols-outlined">star</span>
-                <span class="material-symbols-outlined">star</span>
-                <span class="material-symbols-outlined">star</span>
-                <span class="material-symbols-outlined">star</span>
-                <span class="material-symbols-outlined">star</span>
-            </div>
-        </div>
-        <p class="rv-text">Great taste and quality ingredients. My only complaint is that there could have been a bit more basil on top, but the flavors were spot on otherwise. Definitely will order again.</p>
-        <div class="rv-actions">
-            <button class="rv-action-btn">
-                <span class="material-symbols-outlined" style="font-Variation-Settings:'FILL' 1;">thumb_up</span> Helpful (4)
-            </button>
-            <button class="rv-action-btn">
-                <span class="material-symbols-outlined" style="font-Variation-Settings:'FILL' 1;">chat_bubble</span> Reply
-            </button>
-        </div>
-    </div>
-
-    <div class="rv-item">
-        <div class="rv-user">
-            <div class="rv-user-info">
-                <img src="/images/home/user3.jpg" alt="Elena Rodriguez" class="rv-avatar" onerror="this.src='/images/placeholder.png'">
-                <div>
-                    <div class="rv-name">Elena Rodriguez</div>
-                    <div class="rv-date">Verified Purchase • Oct 14, 2023</div>
-                </div>
-            </div>
-            <div class="rv-stars-small">
-                <span class="material-symbols-outlined">star</span>
-                <span class="material-symbols-outlined">star</span>
-                <span class="material-symbols-outlined">star</span>
-                <span class="material-symbols-outlined">star</span>
-                <span class="material-symbols-outlined">star</span>
-            </div>
-        </div>
-        <p class="rv-text">This pizza is a work of art! You can tell it's made in a traditional oven. The sauce isn't too sweet, just perfect. PizzaDeli is my new go-to for Friday night dinner!</p>
-        <div class="rv-actions">
-            <button class="rv-action-btn">
-                <span class="material-symbols-outlined" style="font-Variation-Settings:'FILL' 1;">thumb_up</span> Helpful (21)
-            </button>
-            <button class="rv-action-btn">
-                <span class="material-symbols-outlined" style="font-Variation-Settings:'FILL' 1;">chat_bubble</span> Reply
-            </button>
-        </div>
-    </div>
-
-    <button class="rv-load-more">Load More Reviews <span class="material-symbols-outlined">expand_more</span></button>
+    @if (Model != null && Model.Count > 5)
+    {
+        <button class="btn-load-more">Xem thêm đánh giá</button>
+    }
+</div>more</span></button>
 </div>

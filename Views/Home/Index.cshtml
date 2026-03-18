@@ -1,6 +1,7 @@
 @model List<PizzaDeli.Models.Category>
 @{
     ViewData["Title"] = "PizzaDeli - Authentic Wood-Fired Pizza";
+    var isAddMore = Context.Request.Query["addmore"] == "1";
 }
 
 @section Styles {
@@ -162,9 +163,9 @@
                     <h2 class="brand-name">PizzaDeli</h2>
                 </div>
                 <nav class="nav-links">
-                    <a href="#">Menu</a>
-                    <a href="#">Offers</a>
-                    <a href="#">Contact</a>
+                    <a href="#">Thực đơn</a>
+                    <a href="#">Khuyến mãi</a>
+                    <a href="#">Liên hệ</a>
                 </nav>
             </div>
 
@@ -172,7 +173,7 @@
             <div class="search-wrapper">
                 <div class="search-box">
                     <span class="material-symbols-outlined search-icon">search</span>
-                    <input class="search-input" type="text" placeholder="Search for your favorite pizza..." />
+                    <input class="search-input" type="text" placeholder="Tìm pizza yêu thích của bạn..." />
                 </div>
             </div>
 
@@ -326,11 +327,11 @@
                     <div class="hero-text">
                         <h1 class="hero-title">PizzaDeli</h1>
                         <p class="hero-desc">
-                            Experience the rich taste of authentic wood-fired pizzas delivered hot to your doorstep.
+                            Trải nghiệm hương vị pizza nướng bằng lò gỗ chính thống, giao tận tay còn nóng hổi.
                         </p>
                         <button class="btn-order">
                             <span class="material-symbols-outlined">rocket_launch</span>
-                            Order Now
+                            Đặt ngay
                         </button>
                     </div>
                     <div class="hero-image">
@@ -364,7 +365,14 @@
                             {
                                 foreach (var p in products)
                                 {
-                                    <div class="product-card">
+                                    <div class="product-card" style="cursor: pointer;"
+                                         data-product-id="@p.Id"
+                                         data-product-name="@p.Name"
+                                         data-product-price="@p.Price"
+                                         data-product-image="@(p.ImageUrl ?? "")"
+                                         data-product-cat="@cat.Name"
+                                         data-product-desc="@p.Description"
+                                         onclick="onCardItemClick(event, this)">
                                         <div class="card-img-wrapper">
                                             <img src="@(string.IsNullOrEmpty(p.ImageUrl) ? "/images/no-image.png" : p.ImageUrl)"
                                                  alt="@p.Name"
@@ -381,27 +389,44 @@
                                             </div>
                                             <p class="card-desc line-clamp-2">@p.Description</p>
                                             <div class="card-actions">
-                                                <button type="button" class="btn-add-cart" title="Thêm vào giỏ"
-                                                        data-product-id="@p.Id"
-                                                        data-product-name="@p.Name"
-                                                        data-product-price="@p.Price"
-                                                        data-product-image="@(p.ImageUrl ?? "")"
-                                                        data-product-cat="@cat.Name"
-                                                        data-product-desc="@p.Description"
-                                                        onclick="onAddToCartClick(this)">
-                                                    <span class="material-symbols-outlined pointer-events-none">add_shopping_cart</span>
-                                                </button>
-                                                <button type="button" class="btn-buy-now" title="Mua ngay"
-                                                        data-product-id="@p.Id"
-                                                        data-product-name="@p.Name"
-                                                        data-product-price="@p.Price"
-                                                        data-product-image="@(p.ImageUrl ?? "")"
-                                                        data-product-cat="@cat.Name"
-                                                        data-product-desc="@p.Description"
-                                                        onclick="onBuyNowClick(this)">
-                                                    <span class="material-symbols-outlined pointer-events-none">payments</span>
-                                                    <span class="pointer-events-none">Mua ngay</span>
-                                                </button>
+                                                @if (isAddMore)
+                                                {
+                                                    <button type="button" class="btn-buy-now" title="Mua thêm" style="width: 100%; border-radius: 8px;"
+                                                            data-product-id="@p.Id"
+                                                            data-product-name="@p.Name"
+                                                            data-product-price="@p.Price"
+                                                            data-product-image="@(p.ImageUrl ?? "")"
+                                                            data-product-cat="@cat.Name"
+                                                            data-product-desc="@p.Description"
+                                                            onclick="onAddMoreClick(event, this)">
+                                                        <span class="material-symbols-outlined pointer-events-none">add_circle</span>
+                                                        <span class="pointer-events-none" style="margin-left: 0.5rem;">Mua thêm</span>
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" class="btn-add-cart" title="Thêm vào giỏ"
+                                                            data-product-id="@p.Id"
+                                                            data-product-name="@p.Name"
+                                                            data-product-price="@p.Price"
+                                                            data-product-image="@(p.ImageUrl ?? "")"
+                                                            data-product-cat="@cat.Name"
+                                                            data-product-desc="@p.Description"
+                                                            onclick="onAddToCartClick(event, this)">
+                                                        <span class="material-symbols-outlined pointer-events-none">add_shopping_cart</span>
+                                                    </button>
+                                                    <button type="button" class="btn-buy-now" title="Mua ngay"
+                                                            data-product-id="@p.Id"
+                                                            data-product-name="@p.Name"
+                                                            data-product-price="@p.Price"
+                                                            data-product-image="@(p.ImageUrl ?? "")"
+                                                            data-product-cat="@cat.Name"
+                                                            data-product-desc="@p.Description"
+                                                            onclick="onBuyNowClick(event, this)">
+                                                        <span class="material-symbols-outlined pointer-events-none">payments</span>
+                                                        <span class="pointer-events-none">Mua ngay</span>
+                                                    </button>
+                                                }
                                             </div>
                                         </div>
                                     </div>
@@ -444,7 +469,7 @@
                         <span class="footer-brand-name">PizzaDeli</span>
                     </div>
                     <p class="footer-desc">
-                        Bringing the authentic taste of wood-fired ovens to your kitchen table. Quality ingredients, crafted with passion.
+                        Mang đến hương vị pizza nướng chính thống từ lò gỗ đến bàn ăn của bạn. Nguyên liệu chất lượng, chế biến với niềm đam mê.
                     </p>
                     <div class="social-links">
                         <a href="#" class="social-link" aria-label="Share">
@@ -461,41 +486,41 @@
 
                 <!-- Quick Links -->
                 <div class="footer-col">
-                    <h4>Quick Links</h4>
+                    <h4>Liên kết nhanh</h4>
                     <ul>
-                        <li><a href="#">About Us</a></li>
-                        <li><a href="#">Our Menu</a></li>
-                        <li><a href="#">Gift Cards</a></li>
-                        <li><a href="#">Careers</a></li>
+                        <li><a href="#">Về chúng tôi</a></li>
+                        <li><a href="#">Thực đơn</a></li>
+                        <li><a href="#">Thẻ quà</a></li>
+                        <li><a href="#">Tuyển dụng</a></li>
                     </ul>
                 </div>
 
                 <!-- Support -->
                 <div class="footer-col">
-                    <h4>Support</h4>
+                    <h4>Hỗ trợ</h4>
                     <ul>
-                        <li><a href="#">Help / FAQ</a></li>
-                        <li><a href="#">Order Tracking</a></li>
-                        <li><a href="#">Privacy Policy</a></li>
-                        <li><a href="#">Terms of Service</a></li>
+                        <li><a href="#">Hỏi đáp</a></li>
+                        <li><a href="#">Theo dõi đơn hàng</a></li>
+                        <li><a href="#">Chính sách riêng tư</a></li>
+                        <li><a href="#">Thỏa thuận dịch vụ</a></li>
                     </ul>
                 </div>
 
                 <!-- Contact -->
                 <div class="footer-col">
-                    <h4>Contact Us</h4>
+                    <h4>Liên hệ</h4>
                     <ul>
                         <li class="footer-contact-item">
                             <span class="material-symbols-outlined">call</span>
-                            +1 (555) 123-4567
+                            +84 346765950
                         </li>
                         <li class="footer-contact-item">
                             <span class="material-symbols-outlined">mail</span>
-                            hello@pizzadeli.com
+                            phamanhkhoa56789@gmail.com
                         </li>
                         <li class="footer-contact-item">
                             <span class="material-symbols-outlined">location_on</span>
-                            123 Pizza Lane, Foodie City
+                            137 Nguyễn Thị Thập
                         </li>
                     </ul>
                 </div>
@@ -504,11 +529,11 @@
 
             <!-- Footer Bottom -->
             <div class="footer-bottom">
-                <p>&copy; 2024 PizzaDeli. All rights reserved.</p>
+                <p>&copy; 2026 PizzaDeli. Toàn quyền bảo lưu.</p>
                 <div class="footer-bottom-links">
-                    <a href="#">Cookies</a>
-                    <a href="#">Security</a>
-                    <a href="#">Sitemap</a>
+                    <a href="#">Cookie</a>
+                    <a href="#">Bảo mật</a>
+                    <a href="#">Sơ đồ trang</a>
                 </div>
             </div>
         </div>

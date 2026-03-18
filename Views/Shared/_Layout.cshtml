@@ -31,7 +31,7 @@
     <div class="cart-drawer-header">
         <div class="cart-drawer-title">
             <span class="material-symbols-outlined">shopping_cart</span>
-            Shopping Cart
+            Giỏ hàng
         </div>
         <button class="cart-drawer-close" id="cartDrawerClose" aria-label="Đóng giỏ hàng">
             <span class="material-symbols-outlined">close</span>
@@ -53,26 +53,26 @@
     <div class="cart-drawer-footer" id="cartDrawerFooter" style="display:none;">
         <div class="cart-footer-summary">
             <div class="cart-summary-row">
-                <span>Subtotal</span>
+                <span>Tạm tính</span>
                 <span id="drawerSubtotal">0 ₫</span>
             </div>
             <div class="cart-summary-row">
-                <span>Delivery Tax</span>
+                <span>Phí giao hàng (ước tính)</span>
                 <span id="drawerTax">0 ₫</span>
             </div>
             <div class="cart-grand-total-row">
-                <span>Grand Total</span>
+                <span>Tổng cộng</span>
                 <span id="drawerTotalPrice">0 ₫</span>
             </div>
         </div>
         <div class="cart-footer-actions">
             <a href="/Customer/Checkout" class="btn-checkout" id="btnCheckout">
                 <span class="material-symbols-outlined">credit_card</span>
-                Checkout Now
+                Thanh toán ngay
             </a>
             <p class="cart-secure-text">
                 <span class="material-symbols-outlined">lock</span>
-                SECURE PAYMENT POWERED BY PIZZADELI
+                THANH TOÁN BẢO MẬT BỞI PIZZADELI
             </p>
         </div>
     </div>
@@ -93,28 +93,28 @@
             <div class="pizza-modal-header">
                 <h2 id="pzModalName">...</h2>
                 <div class="pz-modal-rating">
-                    <span class="material-symbols-outlined">star</span>
-                    <span class="material-symbols-outlined">star</span>
-                    <span class="material-symbols-outlined">star</span>
-                    <span class="material-symbols-outlined">star</span>
-                    <span class="material-symbols-outlined">star</span>
-                    <span> 4.8 (128 reviews) &bull; <u><a href="/Customer/ProductReviews" style="color:var(--slate-800); text-decoration:none;">See Reviews</a></u> &rarr;</span>
+                    <span id="pzStar1" class="material-symbols-outlined">star</span>
+                    <span id="pzStar2" class="material-symbols-outlined">star</span>
+                    <span id="pzStar3" class="material-symbols-outlined">star</span>
+                    <span id="pzStar4" class="material-symbols-outlined">star</span>
+                    <span id="pzStar5" class="material-symbols-outlined">star</span>
+                    <span id="pzModalRatingText"> 0.0 (0 đánh giá) &bull; <u><a href="/Customer/ProductReviews" style="color:var(--slate-800); text-decoration:none;">Xem đánh giá</a></u> &rarr;</span>
                 </div>
                 <p id="pzModalDesc" class="pz-modal-desc">...</p>
             </div>
             
             <div class="pz-modal-scroll-area">
                 <div class="pz-opt-group">
-                    <label class="pz-opt-label">ĐẾ BÁNH (CRUST)</label>
+                    <label class="pz-opt-label">ĐẾ BÁNH</label>
                     <div class="pz-btn-group">
-                        <label class="pz-radio-btn active"><input type="radio" name="pz-crust" value="Thin" onclick="updatePzRadio(this)" checked> Thin</label>
-                        <label class="pz-radio-btn"><input type="radio" name="pz-crust" value="Medium" onclick="updatePzRadio(this)"> Medium</label>
-                        <label class="pz-radio-btn"><input type="radio" name="pz-crust" value="Thick" onclick="updatePzRadio(this)"> Thick</label>
+                        <label class="pz-radio-btn active"><input type="radio" name="pz-crust" value="Mỏng" onclick="updatePzRadio(this)" checked> Mỏng</label>
+                        <label class="pz-radio-btn"><input type="radio" name="pz-crust" value="Vừa" onclick="updatePzRadio(this)"> Vừa</label>
+                        <label class="pz-radio-btn"><input type="radio" name="pz-crust" value="Dày" onclick="updatePzRadio(this)"> Dày</label>
                     </div>
                 </div>
 
                 <div class="pz-opt-group">
-                    <label class="pz-opt-label">PHÔ MAI (CHEESE)</label>
+                    <label class="pz-opt-label">PHÔ MAI</label>
                     <div class="pz-btn-group">
                         <label class="pz-radio-btn active"><input type="radio" name="pz-cheese" value="Mozzarella" onclick="updatePzRadio(this)" checked> Mozzarella</label>
                         <label class="pz-radio-btn"><input type="radio" name="pz-cheese" value="Parmesan" onclick="updatePzRadio(this)"> Parmesan</label>
@@ -123,12 +123,12 @@
                 </div>
 
                 <div class="pz-opt-group">
-                    <label class="pz-opt-label">TOPPING (EXTRA)</label>
+                    <label class="pz-opt-label">TOPPING THÊM</label>
                     <div class="pz-btn-group">
                         <label class="pz-check-btn"><input type="checkbox" name="pz-topping" value="Pepperoni" onclick="updatePzCheck(this)"><div class="c-indicator"></div> Pepperoni</label>
-                        <label class="pz-check-btn"><input type="checkbox" name="pz-topping" value="Mushrooms" onclick="updatePzCheck(this)"><div class="c-indicator"></div> Mushrooms</label>
-                        <label class="pz-check-btn"><input type="checkbox" name="pz-topping" value="Onions" onclick="updatePzCheck(this)"><div class="c-indicator"></div> Onions</label>
-                        <label class="pz-check-btn"><input type="checkbox" name="pz-topping" value="Bell" onclick="updatePzCheck(this)"><div class="c-indicator"></div> Bell Peppers</label>
+                        <label class="pz-check-btn"><input type="checkbox" name="pz-topping" value="Nấm" onclick="updatePzCheck(this)"><div class="c-indicator"></div> Nấm</label>
+                        <label class="pz-check-btn"><input type="checkbox" name="pz-topping" value="Hành tây" onclick="updatePzCheck(this)"><div class="c-indicator"></div> Hành tây</label>
+                        <label class="pz-check-btn"><input type="checkbox" name="pz-topping" value="Ớt chuông" onclick="updatePzCheck(this)"><div class="c-indicator"></div> Ớt chuông</label>
                     </div>
                 </div>
             </div>
@@ -140,9 +140,9 @@
                     <span id="pzModalQty">1</span>
                     <button type="button" onclick="changePzModalQty(1)"><span class="material-symbols-outlined">add</span></button>
                 </div>
-                <button type="button" class="btn-pz-add" id="btnPzModalAdd" onclick="confirmPzModalAdd()">
+                <button type="button" class="btn-pz-add" id="pzModalConfirmBtn" onclick="confirmPzModalAdd()">
                     <span class="material-symbols-outlined">shopping_cart</span>
-                    Add to Cart - <span id="pzModalPriceTotal"></span>
+                    Thêm vào giỏ - <span id="pzModalPriceTotal"></span>
                 </button>
             </div>
         </div>

@@ -240,7 +240,24 @@ function getProductDataFromBtn(btn) {
 let currentPizzaToCart = null;
 let currentPizzaModalQty = 1;
 
-window.onAddToCartClick = function (btn) {
+window.onCardItemClick = function (event, card) {
+    // Nếu click trúng button bên trong thì bỏ qua
+    if (event.target.closest('button')) return;
+    
+    const product = getProductDataFromBtn(card);
+    const isPizza = (product.cat || '').toLowerCase().includes('pizza') || (product.name || '').toLowerCase().includes('pizza');
+    
+    if (isPizza) {
+        openPizzaDetailModal(product);
+    } else {
+        // Tương tự AddToCart nếu không phải Pizza (Đã bị vô hiệu hóa theo yêu cầu, chỉ click add to cart hoặc buy now)
+        // addToCart(product);
+        // Có thể thêm feedback visual nhỏ góc màn hình nếu muốn
+    }
+};
+
+window.onAddToCartClick = function (event, btn) {
+    if (event) event.stopPropagation();
     const product = getProductDataFromBtn(btn);
     // Nếu là Pizza thì bung Modal
     const isPizza = (product.cat || '').toLowerCase().includes('pizza') || (product.name || '').toLowerCase().includes('pizza');
@@ -263,31 +280,92 @@ window.onAddToCartClick = function (btn) {
     }, 1200);
 };
 
-window.onBuyNowClick = function (btn) {
+window.onBuyNowClick = function (event, btn) {
+    if (event) event.stopPropagation();
     const product = getProductDataFromBtn(btn);
     
-    // Nếu là Pizza bung Modal (khi confirm sẽ Add to cart sau đó mình redirect thủ công)
+    // Nếu là Pizza bung Modal, confirm sẽ xử lý buynow mode
     const isPizza = (product.cat || '').toLowerCase().includes('pizza') || (product.name || '').toLowerCase().includes('pizza');
     if (isPizza) {
         openPizzaDetailModal(product, true);
         return;
     }
 
-    // Thêm trực tiếp nếu ko phải Pizza
-    const cart = getCart();
-    const idx  = cart.findIndex(i => i.id === product.id);
-    if (idx >= 0) {
-        cart[idx].quantity += 1;
-    } else {
-        cart.push({ ...product, quantity: 1 });
+    // Không phải Pizza: chỉ thanh toán 1 item, KHÔNG đụng cart
+    const buyNowItem = { ...product, quantity: 1 };
+    sessionStorage.setItem('buynow_item', JSON.stringify([buyNowItem]));
+    window.location.href = '/Customer/Checkout?mode=buynow';
+};
+
+window.onAddMoreClick = function (event, btn) {
+    if (event) event.stopPropagation();
+    const product = getProductDataFromBtn(btn);
+    
+    const isPizza = (product.cat || '').toLowerCase().includes('pizza') || (product.name || '').toLowerCase().includes('pizza');
+    if (isPizza) {
+        openPizzaDetailModal(product, true);
+        return;
     }
-    saveCart(cart);
-    window.location.href = '/Customer/Checkout';
+
+    const buyNowItem = { ...product, quantity: 1 };
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    if (urlParams.get('mode') === 'buynow') {
+        let items = [];
+        try { items = JSON.parse(sessionStorage.getItem('buynow_item')) || []; } catch(e){}
+        if (!Array.isArray(items)) items = [items];
+        
+        const exist = items.find(x => x.id === buyNowItem.id);
+        if(exist) exist.quantity += 1;
+        else items.push(buyNowItem);
+        
+        sessionStorage.setItem('buynow_item', JSON.stringify(items));
+        window.location.href = '/Customer/Checkout?mode=buynow';
+    } else {
+        let cart = getCart();
+        const exist = cart.find(x => x.id === buyNowItem.id);
+        if(exist) exist.quantity += 1;
+        else cart.push(buyNowItem);
+        saveCart(cart);
+        window.location.href = '/Customer/Checkout';
+    }
 };
 
 // ==========================================
 // THÊM CHỨC NĂNG MODAL CHO PIZZA
 // ==========================================
+/** Cập nhật sao + text đánh giá trong pizza modal */
+function renderModalRating(avg, count, productId) {
+    const starIds = ['pzStar1', 'pzStar2', 'pzStar3', 'pzStar4', 'pzStar5'];
+    starIds.forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const threshold = i + 1;          // 1..5
+        if (avg >= threshold) {
+            el.textContent = 'star';          // sao đầy
+            el.style.fontVariationSettings = "'FILL' 1";
+            el.style.color = '#f59e0b';
+        } else if (avg >= threshold - 0.5) {
+            el.textContent = 'star_half';     // nửa sao
+            el.style.fontVariationSettings = "'FILL' 1";
+            el.style.color = '#f59e0b';
+        } else {
+            el.textContent = 'star_border';   // sao rỗng
+            el.style.fontVariationSettings = "'FILL' 0";
+            el.style.color = '#cbd5e1';
+        }
+    });
+
+    const textEl = document.getElementById('pzModalRatingText');
+    if (!textEl) return;
+    if (count === 0) {
+        textEl.innerHTML = ' <span style="color:#94a3b8; font-size:0.85rem;">Chưa có đánh giá</span>';
+    } else {
+        const link = productId ? `/Customer/ReviewDetail/${productId}` : '#';
+        textEl.innerHTML = ` <strong>${avg.toFixed(1)}</strong> (${count} đánh giá) &bull; <u><a href="${link}" style="color:var(--slate-800); text-decoration:none;">Xem đánh giá</a></u> &rarr;`;
+    }
+}
+
 let isBuyNowMode = false;
 function openPizzaDetailModal(product, buyNow = false) {
     isBuyNowMode = buyNow;
@@ -298,7 +376,9 @@ function openPizzaDetailModal(product, buyNow = false) {
     document.getElementById('pzModalName').textContent = product.name;
     document.getElementById('pzModalDesc').textContent = product.desc || 'Hương vị tuyệt hảo trên từng lớp phô mai nóng hổi được nướng hoàn hảo.';
     document.getElementById('pzModalQty').textContent = 1;
-    document.getElementById('pzModalPriceTotal').textContent = formatVND(product.price);
+    
+    // Lưu ý: Không update textContent của pzModalPriceTotal ở đây nữa,
+    // vì lát nữa ta sẽ gán lại toàn bộ innerHTML phần nút bên dưới.
 
     // Reset styles of Options
     document.querySelectorAll('.pz-radio-btn').forEach(l => l.classList.remove('active'));
@@ -312,6 +392,31 @@ function openPizzaDetailModal(product, buyNow = false) {
     
     const cheeseFirst = document.querySelector('input[name="pz-cheese"]');
     if (cheeseFirst) { cheeseFirst.checked = true; cheeseFirst.parentElement.classList.add('active'); }
+
+    // Đổi text nút theo mode
+    const confirmBtn = document.getElementById('pzModalConfirmBtn');
+    if (confirmBtn) {
+        const priceStr = formatVND(product.price);
+        const urlParams = new URLSearchParams(window.location.search);
+        if (buyNow) {
+            if (urlParams.get('addmore') === '1') {
+                confirmBtn.innerHTML = `<span class="material-symbols-outlined pointer-events-none">add_circle</span> Mua thêm - <span id="pzModalPriceTotal">${priceStr}</span>`;
+            } else {
+                confirmBtn.innerHTML = `<span class="material-symbols-outlined pointer-events-none">payments</span> Mua ngay - <span id="pzModalPriceTotal">${priceStr}</span>`;
+            }
+        } else {
+            confirmBtn.innerHTML = `<span class="material-symbols-outlined pointer-events-none">add_shopping_cart</span> Thêm vào giỏ - <span id="pzModalPriceTotal">${priceStr}</span>`;
+        }
+    }
+
+    // Gọi API lấy rating thật
+    renderModalRating(0, 0, product.id); // reset về chờ
+    if (product.id) {
+        fetch('/Customer/GetProductRating?productId=' + encodeURIComponent(product.id))
+            .then(r => r.json())
+            .then(data => renderModalRating(data.avgRating || 0, data.count || 0, product.id))
+            .catch(() => renderModalRating(0, 0, product.id));
+    }
 
     // Toggle overlay
     const modal = document.getElementById('pizzaDetailModal');
@@ -330,6 +435,19 @@ function closePizzaModal() {
         setTimeout(() => { modal.style.display = 'none'; }, 300);
     }
 }
+
+// Bắt sự kiện click ra mảng mờ (overlay) để đóng Modal
+document.addEventListener('DOMContentLoaded', () => {
+    const mOverlay = document.getElementById('pizzaDetailModal');
+    if(mOverlay) {
+        mOverlay.addEventListener('click', function(e) {
+            // Click đúng vào overlay, không phải thẻ con
+            if (e.target === mOverlay) {
+                closePizzaModal();
+            }
+        });
+    }
+});
 
 function changePzModalQty(delta) {
     currentPizzaModalQty += delta;
@@ -371,24 +489,43 @@ function confirmPzModalAdd() {
         id: currentPizzaToCart.id + '-' + crust + '-' + cheese + (toppingList ? '-' + toppingList.replace(/, /g,'').substring(0,5) : ''),
         name: addedName,
         price: currentPizzaToCart.price,
-        image: currentPizzaToCart.image
+        image: currentPizzaToCart.image,
+        quantity: currentPizzaModalQty
     };
 
-    // Luôn add đủ quantity vào thẻ qua localstorage
-    const cart = getCart();
-    const idx = cart.findIndex(i => i.id === customizedProduct.id);
-    if(idx >= 0) cart[idx].quantity += currentPizzaModalQty;
-    else {
-        customizedProduct.quantity = currentPizzaModalQty;
-        cart.push(customizedProduct);
-    }
-    saveCart(cart);
-
     closePizzaModal();
-    
+
     if (isBuyNowMode) {
-        window.location.href = '/Customer/Checkout';
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('addmore') === '1') {
+            if (urlParams.get('mode') === 'buynow') {
+                let items = [];
+                try { items = JSON.parse(sessionStorage.getItem('buynow_item')) || []; } catch(e){}
+                if (!Array.isArray(items)) items = [items];
+                const exist = items.find(x => x.id === customizedProduct.id);
+                if(exist) exist.quantity += currentPizzaModalQty;
+                else items.push(customizedProduct);
+                sessionStorage.setItem('buynow_item', JSON.stringify(items));
+                window.location.href = '/Customer/Checkout?mode=buynow';
+            } else {
+                const cart = getCart();
+                const idx = cart.findIndex(i => i.id === customizedProduct.id);
+                if(idx >= 0) cart[idx].quantity += currentPizzaModalQty;
+                else cart.push(customizedProduct);
+                saveCart(cart);
+                window.location.href = '/Customer/Checkout';
+            }
+        } else {
+            sessionStorage.setItem('buynow_item', JSON.stringify([customizedProduct]));
+            window.location.href = '/Customer/Checkout?mode=buynow';
+        }
     } else {
+        // Add đủ quantity vào cart localStorage
+        const cart = getCart();
+        const idx = cart.findIndex(i => i.id === customizedProduct.id);
+        if(idx >= 0) cart[idx].quantity += currentPizzaModalQty;
+        else cart.push(customizedProduct);
+        saveCart(cart);
         renderCartDrawer();
         openCartDrawer();
     }
@@ -400,4 +537,4 @@ function formatVND(amount) {
 }
 
 // Expose addToCart toàn cục cho các trang khác có thể gọi
-window.PizzaCart = { addToCart, openCartDrawer, closeCartDrawer, getCart };
+window.PizzaCart = { addToCart, openCartDrawer, closeCartDrawer, getCart, saveCart, renderCartDrawer };

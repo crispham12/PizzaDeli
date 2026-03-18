@@ -28,6 +28,11 @@ public class User
     [MaxLength(255)]
     public string? Address { get; set; }
 
+    [MaxLength(20)]
+    public string? Gender { get; set; }
+
+    public DateTime? DateOfBirth { get; set; }
+
     public string? Avatar { get; set; }
 
     [Required]
