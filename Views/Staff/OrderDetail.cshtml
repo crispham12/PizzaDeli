@@ -1,0 +1,544 @@
+@model PizzaDeli.Models.Order
+@{
+    ViewData["Title"] = "Chi tiết đơn hàng";
+    Layout = "_StaffLayout";
+
+    (string label, string bg, string color) GetStatus(string st) => st switch
+    {
+        "Pending"           => ("CHỜ XỬ LÝ",  "#fee2e2", "#991b1b"),
+        "Chờ xử lý"        => ("CHỜ XỬ LÝ",  "#fee2e2", "#991b1b"),
+        "Confirmed"         => ("ĐÃ XÁC NHẬN","#fef3c7", "#92400e"),
+        "Đã xác nhận"      => ("ĐÃ XÁC NHẬN","#fef3c7", "#92400e"),
+        "Shipping"          => ("ĐANG GIAO",   "#e0e7ff", "#3730a3"),
+        "Đang giao hàng"   => ("ĐANG GIAO",   "#e0e7ff", "#3730a3"),
+        "Completed"         => ("HOÀN THÀNH",  "#d1fae5", "#065f46"),
+        "Đã hoàn thành"    => ("HOÀN THÀNH",  "#d1fae5", "#065f46"),
+        "Cancelled"         => ("ĐÃ HỦY",     "#ffe4e6", "#be123c"),
+        "Đã hủy"           => ("ĐÃ HỦY",     "#ffe4e6", "#be123c"),
+        _                   => (st.ToUpper(),  "#f3f4f6", "#374151")
+    };
+
+    var st = GetStatus(Model.Status);
+    var shortId = "#ORD-" + Model.Id.Substring(0, 8).ToUpper();
+    var canConfirm = Model.Status == "Pending" || Model.Status == "Chờ xử lý" || Model.Status == "Confirmed" || Model.Status == "Đã xác nhận";
+    var canCancel  = Model.Status != "Đã hủy" && Model.Status != "Cancelled" && Model.Status != "Đã hoàn thành" && Model.Status != "Completed";
+}
+
+<style>
+    .od-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .od-back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        color: #6b7280;
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-decoration: none;
+        margin-bottom: 1rem;
+    }
+    .od-back-link:hover { color: #5C3D2E; }
+
+    .od-title-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .od-title-left {}
+
+    .od-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.3rem 0.9rem;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.5rem;
+    }
+
+    .od-status-dot {
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .od-title-left h1 {
+        font-size: 2.25rem;
+        font-weight: 800;
+        color: #111827;
+        margin: 0.25rem 0;
+    }
+
+    .od-title-left p {
+        color: #6b7280;
+        font-size: 0.875rem;
+        margin: 0;
+    }
+
+    .od-btn-row {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .od-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.65rem 1.4rem;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+        transition: all 0.18s;
+        text-decoration: none;
+    }
+
+    .od-btn-outline {
+        background: transparent;
+        border: 1.5px solid #e5e7eb;
+        color: #374151;
+    }
+    .od-btn-outline:hover { border-color: #ef4444; color: #ef4444; }
+
+    .od-btn-primary {
+        background: #5C3D2E;
+        color: #fff;
+    }
+    .od-btn-primary:hover { background: #462c20; transform: translateY(-1px); }
+
+    /* 3 info cards */
+    .od-info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .od-info-card {
+        background: #fff;
+        border-radius: 14px;
+        padding: 1.25rem 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .od-info-label {
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #9ca3af;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .od-info-label .material-symbols-outlined { font-size: 1rem; }
+
+    .od-info-value {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #111827;
+        margin: 0 0 0.4rem 0;
+    }
+
+    .od-info-sub {
+        font-size: 0.8125rem;
+        color: #6b7280;
+        margin: 0.25rem 0 0 0;
+    }
+
+    /* Items table */
+    .od-items-card {
+        background: #fff;
+        border-radius: 14px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        margin-bottom: 1.5rem;
+    }
+
+    .od-items-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.25rem;
+    }
+
+    .od-items-header h3 {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #111827;
+        margin: 0;
+    }
+
+    .od-items-header span {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+
+    .od-items-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .od-items-table thead th {
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #9ca3af;
+        font-weight: 700;
+        padding: 0.625rem 0.75rem;
+        border-bottom: 1px solid #f3f4f6;
+        text-align: left;
+    }
+
+    .od-items-table tbody td {
+        padding: 1rem 0.75rem;
+        border-bottom: 1px solid #f9fafb;
+        color: #374151;
+        font-size: 0.9rem;
+    }
+
+    .od-items-table tbody tr:last-child td { border-bottom: none; }
+
+    .od-product-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.875rem;
+    }
+
+    .od-product-img {
+        width: 52px;
+        height: 52px;
+        border-radius: 10px;
+        object-fit: cover;
+        background: #f3f4f6;
+    }
+
+    .od-product-name { font-weight: 600; color: #111827; }
+    .od-product-sub { font-size: 0.8rem; color: #9ca3af; font-weight: 500; }
+
+    .od-text-right { text-align: right; }
+    .od-strong { font-weight: 700; color: #111827; }
+    .od-total-final {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #5C3D2E;
+    }
+
+    /* Bottom 2 cols */
+    .od-bottom-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+    }
+
+    .od-bottom-card {
+        background: #fff;
+        border-radius: 14px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .od-bottom-card h4 {
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #9ca3af;
+        font-weight: 700;
+        margin: 0 0 1rem 0;
+    }
+
+    .od-note-text {
+        font-size: 0.9375rem;
+        color: #374151;
+        line-height: 1.6;
+        border-left: 3px solid #5C3D2E;
+        padding-left: 1rem;
+        font-style: italic;
+    }
+
+    /* Timeline */
+    .od-timeline { list-style: none; padding: 0; margin: 0; }
+    .od-tl-item {
+        display: flex;
+        gap: 0.875rem;
+        margin-bottom: 1rem;
+    }
+    .od-tl-item:last-child { margin-bottom: 0; }
+
+    .od-tl-dot {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 2px;
+    }
+    .od-tl-dot.active { background: #5C3D2E; }
+    .od-tl-dot.pending { background: #e5e7eb; }
+    .od-tl-dot .material-symbols-outlined { font-size: 13px; color: #fff; }
+
+    .od-tl-label { font-weight: 600; color: #111827; font-size: 0.9rem; }
+    .od-tl-time  { font-size: 0.8rem; color: #9ca3af; margin-top: 2px; }
+</style>
+
+<!-- Back -->
+<a asp-action="Orders" class="od-back-link">
+    <span class="material-symbols-outlined">arrow_back</span> Quay lại danh sách
+</a>
+
+<!-- Header -->
+<div class="od-header">
+    <div class="od-title-row">
+        <div class="od-title-left">
+            <div class="od-status-badge" style="background:@st.bg; color:@st.color;">
+                <span class="od-status-dot" style="background:@st.color;"></span>
+                @st.label
+            </div>
+            <p style="color:#9ca3af; font-size:0.875rem; margin:0 0 0.25rem 0; font-weight:600;">ID: @shortId</p>
+            <h1>Chi tiết đơn hàng</h1>
+            <p>Thời gian đặt: @Model.OrderDate.ToString("dd/MM/yyyy, HH:mm")</p>
+        </div>
+
+        <div class="od-btn-row">
+            @if (canCancel)
+            {
+                <form asp-action="UpdateOrderStatus" method="post" style="margin:0;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="status" value="Đã hủy" />
+                    <button type="submit" class="od-btn od-btn-outline">
+                        <span class="material-symbols-outlined" style="font-size:18px;">cancel</span> Hủy đơn
+                    </button>
+                </form>
+            }
+            @if (canConfirm)
+            {
+                <form asp-action="UpdateOrderStatus" method="post" style="margin:0;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="status" value="Đang giao hàng" />
+                    <button type="submit" class="od-btn od-btn-primary">
+                        <span class="material-symbols-outlined" style="font-size:18px;">local_shipping</span> Xác nhận giao hàng
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- 3 Info Cards -->
+<div class="od-info-grid">
+    <!-- Khách hàng -->
+    <div class="od-info-card">
+        <div class="od-info-label"><span class="material-symbols-outlined">person</span> KHÁCH HÀNG</div>
+        <div class="od-info-value">@(Model.User?.FullName ?? "Khách vãng lai")</div>
+        @if (Model.User != null)
+        {
+            <p class="od-info-sub">
+                <span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle;">mail</span>
+                @Model.User.Email
+            </p>
+            <p class="od-info-sub">
+                <span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle;">phone</span>
+                @(Model.User.Phone ?? "—")
+            </p>
+        }
+    </div>
+
+    <!-- Thanh toán -->
+    <div class="od-info-card">
+        <div class="od-info-label"><span class="material-symbols-outlined">credit_card</span> THANH TOÁN</div>
+        <div class="od-info-value">@(Model.PaymentMethod ?? "COD")</div>
+        <p class="od-info-sub">Tạm tính: @Model.TotalAmount.ToString("N0")đ</p>
+        @if (Model.DiscountAmount > 0)
+        {
+            <p class="od-info-sub" style="color:#10b981;">Giảm giá: - @Model.DiscountAmount.ToString("N0")đ</p>
+        }
+        <p class="od-info-sub od-strong">Thực trả: @Model.FinalAmount.ToString("N0")đ</p>
+    </div>
+
+    <!-- Địa chỉ giao -->
+    <div class="od-info-card">
+        <div class="od-info-label"><span class="material-symbols-outlined">location_on</span> ĐỊA CHỈ GIAO HÀNG</div>
+        <div class="od-info-value" style="font-size:0.975rem;">@Model.ShippingAddress</div>
+        <p class="od-info-sub" style="display:flex; align-items:center; gap:0.25rem; margin-top:0.5rem;">
+            <span class="material-symbols-outlined" style="font-size:15px; color:#5C3D2E;">near_me</span>
+            <span style="color:#5C3D2E; font-size:0.8125rem; font-weight:600;">Đang tính khoảng cách...</span>
+        </p>
+    </div>
+</div>
+
+<!-- Items table -->
+<div class="od-items-card">
+    <div class="od-items-header">
+        <h3>Sản phẩm đã đặt</h3>
+        <span>@Model.OrderDetails.Count mặt hàng</span>
+    </div>
+
+    <table class="od-items-table">
+        <thead>
+            <tr>
+                <th>SẢN PHẨM</th>
+                <th style="text-align:center;">SL</th>
+                <th style="text-align:right;">ĐƠN GIÁ</th>
+                <th style="text-align:right;">THÀNH TIỀN</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.OrderDetails)
+            {
+                <tr>
+                    <td>
+                        <div class="od-product-cell">
+                            @if (item.Product?.ImageUrl != null)
+                            {
+                                <img src="@item.Product.ImageUrl" class="od-product-img" alt="@item.Product.Name" />
+                            }
+                            else
+                            {
+                                <div class="od-product-img" style="display:flex; align-items:center; justify-content:center;">
+                                    <span class="material-symbols-outlined" style="color:#d1d5db; font-size:24px;">restaurant</span>
+                                </div>
+                            }
+                            <div>
+                                <div class="od-product-name">@(item.Product?.Name ?? "Sản phẩm không xác định")</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="text-align:center; font-weight:600;">@item.Quantity</td>
+                    <td class="od-text-right">@item.UnitPrice.ToString("N0")đ</td>
+                    <td class="od-text-right od-strong">@item.TotalPrice.ToString("N0")đ</td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3" style="padding:0.75rem; text-align:right; color:#6b7280; font-size:0.875rem;">Tạm tính</td>
+                <td class="od-text-right" style="padding:0.75rem; color:#374151; font-weight:600;">@Model.TotalAmount.ToString("N0")đ</td>
+            </tr>
+            @if (Model.DiscountAmount > 0)
+            {
+                <tr>
+                    <td colspan="3" style="padding:0.5rem 0.75rem; text-align:right; color:#10b981; font-size:0.875rem;">Giảm giá (voucher)</td>
+                    <td class="od-text-right" style="padding:0.5rem 0.75rem; color:#10b981; font-weight:600;">- @Model.DiscountAmount.ToString("N0")đ</td>
+                </tr>
+            }
+            <tr style="border-top: 2px solid #f3f4f6;">
+                <td colspan="3" style="padding:1rem 0.75rem; text-align:right; font-weight:700; font-size:1rem;">Tổng thanh toán</td>
+                <td class="od-text-right od-total-final" style="padding:1rem 0.75rem;">@Model.FinalAmount.ToString("N0")đ</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<!-- Bottom row -->
+<div class="od-bottom-grid">
+    <!-- Ghi chú -->
+    <div class="od-bottom-card">
+        <h4>GHI CHÚ TỪ KHÁCH</h4>
+        <div class="od-note-text">
+            "Vui lòng giao đúng giờ. Cảm ơn!"
+        </div>
+    </div>
+
+    <!-- Timeline trạng thái -->
+    <div class="od-bottom-card">
+        <h4>TRẠNG THÁI VẬN CHUYỂN</h4>
+        <ul class="od-timeline">
+            <li class="od-tl-item">
+                <div class="od-tl-dot active">
+                    <span class="material-symbols-outlined">check</span>
+                </div>
+                <div>
+                    <div class="od-tl-label">Đơn hàng đã đặt</div>
+                    <div class="od-tl-time">@Model.OrderDate.ToString("HH:mm · dd/MM/yyyy")</div>
+                </div>
+            </li>
+
+            @if (Model.Status == "Đã xác nhận" || Model.Status == "Confirmed"
+              || Model.Status == "Đang giao hàng" || Model.Status == "Shipping"
+              || Model.Status == "Đã hoàn thành" || Model.Status == "Completed")
+            {
+                <li class="od-tl-item">
+                    <div class="od-tl-dot active">
+                        <span class="material-symbols-outlined">check</span>
+                    </div>
+                    <div>
+                        <div class="od-tl-label">Đã xác nhận đơn</div>
+                        <div class="od-tl-time">Đã xác nhận</div>
+                    </div>
+                </li>
+            }
+            else
+            {
+                <li class="od-tl-item">
+                    <div class="od-tl-dot pending"></div>
+                    <div>
+                        <div class="od-tl-label" style="color:#9ca3af;">Xác nhận đơn</div>
+                        <div class="od-tl-time">Chờ xử lý</div>
+                    </div>
+                </li>
+            }
+
+            @if (Model.Status == "Đang giao hàng" || Model.Status == "Shipping"
+              || Model.Status == "Đã hoàn thành" || Model.Status == "Completed")
+            {
+                <li class="od-tl-item">
+                    <div class="od-tl-dot active">
+                        <span class="material-symbols-outlined">check</span>
+                    </div>
+                    <div>
+                        <div class="od-tl-label">Shipper đang giao</div>
+                        <div class="od-tl-time">Đang trên đường</div>
+                    </div>
+                </li>
+            }
+            else
+            {
+                <li class="od-tl-item">
+                    <div class="od-tl-dot pending"></div>
+                    <div>
+                        <div class="od-tl-label" style="color:#9ca3af;">Shipper đang giao</div>
+                        <div class="od-tl-time">Dự kiến: sớm nhất</div>
+                    </div>
+                </li>
+            }
+
+            @if (Model.Status == "Đã hoàn thành" || Model.Status == "Completed")
+            {
+                <li class="od-tl-item">
+                    <div class="od-tl-dot active">
+                        <span class="material-symbols-outlined">check</span>
+                    </div>
+                    <div>
+                        <div class="od-tl-label">Giao thành công</div>
+                        <div class="od-tl-time">Đã hoàn thành</div>
+                    </div>
+                </li>
+            }
+            else
+            {
+                <li class="od-tl-item">
+                    <div class="od-tl-dot pending"></div>
+                    <div>
+                        <div class="od-tl-label" style="color:#9ca3af;">Giao thành công</div>
+                        <div class="od-tl-time">Chờ hoàn thành</div>
+                    </div>
+                </li>
+            }
+        </ul>
+    </div>
+</div>

@@ -89,7 +89,7 @@
                 {
                     var initials = GetInitials(user.FullName);
                     var avColor  = GetAvColor(user.FullName);
-                    var (roleLabel, roleBg, roleColor) = GetRole(user.Role);
+                    var (roleLabel, roleBg, roleColor) = GetRole(user.Role.ToString());
                     var shortId  = "#USR-" + user.Id.Substring(0, 4).ToUpper();
 
                     <tr>

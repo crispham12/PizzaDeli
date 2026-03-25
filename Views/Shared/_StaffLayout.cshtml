@@ -1,0 +1,125 @@
+@{
+    var uname = Context.Session.GetString("USER_NAME") ?? "Staff";
+    var uemail = Context.Session.GetString("USER_EMAIL") ?? "staff@pizzadeli.vn";
+
+    // Determine active menu based on context
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - PizzaDeli Staff</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+
+<div class="dash-page">
+    <!-- Sidebar -->
+    <aside class="dash-sidebar">
+        <div class="dash-logo-area">
+            <div class="dash-logo-icon"><span class="material-symbols-outlined">delivery_dining</span></div>
+            <div class="dash-logo-text">
+                <span class="logo-title">PizzaDeli</span>
+                <span class="logo-subtitle">Staff Portal</span>
+            </div>
+        </div>
+
+        <nav class="dash-nav">
+            <div class="dash-nav-title">Nhiệm vụ</div>
+            
+            <a asp-controller="Staff" asp-action="Orders" class="dash-nav-item @(action == "Orders" ? "active" : "")">
+                <span class="material-symbols-outlined">receipt_long</span> Quản lý đơn hàng
+            </a>
+            <a asp-controller="Staff" asp-action="Deliveries" class="dash-nav-item @(action == "Deliveries" ? "active" : "")">
+                <span class="material-symbols-outlined">local_shipping</span> Xử lý giao hàng
+            </a>
+            
+            <div class="dash-nav-title">Tương tác</div>
+
+            <a asp-controller="Staff" asp-action="Customers" class="dash-nav-item @(action == "Customers" ? "active" : "")">
+                <span class="material-symbols-outlined">support_agent</span> Hỗ trợ khách hàng
+            </a>
+            <a asp-controller="Staff" asp-action="Comments" class="dash-nav-item @(action == "Comments" ? "active" : "")">
+                <span class="material-symbols-outlined">reviews</span> Quản lý bình luận
+            </a>
+        </nav>
+        
+        <div class="dash-sidebar-footer">
+            <div class="dash-today">
+                <span class="today-label">HÔM NAY</span>
+                <span class="today-date" id="sidebar-date">...</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="dash-main">
+        <header class="dash-header">
+            <div class="header-title">
+                <span class="material-symbols-outlined">work</span>
+                <h1>@ViewData["Title"]</h1>
+            </div>
+            
+            <div class="header-actions">
+                <div class="header-user">
+                    <div class="user-avatar">
+                        <span class="material-symbols-outlined">badge</span>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-role">Nhân viên</span>
+                        <span class="user-email">@uemail</span>
+                    </div>
+                </div>
+                <a asp-controller="Account" asp-action="Logout" class="header-icon-btn" title="Đăng xuất">
+                    <span class="material-symbols-outlined">logout</span>
+                </a>
+                <div class="header-divider"></div>
+                <button class="header-icon-btn has-badge" title="Thông báo">
+                    <span class="material-symbols-outlined">notifications</span>
+                </button>
+                <a asp-controller="Home" asp-action="Index" class="header-icon-btn" title="Về trang cửa hàng">
+                    <span class="material-symbols-outlined">storefront</span>
+                </a>
+            </div>
+        </header>
+
+        <div class="dash-content-scroll">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert-success" style="padding: 1rem; background: #ecfdf5; color: #065f46; border-radius: 8px; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 500;">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    @TempData["SuccessMessage"]
+                </div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert-error" style="padding: 1rem; background: #fef2f2; color: #991b1b; border-radius: 8px; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 500;">
+                    <span class="material-symbols-outlined">error</span>
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+
+            @RenderBody()
+            
+            <div class="dash-footer-text">
+                &copy; 2024 PizzaDeli. Hệ thống làm việc chuyên nghiệp cho nhân viên.
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    document.getElementById('sidebar-date').textContent = dd + '/' + mm + '/' + yyyy;
+</script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

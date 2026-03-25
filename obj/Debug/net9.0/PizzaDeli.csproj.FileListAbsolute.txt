@@ -220,7 +220,7 @@ C:\Users\Admin\Desktop\Lamnhom-net\bin\Debug\net9.0\BCrypt.Net-Next.dll
 C:\Users\Admin\Desktop\Lamnhom-net\obj\Debug\net9.0\compressed\inn8x53dv7-von3n9yde4.gz
 C:\Users\Admin\Desktop\Lamnhom-net\obj\Debug\net9.0\compressed\d9j9xcaa3y-ewl5q82l0j.gz
 C:\Users\Admin\Desktop\Lamnhom-net\obj\Debug\net9.0\PizzaDeli.sourcelink.json
-C:\Users\Admin\Desktop\Lamnhom-net\obj\Debug\net9.0\compressed\kzfjzmpyqt-0f20gm5ht7.gz
 C:\Users\Admin\Desktop\Lamnhom-net\bin\Debug\net9.0\BouncyCastle.Cryptography.dll
 C:\Users\Admin\Desktop\Lamnhom-net\bin\Debug\net9.0\MailKit.dll
 C:\Users\Admin\Desktop\Lamnhom-net\bin\Debug\net9.0\MimeKit.dll
+C:\Users\Admin\Desktop\Lamnhom-net\obj\Debug\net9.0\compressed\kzfjzmpyqt-l1v5feecld.gz

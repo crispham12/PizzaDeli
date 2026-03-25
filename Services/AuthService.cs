@@ -25,7 +25,24 @@ public class AuthService
         if (user == null || !user.IsActive)
             return (false, null, null, "Không tìm thấy tài khoản email này hoặc tài khoản đã bị khóa.");
 
-        if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+        bool isValid = false;
+        try
+        {
+            isValid = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
+        }
+        catch (BCrypt.Net.SaltParseException)
+        {
+            // Nếu password trong DB đang ở dạng plain-text (tạo tay), so sánh trực tiếp
+            if (user.PasswordHash == password)
+            {
+                isValid = true;
+                // Auto-heal: Cập nhật lại mật khẩu thành mã băm BCrypt chuẩn
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password);
+                await _db.SaveChangesAsync();
+            }
+        }
+
+        if (!isValid)
             return (false, null, null, "Sai mật khẩu.");
 
         // Tạo token giả (do chưa dùng JWT chính thức)
@@ -36,7 +53,7 @@ public class AuthService
             Id = user.Id,
             Email = user.Email,
             FullName = user.FullName,
-            Role = user.Role,
+            Role = user.Role.ToString(),
             Phone = user.Phone,
             Avatar = user.Avatar
         };
@@ -60,7 +77,7 @@ public class AuthService
             Email = req.Email,
             Phone = req.Phone,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.Password),
-            Role = "Customer", // Mặc định là Customer
+            Role = UserRole.Customer, // Mặc định là Customer
             IsActive = true,
             CreatedAt = DateTime.Now
         };

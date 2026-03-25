@@ -1,0 +1,449 @@
+@model List<PizzaDeli.Models.Voucher>
+@{
+    ViewData["Title"] = "Khuyến Mãi - PizzaDeli";
+    var _role  = Context.Session.GetString("USER_ROLE");
+    var _name  = Context.Session.GetString("USER_NAME");
+    var _auth  = !string.IsNullOrEmpty(_role);
+
+    string[] badgeLabels = { "NỔI BẬT", "ĐẶC BIỆT", "BÁN CHẠY", "MỚI", "HÔM NAY" };
+    string[] badgeColors = { "#5c3d2e", "#b07850", "#c45c2e", "#2563eb", "#059669" };
+    string[] heroColors  = { "#f9f0e8", "#fdf6ee", "#fff8f3", "#eff6ff", "#f0fdf4" };
+}
+
+@section Styles {
+<style>
+/* ===== Layout ===== */
+.promo-page { background: #f7f4f0; min-height: 100vh; }
+
+/* ===== Navbar reuse ===== */
+.btn-profile-dropdown {
+    background: #f4ede6; color: #1f2937; border: none;
+    padding: .5rem 1rem; border-radius: 99px;
+    display: flex; align-items: center; gap: .5rem;
+    font-weight: 700; font-size: .9rem; cursor: pointer; transition: opacity .2s;
+}
+.btn-profile-dropdown:hover { opacity: .9; }
+.customer-dropdown-menu {
+    display: none; position: absolute;
+    top: calc(100% + 10px); right: 0;
+    background: #fff; border-radius: 20px; width: 280px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.1);
+    z-index: 100; overflow: hidden; flex-direction: column; padding: .5rem 0;
+}
+.customer-dropdown-menu.show { display: flex; }
+.c-dropdown-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 11px 18px; text-decoration: none; color: #374151; transition: background .15s;
+}
+.c-dropdown-item:hover { background: #f9fafb; color: #1f2937; }
+.c-item-icon-wrap { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.c-item-icon-wrap.primary { background: #e1d3c1; color: #533e38; }
+.c-item-icon-wrap.danger-bg { background: #eabfb9; }
+.c-item-text { display: flex; flex-direction: column; }
+.c-item-title { font-weight: 700; font-size: 1rem; color: #533e38; }
+.c-item-desc { font-size: .82rem; color: #8c837f; margin-top: 2px; }
+.nav-links a.active-nav { color: #c45c2e; font-weight: 800; }
+
+/* ===== Hero banner ===== */
+.promo-hero {
+    background: linear-gradient(135deg, #3d2518 0%, #7a4f35 60%, #b07850 100%);
+    color: #fff;
+    padding: 4rem 0 3rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+.promo-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.promo-hero-inner { position: relative; max-width: 700px; margin: 0 auto; padding: 0 1.5rem; }
+.promo-eyebrow {
+    display: inline-block;
+    font-size: .75rem; font-weight: 800; letter-spacing: .15em; text-transform: uppercase;
+    background: rgba(255,255,255,.15); border-radius: 99px;
+    padding: .35rem 1rem; margin-bottom: 1.2rem; color: #fde9ce;
+}
+.promo-hero h1 { font-size: 2.8rem; font-weight: 900; line-height: 1.1; margin: 0 0 1rem; }
+.promo-hero p  { font-size: 1.05rem; color: rgba(255,255,255,.75); margin: 0; }
+
+/* ===== Body ===== */
+.promo-body { max-width: 1100px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+
+/* ===== Cards grid ===== */
+.voucher-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+@@media (max-width: 900px) { .voucher-grid { grid-template-columns: repeat(2,1fr); } }
+@@media (max-width: 560px) { .voucher-grid { grid-template-columns: 1fr; } }
+
+/* ===== Voucher card ===== */
+.voucher-card {
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,.07);
+    transition: box-shadow .2s, transform .2s;
+    display: flex;
+    flex-direction: column;
+}
+.voucher-card:hover { box-shadow: 0 10px 36px rgba(92,61,46,.13); transform: translateY(-4px); }
+
+.vc-img-wrap {
+    position: relative;
+    height: 170px;
+    overflow: hidden;
+}
+.vc-img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
+.voucher-card:hover .vc-img-wrap img { transform: scale(1.05); }
+
+.vc-badge {
+    position: absolute; top: 12px; left: 12px;
+    font-size: .67rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+    color: #fff; padding: .28rem .65rem; border-radius: 6px;
+}
+
+.vc-body { padding: 1.25rem 1.25rem .9rem; flex: 1; display: flex; flex-direction: column; gap: .4rem; }
+.vc-title { font-size: 1.1rem; font-weight: 900; color: #1a1a1a; text-transform: uppercase; letter-spacing: .02em; }
+.vc-desc { font-size: .85rem; color: #6b7280; line-height: 1.55;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.vc-min { font-size: .8rem; color: #b07850; font-weight: 700; margin-top: .1rem; }
+
+.vc-code-row {
+    display: flex; align-items: center; gap: 0;
+    margin-top: .8rem;
+    border-top: 1.5px dashed #e5e7eb;
+    padding-top: .9rem;
+}
+.vc-code-label { font-size: .68rem; font-weight: 700; color: #9ca3af; letter-spacing: .08em; text-transform: uppercase; margin-bottom: .2rem; }
+.vc-code-box {
+    flex: 1;
+    background: #f7f4f0;
+    border-radius: 8px 0 0 8px;
+    padding: .5rem .85rem;
+    display: flex; flex-direction: column;
+}
+.vc-code-text { font-family: monospace; font-size: 1rem; font-weight: 800; color: #3d2518; letter-spacing: .06em; }
+.btn-copy {
+    background: #5c3d2e; color: #fff;
+    border: none; border-radius: 0 8px 8px 0;
+    padding: 0 1rem;
+    font-size: .78rem; font-weight: 800; letter-spacing: .05em;
+    cursor: pointer; transition: background .15s;
+    white-space: nowrap;
+}
+.btn-copy:hover { background: #4a2e1e; }
+.btn-copy.copied { background: #059669; }
+
+.vc-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .7rem 1.25rem 1rem;
+    font-size: .78rem; color: #9ca3af;
+}
+.vc-expiry { display: flex; align-items: center; gap: 4px; font-weight: 600; }
+.vc-expiry .material-symbols-outlined { font-size: .95rem; }
+.vc-expiry.soon { color: #ef4444; }
+.vc-detail-link { color: #5c3d2e; font-weight: 700; text-decoration: none; font-size: .8rem; }
+.vc-detail-link:hover { text-decoration: underline; }
+
+/* ===== Empty state ===== */
+.promo-empty {
+    text-align: center; padding: 5rem 0; color: #9ca3af;
+}
+.promo-empty .material-symbols-outlined { font-size: 3.5rem; opacity: .3; display: block; margin-bottom: .75rem; }
+
+/* ===== CTA banner ===== */
+.promo-cta {
+    margin-top: 3.5rem;
+    background: #fff;
+    border-radius: 24px;
+    padding: 3rem 2rem;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,.05);
+}
+.promo-cta .cta-icon {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: #f0ebe5;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.25rem;
+}
+.promo-cta .cta-icon .material-symbols-outlined { font-size: 2rem; color: #5c3d2e; }
+.promo-cta h2 { font-size: 1.5rem; font-weight: 800; color: #1a1a1a; margin: 0 0 .5rem; }
+.promo-cta p  { font-size: .95rem; color: #6b7280; margin: 0 0 1.5rem; }
+.btn-cta-menu {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: #5c3d2e; color: #fff;
+    border: none; border-radius: 99px;
+    padding: .75rem 2rem; font-weight: 800; font-size: .95rem;
+    text-decoration: none; cursor: pointer;
+    transition: background .18s, transform .15s;
+}
+.btn-cta-menu:hover { background: #4a2e1e; transform: translateY(-1px); color: #fff; }
+</style>
+}
+
+<div class="layout-container">
+
+@{
+    var rol  = Context.Session.GetString("USER_ROLE");
+    var nam  = Context.Session.GetString("USER_NAME");
+    var aut  = !string.IsNullOrEmpty(rol);
+}
+
+<!-- ===== HEADER ===== -->
+<header class="site-header">
+    <div class="container nav-inner">
+        <div class="nav-left">
+            <div class="brand">
+                <span class="material-symbols-outlined">local_pizza</span>
+                <a asp-controller="Home" asp-action="Index" style="text-decoration:none;">
+                    <h2 class="brand-name">PizzaDeli</h2>
+                </a>
+            </div>
+            <nav class="nav-links">
+                <a asp-controller="Home" asp-action="Menu">Thực đơn</a>
+                <a asp-controller="Home" asp-action="Promotions" class="active-nav">Khuyến mãi</a>
+                <a href="#">Liên hệ</a>
+            </nav>
+        </div>
+        <div class="nav-actions">
+            @if (aut)
+            {
+                @if (rol == "Admin")
+                {
+                    <a asp-controller="Admin" asp-action="Dashboard" class="btn-profile">
+                        <span class="material-symbols-outlined">admin_panel_settings</span>
+                        <span class="btn-profile-text">Admin</span>
+                    </a>
+                }
+                else if (rol == "Staff")
+                {
+                    <a asp-controller="Staff" asp-action="Orders" class="btn-profile">
+                        <span class="material-symbols-outlined">badge</span>
+                        <span class="btn-profile-text">Nhân viên</span>
+                    </a>
+                }
+                else
+                {
+                    <div style="position:relative;" id="promoDropWrap">
+                        <button class="btn-profile-dropdown" onclick="toggleDrop(event)">
+                            <span class="material-symbols-outlined">person</span>
+                            <span>@nam</span>
+                            <span class="material-symbols-outlined" style="font-size:1.1rem;">keyboard_arrow_down</span>
+                        </button>
+                        <div class="customer-dropdown-menu" id="promoDropMenu">
+                            <a href="/Customer/Orders" class="c-dropdown-item">
+                                <div class="c-item-icon-wrap primary"><span class="material-symbols-outlined">receipt_long</span></div>
+                                <div class="c-item-text">
+                                    <div class="c-item-title">Đơn hàng của tôi</div>
+                                    <div class="c-item-desc">Theo dõi &amp; quản lý đơn hàng</div>
+                                </div>
+                            </a>
+                            <a asp-controller="Customer" asp-action="Profile" class="c-dropdown-item">
+                                <div class="c-item-icon-wrap primary"><span class="material-symbols-outlined">person</span></div>
+                                <div class="c-item-text">
+                                    <div class="c-item-title">Thông tin cá nhân</div>
+                                    <div class="c-item-desc">Quản lý tài khoản của bạn</div>
+                                </div>
+                            </a>
+                            <a asp-controller="Account" asp-action="Logout" class="c-dropdown-item">
+                                <div class="c-item-icon-wrap danger-bg">
+                                    <span class="material-symbols-outlined" style="color:#782a2a;transform:scaleX(-1);">logout</span>
+                                </div>
+                                <div class="c-item-text" style="display:flex;align-items:center;">
+                                    <div class="c-item-title" style="color:#782a2a;font-size:1.1rem;margin:0;">Đăng xuất</div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                    <script>
+                        function toggleDrop(e) {
+                            if (e) e.stopPropagation();
+                            document.getElementById('promoDropMenu').classList.toggle('show');
+                        }
+                        window.addEventListener('click', function(e) {
+                            var m = document.getElementById('promoDropMenu');
+                            var w = document.getElementById('promoDropWrap');
+                            if (m && m.classList.contains('show') && !w.contains(e.target))
+                                m.classList.remove('show');
+                        });
+                    </script>
+                    <a href="javascript:void(0)" onclick="window.PizzaCart && window.PizzaCart.openCartDrawer()" class="btn-cart" aria-label="Giỏ hàng">
+                        <span class="material-symbols-outlined">shopping_cart</span>
+                        <span class="cart-badge" id="cart-count">0</span>
+                    </a>
+                }
+                @if (rol != "Customer")
+                {
+                    <a asp-controller="Account" asp-action="Logout" class="btn-icon" title="Đăng xuất">
+                        <span class="material-symbols-outlined">logout</span>
+                    </a>
+                }
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login" class="btn-profile">
+                    <span class="material-symbols-outlined">login</span>
+                    <span class="btn-profile-text">Đăng nhập</span>
+                </a>
+                <a asp-controller="Account" asp-action="Register" class="btn-cart" style="text-decoration:none;padding:.5rem 1rem;font-size:.875rem;font-weight:700;">Đăng ký</a>
+            }
+        </div>
+    </div>
+</header>
+
+<!-- ===== HERO ===== -->
+<div class="promo-hero">
+    <div class="promo-hero-inner">
+        <span class="promo-eyebrow">
+            <span class="material-symbols-outlined" style="font-size:.9rem;vertical-align:middle;">local_offer</span>
+            ƯU ĐÃI ĐỘC QUYỀN
+        </span>
+        <h1>Khuyến Mãi</h1>
+        <p>Áp dụng các mã giảm giá khi thanh toán để tận hưởng hương vị tuyệt vời với giá tốt nhất.</p>
+    </div>
+</div>
+
+<!-- ===== BODY ===== -->
+<div class="promo-body">
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="voucher-grid">
+            @{
+                int vi = 0;
+                // Assign a pizza product image per voucher for visual variety
+                var allProducts = ViewData["HeroImages"] as List<string>;
+            }
+            @foreach (var v in Model)
+            {
+                var bi    = vi % badgeLabels.Length;
+                var bg    = badgeColors[bi];
+                var heroBg = heroColors[bi];
+                var isExpiringSoon = v.ExpiryDate.HasValue && v.ExpiryDate.Value <= DateTime.Now.AddDays(7);
+                var discountLabel = v.DiscountPercent.HasValue
+                    ? $"Giảm {v.DiscountPercent:0}%"
+                    : v.DiscountAmount.HasValue ? $"Giảm {v.DiscountAmount:N0}₫" : "Ưu đãi";
+
+                <div class="voucher-card">
+                    <!-- Image / Color hero -->
+                    <div class="vc-img-wrap" style="background: @heroBg; display:flex; align-items:center; justify-content:center;">
+                        <span class="material-symbols-outlined" style="font-size:5rem; color:@bg; opacity:.18;">local_offer</span>
+                        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                            <span style="font-size:2.2rem;font-weight:900;color:@bg;letter-spacing:.02em;">@discountLabel</span>
+                            @if (v.MinOrderValue > 0)
+                            {
+                                <span style="font-size:.82rem;color:@bg;opacity:.7;margin-top:.25rem;">Đơn tối thiểu @v.MinOrderValue.ToString("N0")₫</span>
+                            }
+                        </div>
+                        <span class="vc-badge" style="background:@bg;">@badgeLabels[bi]</span>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="vc-body">
+                        <div class="vc-title">@(string.IsNullOrEmpty(v.Name) ? discountLabel : v.Name)</div>
+                        @if (v.MinOrderValue > 0)
+                        {
+                            <div class="vc-min">
+                                <span class="material-symbols-outlined" style="font-size:.9rem;vertical-align:middle;">info</span>
+                                Đơn tối thiểu @v.MinOrderValue.ToString("N0")₫
+                            </div>
+                        }
+                        @if (v.MaxUses.HasValue)
+                        {
+                            <div class="vc-desc">Giới hạn @v.MaxUses lượt sử dụng. Nhanh tay kẻo hết!</div>
+                        }
+                        else
+                        {
+                            <div class="vc-desc">Không giới hạn số lần dùng. Áp dụng khi thanh toán tại bước checkout.</div>
+                        }
+
+                        <!-- Coupon code -->
+                        <div class="vc-code-row">
+                            <div class="vc-code-box">
+                                <span class="vc-code-label">Mã giảm giá</span>
+                                <span class="vc-code-text" id="code-@v.Id">@v.Code</span>
+                            </div>
+                            <button class="btn-copy" id="copybtn-@v.Id" onclick="copyCode('@v.Code','@v.Id')">SAO CHÉP</button>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="vc-footer">
+                        <span class="vc-expiry @(isExpiringSoon ? "soon" : "")">
+                            <span class="material-symbols-outlined">schedule</span>
+                            @if (v.ExpiryDate.HasValue)
+                            {
+                                @(isExpiringSoon ? "Sắp hết hạn: " : "HSD: ")
+                                @v.ExpiryDate.Value.ToString("dd/MM/yyyy")
+                            }
+                            else
+                            {
+                                <span>Không giới hạn thời gian</span>
+                            }
+                        </span>
+                    </div>
+                </div>
+                vi++;
+            }
+        </div>
+    }
+    else
+    {
+        <div class="promo-empty">
+            <span class="material-symbols-outlined">local_offer</span>
+            <p style="font-size:1.1rem;font-weight:700;color:#6b7280;margin:.5rem 0 .25rem;">Chưa có khuyến mãi nào</p>
+            <p style="font-size:.9rem;">Hãy quay lại sau để khám phá các ưu đãi hấp dẫn!</p>
+        </div>
+    }
+
+    <!-- CTA -->
+    <div class="promo-cta">
+        <div class="cta-icon">
+            <span class="material-symbols-outlined">local_pizza</span>
+        </div>
+        <h2>Muốn khám phá thực đơn?</h2>
+        <p>Chúng tôi thường xuyên cập nhật ưu đãi flash sale và phần thưởng thành viên. Đặt hàng ngay hôm nay!</p>
+        <a asp-controller="Home" asp-action="Menu" class="btn-cta-menu">
+            <span class="material-symbols-outlined">restaurant_menu</span>
+            Xem Thực Đơn
+        </a>
+    </div>
+
+</div><!-- /promo-body -->
+</div><!-- /layout-container -->
+
+@section Scripts {
+<script>
+function copyCode(code, id) {
+    navigator.clipboard.writeText(code).then(function() {
+        var btn = document.getElementById('copybtn-' + id);
+        if (!btn) return;
+        var orig = btn.textContent;
+        btn.textContent = '✓ ĐÃ CHÉP';
+        btn.classList.add('copied');
+        setTimeout(function() {
+            btn.textContent = orig;
+            btn.classList.remove('copied');
+        }, 2000);
+    }).catch(function() {
+        // fallback
+        var el = document.createElement('textarea');
+        el.value = code;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        var btn = document.getElementById('copybtn-' + id);
+        if (btn) {
+            btn.textContent = '✓ ĐÃ CHÉP';
+            btn.classList.add('copied');
+            setTimeout(function() { btn.textContent = 'SAO CHÉP'; btn.classList.remove('copied'); }, 2000);
+        }
+    });
+}
+</script>
+}

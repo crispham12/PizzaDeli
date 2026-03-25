@@ -139,47 +139,114 @@ public class CustomerController : BaseController
         }
     }
 
+    [HttpGet]
+    public IActionResult ChangePassword()
+    {
+        var g = Guard(); if (g != null) return g;
+        return View();
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult ChangePassword(string oldPassword, string newPassword)
+    public IActionResult SendPasswordOtp(string currentPassword)
+    {
+        var g = Guard(); if (g != null) return g;
+        
+        var user = _context.Users.Find(CurrentUserId);
+        if (user == null) return Json(new { success = false, message = "Người dùng không tồn tại!" });
+
+        if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash))
+        {
+            return Json(new { success = false, message = "Mật khẩu hiện tại không đúng!" });
+        }
+
+        // Tạo mã ngẫu nhiên 6 số
+        Random rnd = new Random();
+        string code = rnd.Next(100000, 999999).ToString();
+
+        // Lưu session OTP đổi mật khẩu
+        HttpContext.Session.SetString("PWD_OTP", code);
+        HttpContext.Session.SetString("PWD_OTP_VALIDATED", "false");
+
+        try 
+        {
+            var client = new System.Net.Mail.SmtpClient("smtp.gmail.com", 587)
+            {
+                EnableSsl = true,
+                UseDefaultCredentials = false,
+                Credentials = new System.Net.NetworkCredential("phamanhkhoa56789@gmail.com", "ejff yemk uhwd wdtv")
+            };
+
+            var mailMessage = new System.Net.Mail.MailMessage
+            {
+                From = new System.Net.Mail.MailAddress("pizzadelidemo1@gmail.com", "PizzaDeli Security"),
+                Subject = "PizzaDeli - Xác nhận đổi Mật khẩu",
+                Body = $"<h2>Yêu cầu thay đổi mật khẩu tài khoản {user.FullName}</h2><hr/>" +
+                       $"<p>Chào bạn,</p>" +
+                       $"<p>Đây là mã xác nhận (OTP) 6 chữ số để tiếp tục đổi mật khẩu của bạn:</p>" +
+                       $"<h1 style='color: #16a34a; letter-spacing: 0.2em;'>{code}</h1>" +
+                       $"<p>Vui lòng tuyệt đối không tiết lộ mã này cho bất kỳ ai.</p>",
+                IsBodyHtml = true,
+            };
+            mailMessage.To.Add(user.Email);
+            client.Send(mailMessage);
+
+            return Json(new { success = true, message = "Mã xác nhận đã được gửi về email của bạn!" });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = $"Gặp lỗi hệ thống gửi mail: {ex.Message}" });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult VerifyPasswordOtp(string code)
+    {
+        var g = Guard(); if (g != null) return g;
+
+        var savedOtp = HttpContext.Session.GetString("PWD_OTP");
+        if (string.IsNullOrEmpty(savedOtp) || savedOtp != code)
+        {
+            return Json(new { success = false, message = "Mã xác nhận không hợp lệ hoặc đã hết hạn!" });
+        }
+
+        // Đánh dấu là đã xác minh đúng
+        HttpContext.Session.SetString("PWD_OTP_VALIDATED", "true");
+        return Json(new { success = true });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult ChangePassword(string newPassword)
     {
         var g = Guard(); if (g != null) return g;
         
         var user = _context.Users.Find(CurrentUserId);
         if (user == null) return NotFound();
 
-        if (!BCrypt.Net.BCrypt.Verify(oldPassword, user.PasswordHash))
+        // Kiểm tra xem đã qua vòng gác OTP chưa
+        var isValidated = HttpContext.Session.GetString("PWD_OTP_VALIDATED");
+        if (isValidated != "true")
         {
-            TempData["Error"] = "Mật khẩu hiện tại không đúng!";
-            return RedirectToAction("Profile");
+            TempData["Error"] = "Bạn chưa hoàn tất xác minh mã OTP!";
+            return RedirectToAction("ChangePassword");
         }
 
+        // Cập nhật mật khẩu 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
         _context.SaveChanges();
+
+        // Xóa dấu vết session
+        HttpContext.Session.Remove("PWD_OTP");
+        HttpContext.Session.Remove("PWD_OTP_VALIDATED");
 
         TempData["Success"] = "Đổi mật khẩu thành công!";
         return RedirectToAction("Profile");
     }
 
-    // ---- Giỏ hàng ----
+    // ---- Giỏ hàng (lưu trên localStorage ở client) ----
     public IActionResult Cart()                 { var g = Guard(); if (g != null) return g; return View(); }
-
-    [HttpPost]
-    public IActionResult AddToCart(string productId, int qty = 1)
-    {
-        var g = Guard(); if (g != null) return g;
-        // TODO: gọi API thêm vào giỏ
-        return Json(new { success = true, message = "Đã thêm vào giỏ hàng!" });
-    }
-
-    [HttpPost]
-    public IActionResult RemoveFromCart(string cartItemId)
-    {
-        var g = Guard(); if (g != null) return g;
-        // TODO: gọi API xóa khỏi giỏ
-        TempData["Success"] = "Đã xóa món ăn khỏi giỏ hàng.";
-        return RedirectToAction("Cart");
-    }
 
     // ---- Đặt hàng ----
     public IActionResult Checkout()             { var g = Guard(); if (g != null) return g; return View(); }

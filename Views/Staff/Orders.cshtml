@@ -1,0 +1,308 @@
+@model IEnumerable<PizzaDeli.Models.Order>
+@{
+    ViewData["Title"] = "Quản lý đơn hàng";
+    Layout = "_StaffLayout";
+    
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+
+    (string label, string bg, string color) GetStatus(string st) => st switch
+    {
+        "Pending" => ("CHờ Xử LÝ", "#fee2e2", "#991b1b"),
+        "Chờ xử lý" => ("CHờ Xử LÝ", "#fee2e2", "#991b1b"),
+        
+        "Confirmed" => ("ĐÃ XÁC NHẬN", "#fef3c7", "#92400e"),
+        "Đã xác nhận" => ("ĐÃ XÁC NHẬN", "#fef3c7", "#92400e"),
+        
+        "Shipping" => ("ĐANG GIAO", "#e0e7ff", "#3730a3"),
+        "Đang giao hàng" => ("ĐANG GIAO", "#e0e7ff", "#3730a3"),
+        
+        "Completed" => ("HOÀN THÀNH", "#d1fae5", "#065f46"),
+        "Đã hoàn thành" => ("HOÀN THÀNH", "#d1fae5", "#065f46"),
+        
+        "Cancelled" => ("ĐÃ HỤY", "#ffe4e6", "#be123c"),
+        "Đã hủy" => ("ĐÃ HỤY", "#ffe4e6", "#be123c"),
+        
+        _ => (st.ToUpper(), "#f3f4f6", "#374151")
+    };
+}
+
+<style>
+    /* Info Cards styling simulating Image 1 */
+    .stf-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stf-stat-card {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .stf-stat-content h3 {
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #4b5563;
+        font-weight: 700;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .stf-stat-content .stf-stat-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #111827;
+        margin: 0 0 0.5rem 0;
+        line-height: 1;
+    }
+
+    .stf-stat-subtitle {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #10b981;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .stf-stat-subtitle.neutral { color: #6b7280; }
+
+    .stf-stat-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Kebab menu styling */
+    .kebab-btn {
+        background: transparent;
+        border: none;
+        color: #6b7280;
+        padding: 4px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+    }
+    .kebab-btn:hover {
+        background: #f3f4f6;
+        color: #111827;
+    }
+
+    .action-dropdown-menu {
+        position: absolute;
+        right: 0;
+        top: 100%;
+        background: #fff;
+        border: 1px solid #f3f4f6;
+        border-radius: 8px;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+        min-width: 180px;
+        z-index: 10;
+        display: none;
+        padding: 0.5rem 0;
+    }
+    
+    .action-dropdown.active .action-dropdown-menu {
+        display: block;
+    }
+
+    .action-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        color: #374151;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        width: 100%;
+        text-align: left;
+    }
+
+    .action-item:hover {
+        background: #f9fafb;
+        color: #111827;
+    }
+
+    .action-item .material-symbols-outlined {
+        font-size: 1.125rem;
+    }
+</style>
+
+<div class="stf-stats-grid">
+    <div class="stf-stat-card">
+        <div class="stf-stat-content">
+            <h3>TỔNG ĐƠN HÔM NAY</h3>
+            <div class="stf-stat-value">@(ViewBag.TotalToday ?? 0)</div>
+            <p class="stf-stat-subtitle"><span class="material-symbols-outlined" style="font-size:16px;">trending_up</span> +12% so với hôm qua</p>
+        </div>
+        <div class="stf-stat-icon" style="background:#fce7e7; color:#854d0e;">
+            <span class="material-symbols-outlined" style="font-size:28px;">receipt_long</span>
+        </div>
+    </div>
+
+    <div class="stf-stat-card">
+        <div class="stf-stat-content">
+            <h3>ĐƠN CHờ Xử LÝ</h3>
+            <div class="stf-stat-value">@(ViewBag.PendingOrders ?? 0)</div>
+            <p class="stf-stat-subtitle neutral"><span class="material-symbols-outlined" style="font-size:16px;">schedule</span> Thời gian chờ TB: 12 phút</p>
+        </div>
+        <div class="stf-stat-icon" style="background:#dcfce7; color:#065f46;">
+            <span class="material-symbols-outlined" style="font-size:28px;">pending_actions</span>
+        </div>
+    </div>
+
+    <div class="stf-stat-card">
+        <div class="stf-stat-content">
+            <h3>ĐƠN ĐANG GIAO</h3>
+            <div class="stf-stat-value">@(ViewBag.DeliveringOrders ?? 0)</div>
+            <p class="stf-stat-subtitle neutral"><span class="material-symbols-outlined" style="font-size:16px;">local_shipping</span> 9 tài xế đang giao</p>
+        </div>
+        <div class="stf-stat-icon" style="background:#5C3D2E; color:#fff;">
+            <span class="material-symbols-outlined" style="font-size:28px;">two_wheeler</span>
+        </div>
+    </div>
+</div>
+
+
+<div class="product-list-container" style="border-radius:16px; padding-top:1.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding: 0 1.5rem 1.5rem 1.5rem;">
+            <div>
+                <h2 style="font-size: 1.5rem; font-weight:800; margin:0 0 0.25rem 0; color:#111827;">Danh sách đơn hàng</h2>
+                <p style="margin:0; color:#6b7280; font-size:0.875rem;">Cập nhật theo thời gian thực tế từ bếp và đội giao hàng.</p>
+            </div>
+        </div>
+
+    <div class="table-responsive">
+        <table class="dash-table" style="width:100%; table-layout:auto;">
+            <colgroup>
+                <col style="width:15%">
+                <col style="width:22%">
+                <col style="width:15%">
+                <col style="width:20%">
+                <col style="width:18%">
+                <col style="width:10%">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th style="font-size:0.75rem; letter-spacing:0.05em; color:#9ca3af; padding:1rem 1.5rem;">MÃ ĐƠN HÀNG</th>
+                    <th style="font-size:0.75rem; letter-spacing:0.05em; color:#9ca3af; padding:1rem 1.5rem;">KHÁCH HÀNG</th>
+                    <th style="font-size:0.75rem; letter-spacing:0.05em; color:#9ca3af; padding:1rem 1.5rem;">TỔNG TIỀN</th>
+                    <th style="font-size:0.75rem; letter-spacing:0.05em; color:#9ca3af; padding:1rem 1.5rem;">TRẠNG THÁI</th>
+                    <th style="font-size:0.75rem; letter-spacing:0.05em; color:#9ca3af; padding:1rem 1.5rem;">THANH TOÁN</th>
+                    <th style="font-size:0.75rem; letter-spacing:0.05em; color:#9ca3af; padding:1rem 1.5rem; text-align:right;">HÀNH ĐỘNG</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(var item in Model)
+                {
+                    var st = GetStatus(item.Status);
+                    var shortId = "#" + item.Id.Substring(0,8).ToUpper();
+
+                    <tr style="border-bottom:1px solid #f9fafb;">
+                        <td style="padding:1rem 1.5rem;"><strong>@shortId</strong></td>
+                        <td style="padding:1rem 1.5rem; font-weight:500; color:#374151;">@(item.User?.FullName ?? "Khách vãng lai")</td>
+                        <td style="padding:1rem 1.5rem; font-weight:700; color:#111827;">@item.FinalAmount.ToString("N0")đ</td>
+                        <td style="padding:1rem 1.5rem;">
+                            <span style="background:@st.bg; color:@st.color; padding:0.25rem 0.75rem; border-radius:30px; font-size:0.75rem; font-weight:800; letter-spacing:0.05em; display:inline-flex; align-items:center; gap:0.25rem;">
+                                <span style="width:6px; height:6px; border-radius:50%; background:@st.color; display:inline-block;"></span>
+                                @st.label
+                            </span>
+                        </td>
+                        <td style="padding:1rem 1.5rem; color:#6b7280; font-weight:500;">
+                            @(item.PaymentMethod ?? "COD")
+                        </td>
+                        <td style="padding:1rem 1.5rem; text-align:right;">
+                            <div class="action-dropdown" style="position:relative; display:inline-block;">
+                                <button class="kebab-btn" onclick="toggleKebab(this)">
+                                    <span class="material-symbols-outlined">more_vert</span>
+                                </button>
+                                <div class="action-dropdown-menu">
+                                    <a href="/Staff/OrderDetail/@item.Id" class="action-item">
+                                        <span class="material-symbols-outlined">visibility</span> Xem chi tiết
+                                    </a>
+                                    
+                                    <form asp-action="UpdateOrderStatus" method="post" style="margin:0;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        
+                                        @if(item.Status == "Chờ xử lý" || item.Status == "Pending")
+                                        {
+                                            <input type="hidden" name="status" value="Đang giao hàng" />
+                                            <button type="submit" class="action-item">
+                                                <span class="material-symbols-outlined">local_shipping</span> Giao hàng ngay
+                                            </button>
+                                        }
+                                        else if (item.Status == "Đang giao hàng" || item.Status == "Shipping")
+                                        {
+                                            <input type="hidden" name="status" value="Đã hoàn thành" />
+                                            <button type="submit" class="action-item">
+                                                <span class="material-symbols-outlined">check_circle</span> Hoàn tất đơn
+                                            </button>
+                                        }
+                                        
+                                        @if(item.Status != "Đã hủy" && item.Status != "Cancelled" && item.Status != "Đã hoàn thành" && item.Status != "Completed")
+                                        {
+                                            <input type="hidden" name="status" value="Đã hủy" />
+                                            <button type="submit" class="action-item" style="color:#ef4444;">
+                                                <span class="material-symbols-outlined" style="color:#ef4444;">cancel</span> Hủy đơn hàng
+                                            </button>
+                                        }
+                                    </form>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination from Admin -->
+    @if (totalPages > 1)
+    {
+        <div class="dash-pagination" style="padding:1.5rem; border-top:1px solid #f3f4f6; display:flex; justify-content:space-between; align-items:center;">
+            <div style="color:#6b7280; font-size:0.875rem;">Hiển thị @Model.Count() đƣn hàng</div>
+            <div style="display:flex; gap:0.5rem;">
+                <!-- Just basic ui for styling match -->
+                <button style="border:none; background:#f3f4f6; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer;"><span class="material-symbols-outlined" style="font-size:16px;">chevron_left</span></button>
+                <button style="border:none; background:#5C3D2E; color:#fff; width:32px; height:32px; border-radius:50%; font-weight:600; cursor:pointer;">1</button>
+                <button style="border:none; background:#f3f4f6; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer;"><span class="material-symbols-outlined" style="font-size:16px;">chevron_right</span></button>
+            </div>
+        </div>
+    }
+</div>
+
+<script>
+    function toggleKebab(btn) {
+        // close others
+        document.querySelectorAll('.action-dropdown.active').forEach(d => {
+            if (d !== btn.closest('.action-dropdown')) d.classList.remove('active');
+        });
+        btn.closest('.action-dropdown').classList.toggle('active');
+    }
+
+    // Close when click outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.action-dropdown')) {
+            document.querySelectorAll('.action-dropdown.active').forEach(d => d.classList.remove('active'));
+        }
+    });
+</script>

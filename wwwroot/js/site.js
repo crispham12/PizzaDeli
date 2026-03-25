@@ -233,7 +233,8 @@ function getProductDataFromBtn(btn) {
         price: parseFloat(btn.dataset.productPrice || 0),
         image: btn.dataset.productImage || '',
         cat:   btn.dataset.productCat || '',
-        desc:  btn.dataset.productDesc || ''
+        desc:  btn.dataset.productDesc || '',
+        toppings: btn.dataset.productToppings || '[]'
     };
 }
 
@@ -377,6 +378,29 @@ function openPizzaDetailModal(product, buyNow = false) {
     document.getElementById('pzModalDesc').textContent = product.desc || 'Hương vị tuyệt hảo trên từng lớp phô mai nóng hổi được nướng hoàn hảo.';
     document.getElementById('pzModalQty').textContent = 1;
     
+    // RENDER TOPPINGS DYNAMICALLY
+    const toppingListEl = document.getElementById('pzToppingList');
+    if (toppingListEl && product.toppings) {
+        let toppingsArr = [];
+        try { toppingsArr = JSON.parse(product.toppings); } catch(e){}
+        
+        if (toppingsArr && toppingsArr.length > 0) {
+            let html = '';
+            toppingsArr.forEach(t => {
+                html += `
+                <label class="pz-check-btn">
+                    <input type="checkbox" name="pz-topping" value="${t.name}" data-price="${t.price}" onclick="updatePzCheck(this)">
+                    <div class="c-indicator"></div> ${t.name} (+${formatVND(t.price)})
+                </label>`;
+            });
+            toppingListEl.innerHTML = html;
+            toppingListEl.parentElement.style.display = 'block'; // Show if hidden
+        } else {
+            toppingListEl.innerHTML = '';
+            toppingListEl.parentElement.style.display = 'none'; // Hide if no toppings
+        }
+    }
+
     // Lưu ý: Không update textContent của pzModalPriceTotal ở đây nữa,
     // vì lát nữa ta sẽ gán lại toàn bộ innerHTML phần nút bên dưới.
 
@@ -449,14 +473,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+function recalculateModalPrice() {
+    if(!currentPizzaToCart) return;
+    let basePrice = parseFloat(currentPizzaToCart.price || 0);
+    
+    // Cộng các topping đã chọn
+    const checkedToppings = document.querySelectorAll('input[name="pz-topping"]:checked');
+    checkedToppings.forEach(t => {
+        basePrice += parseFloat(t.getAttribute('data-price') || 0);
+    });
+
+    const total = basePrice * currentPizzaModalQty;
+    const el = document.getElementById('pzModalPriceTotal');
+    if(el) el.textContent = formatVND(total);
+}
+
 function changePzModalQty(delta) {
     currentPizzaModalQty += delta;
     if(currentPizzaModalQty < 1) currentPizzaModalQty = 1;
     document.getElementById('pzModalQty').textContent = currentPizzaModalQty;
-    if(currentPizzaToCart) {
-        const total = parseFloat(currentPizzaToCart.price || 0) * currentPizzaModalQty;
-        document.getElementById('pzModalPriceTotal').textContent = formatVND(total);
-    }
+    recalculateModalPrice();
 }
 
 function updatePzRadio(radioInput) {
@@ -470,6 +506,7 @@ function updatePzRadio(radioInput) {
 function updatePzCheck(checkInput) {
     if(checkInput.checked) checkInput.parentElement.classList.add('active');
     else checkInput.parentElement.classList.remove('active');
+    recalculateModalPrice();
 }
 
 function confirmPzModalAdd() {
@@ -482,13 +519,18 @@ function confirmPzModalAdd() {
     const toppingList = Array.from(checkedToppings).map(el => el.value).join(', ');
 
     let addedName = currentPizzaToCart.name;
-    addedName += ` (Đế: ${crust}, Trí: ${cheese})`;
+    addedName += ` (Đế: ${crust}, Phô mai: ${cheese})`;
     if (toppingList) addedName += ` + ${toppingList}`;
+
+    let finalPrice = parseFloat(currentPizzaToCart.price || 0);
+    checkedToppings.forEach(t => {
+        finalPrice += parseFloat(t.getAttribute('data-price') || 0);
+    });
 
     const customizedProduct = {
         id: currentPizzaToCart.id + '-' + crust + '-' + cheese + (toppingList ? '-' + toppingList.replace(/, /g,'').substring(0,5) : ''),
         name: addedName,
-        price: currentPizzaToCart.price,
+        price: finalPrice,
         image: currentPizzaToCart.image,
         quantity: currentPizzaModalQty
     };

@@ -1,0 +1,154 @@
+@model IEnumerable<PizzaDeli.Models.Topping>
+@{
+    ViewData["Title"] = "Quản lý Topping";
+    Layout = "_AdminLayout";
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    var currentStatus = ViewBag.CurrentStatus as string ?? "all";
+}
+
+<div class="page-header">
+    <div class="ph-titles">
+        <h2>Quản lý topping đi kèm</h2>
+        <p>Danh sách topping hiện tại trong hệ thống.</p>
+    </div>
+    <div class="ph-actions">
+        <a asp-action="ToppingCreate" class="btn-pill primary add-btn">
+            <span class="material-symbols-outlined">add_circle</span>
+            Thêm topping mới
+        </a>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background: #dcfce7; color: #16a34a; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+<div class="product-list-container">
+    <!-- Toolbar: Search & Filter -->
+    <div class="pl-toolbar">
+        <form method="get" asp-action="Toppings" class="pl-search">
+            <span class="material-symbols-outlined search-icon">search</span>
+            <input type="text" name="searchQuery" value="@ViewBag.SearchQuery" placeholder="Tìm kiếm theo tên sản phẩm hoặc mã..." onchange="this.form.submit()" style="background:#f9fafb;" />
+            <input type="hidden" name="status" value="@currentStatus" />
+        </form>
+        
+        <div class="pl-tabs-wrapper">
+            <div class="pl-tabs" style="border: 1px solid #e5e7eb; border-radius: 99px; overflow: hidden; display:inline-flex;">
+                <a href="@Url.Action("Toppings", new { searchQuery = ViewBag.SearchQuery, status = "all" })" class="pl-tab @(currentStatus == "all" ? "active" : "")" style="padding: 0.5rem 1.5rem; text-decoration:none; color: #6b7280; font-weight:600; @(currentStatus == "all" ? "color:#111827;" : "")">Tất cả</a>
+                <a href="@Url.Action("Toppings", new { searchQuery = ViewBag.SearchQuery, status = "active" })" class="pl-tab @(currentStatus == "active" ? "active" : "")" style="padding: 0.5rem 1.5rem; text-decoration:none; color: #6b7280; font-weight:600; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; @(currentStatus == "active" ? "color:#111827;" : "")">Đang hoạt động</a>
+                <a href="@Url.Action("Toppings", new { searchQuery = ViewBag.SearchQuery, status = "inactive" })" class="pl-tab @(currentStatus == "inactive" ? "active" : "")" style="padding: 0.5rem 1.5rem; text-decoration:none; color: #6b7280; font-weight:600; @(currentStatus == "inactive" ? "color:#111827;" : "")">Ngừng bán</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Table -->
+    <div class="table-responsive">
+        <table class="pl-table" style="width: 100%; border-collapse: separate; border-spacing: 0; text-align: left;">
+            <thead>
+                <tr>
+                    <th style="padding: 1rem; color: #9ca3af; font-size: 0.75rem; font-weight: 700;">HÌNH ẢNH</th>
+                    <th style="padding: 1rem; color: #9ca3af; font-size: 0.75rem; font-weight: 700;">TÊN SẢN PHẨM</th>
+                    <th style="padding: 1rem; color: #9ca3af; font-size: 0.75rem; font-weight: 700; text-align: center;">DANH MỤC</th>
+                    <th style="padding: 1rem; color: #9ca3af; font-size: 0.75rem; font-weight: 700;">GIÁ TIỀN</th>
+                    <th style="padding: 1rem; color: #9ca3af; font-size: 0.75rem; font-weight: 700;">TRẠNG THÁI</th>
+                    <th style="padding: 1rem; color: #9ca3af; font-size: 0.75rem; font-weight: 700; text-align: right;">HÀNH ĐỘNG</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td style="padding: 1rem; border-bottom: 1px solid #f3f4f6;">
+                            <div class="pt-img" style="background-image: url('@(string.IsNullOrEmpty(item.ImageUrl) ? "/images/placeholder.jpg" : item.ImageUrl)'); border-radius: 50%; width: 50px; height: 50px; background-size: cover; background-position: center;"></div>
+                        </td>
+                        <td style="padding: 1rem; border-bottom: 1px solid #f3f4f6;">
+                            <div class="pt-name" style="font-weight: 700; color: #111827; margin-bottom: 0.2rem;">@item.Name</div>
+                            <div class="pt-code" style="color:#d1d5db; font-size: 0.75rem; font-weight:500;">#@item.Id.Substring(0, 8).ToUpper()</div>
+                        </td>
+                        <td style="padding: 1rem; border-bottom: 1px solid #f3f4f6; text-align: center;">
+                            <span style="background: #fef3c7; color: #b45309; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase;">
+                                TOPPING
+                            </span>
+                        </td>
+                        <td style="padding: 1rem; border-bottom: 1px solid #f3f4f6;">
+                            <span class="pt-price" style="font-weight:800; color: #111827;">@item.Price.ToString("N0")đ</span>
+                        </td>
+                        <td style="padding: 1rem; border-bottom: 1px solid #f3f4f6;">
+                            @if (item.IsAvailable)
+                            {
+                                <div class="pt-status status-in" style="font-weight:700; color:#10b981; display:flex; align-items:center; gap:0.5rem; font-size:0.875rem;">
+                                    <div class="dot green" style="width:6px; height:6px; background:#10b981; border-radius:50%;"></div> Còn hàng
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="pt-status status-out" style="font-weight:700; color:#ef4444; display:flex; align-items:center; gap:0.5rem; font-size:0.875rem;">
+                                    <div class="dot grey" style="width:6px; height:6px; background:#ef4444; border-radius:50%;"></div> Hết hàng
+                                </div>
+                            }
+                        </td>
+                        <td style="padding: 1rem; border-bottom: 1px solid #f3f4f6; text-align:right;">
+                            <div class="pt-actions" style="display:inline-flex; gap:0.5rem;">
+                                <a asp-action="ToppingEdit" asp-route-id="@item.Id" class="action-btn edit" title="Sửa" style="background: #eff6ff; color: #3b82f6; width: 36px; height: 36px; border-radius: 8px; display:inline-flex; align-items:center; justify-content:center; text-decoration:none;">
+                                    <span class="material-symbols-outlined" style="font-size: 1.1rem;">edit</span>
+                                </a>
+                                <form asp-action="ToppingDelete" asp-route-id="@item.Id" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa topping này?');">
+                                    <button type="submit" class="action-btn delete" title="Xóa" style="background: #fef2f2; color: #ef4444; border:none; width: 36px; height: 36px; border-radius: 8px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;">
+                                        <span class="material-symbols-outlined" style="font-size: 1.1rem;">delete</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                
+                @if(!Model.Any())
+                {
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #999; padding: 4rem;">
+                            Chưa có topping nào. Nhấn <b style="color:#5c3d2e;">Thêm sản phẩm mới</b> để tạo.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pl-footer" style="display:flex; justify-content:space-between; align-items:center; margin-top: 1.5rem; border-top: 1px solid #f3f4f6; padding-top: 1.5rem;">
+        <div class="pl-info" style="color:#9ca3af; font-weight:600; font-size: 0.8rem; letter-spacing: 0.05em;">
+            HIỂN THỊ <strong style="color:#374151;">@(Model.Count())</strong> TRONG SỐ <strong style="color:#374151;">@ViewBag.TotalProducts</strong> SẢN PHẨM
+        </div>
+        <div class="pl-pagination" style="display:flex; gap: 0.5rem; align-items:center;">
+            @if (currentPage > 1)
+            {
+                <a href="@Url.Action("Toppings", new { page = currentPage - 1, searchQuery = ViewBag.SearchQuery, status = currentStatus })" class="page-btn" style="background:#5c3d2e; color:#fff; border-radius:50%; width: 32px; height: 32px; display:inline-flex; align-items:center; justify-content:center; text-decoration:none;">
+                    <span class="material-symbols-outlined" style="font-size:1.2rem;">chevron_left</span>
+                </a>
+            }
+            
+            @for (int i = 1; i <= totalPages; i++)
+            {
+                if (i == 1 || i == totalPages || Math.Abs(i - currentPage) <= 1)
+                {
+                     <a href="@Url.Action("Toppings", new { page = i, searchQuery = ViewBag.SearchQuery, status = currentStatus })" class="page-btn @(i == currentPage ? "active" : "")" style="@(i == currentPage ? "background:#5c3d2e; color:#fff; border-radius:50%; width: 32px; height: 32px; display:inline-flex; align-items:center; justify-content:center; text-decoration:none; font-weight:700;" : "color:#5c3d2e; width: 32px; height: 32px; display:inline-flex; align-items:center; justify-content:center; text-decoration:none; font-weight:700;")">@i</a>
+                }
+                else if (Math.Abs(i - currentPage) == 2)
+                {
+                    <span class="page-dots" style="color:#9ca3af; padding:0 0.5rem;">...</span>
+                }
+            }
+
+            @if (currentPage < totalPages)
+            {
+                <a href="@Url.Action("Toppings", new { page = currentPage + 1, searchQuery = ViewBag.SearchQuery, status = currentStatus })" class="page-btn" style="background:#5c3d2e; color:#fff; border-radius:50%; width: 32px; height: 32px; display:inline-flex; align-items:center; justify-content:center; text-decoration:none;">
+                    <span class="material-symbols-outlined" style="font-size:1.2rem;">chevron_right</span>
+                </a>
+            }
+        </div>
+    </div>
+</div>

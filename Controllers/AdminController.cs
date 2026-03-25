@@ -36,7 +36,7 @@ public class AdminController : BaseController
             .Where(o => o.OrderDate.Date == today && o.Status == "Completed")
             .SumAsync(o => (decimal?)o.FinalAmount) ?? 0;
         ViewBag.TotalProducts = await _db.Products.CountAsync();
-        ViewBag.TotalCustomers = await _db.Users.CountAsync(u => u.Role == "Customer");
+        ViewBag.TotalCustomers = await _db.Users.CountAsync(u => u.Role == UserRole.Customer);
 
         // Tổng quan - Đơn hàng tháng này
         ViewBag.OrdersThisMonth = await _db.Orders
@@ -60,8 +60,8 @@ public class AdminController : BaseController
             .ToListAsync();
 
         // Nhân viên theo role  
-        ViewBag.AdminCount = await _db.Users.CountAsync(u => u.Role == "Admin");
-        ViewBag.StaffCount = await _db.Users.CountAsync(u => u.Role == "Staff");
+        ViewBag.AdminCount = await _db.Users.CountAsync(u => u.Role == UserRole.Admin);
+        ViewBag.StaffCount = await _db.Users.CountAsync(u => u.Role == UserRole.Staff);
 
         // Voucher đang chạy
         ViewBag.ActiveVouchers = await _db.Vouchers
@@ -119,9 +119,9 @@ public class AdminController : BaseController
         ViewBag.StatAOVPct  = CalcPct(aovThis, aovLast);
 
         // ---- Khách hàng ----
-        int cusThis  = await _db.Users.CountAsync(u => u.Role == "Customer" && u.CreatedAt >= thisMonthStart);
-        int cusLast  = await _db.Users.CountAsync(u => u.Role == "Customer" && u.CreatedAt >= lastMonthStart && u.CreatedAt < lastMonthEnd);
-        int cusTotal = await _db.Users.CountAsync(u => u.Role == "Customer");
+        int cusThis  = await _db.Users.CountAsync(u => u.Role == UserRole.Customer && u.CreatedAt >= thisMonthStart);
+        int cusLast  = await _db.Users.CountAsync(u => u.Role == UserRole.Customer && u.CreatedAt >= lastMonthStart && u.CreatedAt < lastMonthEnd);
+        int cusTotal = await _db.Users.CountAsync(u => u.Role == UserRole.Customer);
         ViewBag.StatsCustomers   = cusTotal;
         ViewBag.StatCustomersPct = CalcPct(cusThis, cusLast);
 
@@ -220,11 +220,46 @@ public class AdminController : BaseController
         return View(products);
     }
 
+    // 1.1 Xem danh sách Topping (dùng bảng Topping mới)
+    public async Task<IActionResult> Toppings(string searchQuery = "", string status = "all", int page = 1)
+    {
+        var g = Guard(); if (g != null) return g;
+
+        var query = _db.Toppings.AsQueryable();
+
+        // Lọc theo từ khóa
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.Where(p => p.Name.Contains(searchQuery) || p.Id.Contains(searchQuery));
+            ViewBag.SearchQuery = searchQuery;
+        }
+
+        // Lọc theo trạng thái
+        if (status == "active") query = query.Where(p => p.IsAvailable);
+        else if (status == "inactive") query = query.Where(p => !p.IsAvailable);
+        ViewBag.CurrentStatus = status;
+
+        // Phân trang đơn giản
+        int pageSize = 10;
+        int totalProducts = await query.CountAsync();
+        var products = await query.OrderByDescending(p => p.CreatedAt)
+                                  .Skip((page - 1) * pageSize)
+                                  .Take(pageSize)
+                                  .ToListAsync();
+
+        ViewBag.TotalProducts = totalProducts;
+        ViewBag.CurrentPage = page;
+        ViewBag.TotalPages = (int)Math.Ceiling(totalProducts / (double)pageSize);
+
+        return View(products);
+    }
+
     // 2. Tải Form tạo sản phẩm
     public async Task<IActionResult> ProductCreate()  
     { 
         var g = Guard(); if (g != null) return g; 
         ViewBag.Categories = await _db.Categories.Where(c => c.IsActive).ToListAsync(); // Chỉ danh mục active
+        ViewBag.Toppings = await _db.Toppings.Where(t => t.IsAvailable).ToListAsync();
         return View(new Product()); 
     }
 
@@ -255,6 +290,15 @@ public class AdminController : BaseController
 
             model.CreatedAt = DateTime.Now;
             if (string.IsNullOrEmpty(model.Id)) model.Id = Guid.NewGuid().ToString("N");
+
+            // Xử lý chọn topping thêm cho Product
+            if (model.SelectedToppings != null && model.SelectedToppings.Any())
+            {
+                foreach (var tId in model.SelectedToppings)
+                {
+                    model.ProductToppings.Add(new ProductTopping { ProductId = model.Id, ToppingId = tId });
+                }
+            }
             
             _db.Products.Add(model);
             await _db.SaveChangesAsync();
@@ -264,6 +308,7 @@ public class AdminController : BaseController
         }
 
         ViewBag.Categories = await _db.Categories.Where(c => c.IsActive).ToListAsync();
+        ViewBag.Toppings = await _db.Toppings.Where(t => t.IsAvailable).ToListAsync();
         return View(model);
     }
 
@@ -272,10 +317,14 @@ public class AdminController : BaseController
     { 
         var g = Guard(); if (g != null) return g; 
 
-        var product = await _db.Products.FindAsync(id);
+        var product = await _db.Products.Include(p => p.ProductToppings).FirstOrDefaultAsync(p => p.Id == id);
         if (product == null) return NotFound();
 
+        // Load danh sách topping đã chọn
+        product.SelectedToppings = product.ProductToppings.Select(pt => pt.ToppingId).ToList();
+
         ViewBag.Categories = await _db.Categories.Where(c => c.IsActive).ToListAsync(); // Chỉ danh mục active
+        ViewBag.Toppings = await _db.Toppings.Where(t => t.IsAvailable).ToListAsync();
         return View(product); 
     }
 
@@ -313,6 +362,19 @@ public class AdminController : BaseController
             }
 
             _db.Products.Update(p);
+
+            // Cập nhật quan hệ Toppings
+            var existingTops = await _db.ProductToppings.Where(pt => pt.ProductId == p.Id).ToListAsync();
+            _db.ProductToppings.RemoveRange(existingTops);
+
+            if (model.SelectedToppings != null && model.SelectedToppings.Any())
+            {
+                foreach (var tId in model.SelectedToppings)
+                {
+                    _db.ProductToppings.Add(new ProductTopping { ProductId = p.Id, ToppingId = tId });
+                }
+            }
+
             await _db.SaveChangesAsync();
             
             TempData["SuccessMessage"] = "Đã cập nhật sản phẩm thành công!";
@@ -320,6 +382,7 @@ public class AdminController : BaseController
         }
         
         ViewBag.Categories = await _db.Categories.Where(c => c.IsActive).ToListAsync();
+        ViewBag.Toppings = await _db.Toppings.Where(t => t.IsAvailable).ToListAsync();
         return View(model);
     }
 
@@ -338,6 +401,119 @@ public class AdminController : BaseController
             TempData["SuccessMessage"] = "Đã xóa sản phẩm!";
         }
         return RedirectToAction(nameof(Products));
+    }
+
+    // ==========================================
+    // ---- Quản lý Topping (CRUD) ----
+    // ==========================================
+
+    public async Task<IActionResult> ToppingCreate()  
+    { 
+        var g = Guard(); if (g != null) return g; 
+        return View(new Topping()); 
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToppingCreate(Topping model, IFormFile? uploadImage)
+    {
+        var g = Guard(); if (g != null) return g;
+
+        if (ModelState.IsValid)
+        {
+            if (uploadImage != null && uploadImage.Length > 0)
+            {
+                string uploadDir = Path.Combine(_webHostEnvironment.WebRootPath, "images", "products");
+                Directory.CreateDirectory(uploadDir);
+
+                string fileName = Guid.NewGuid().ToString() + Path.GetExtension(uploadImage.FileName);
+                string filePath = Path.Combine(uploadDir, fileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await uploadImage.CopyToAsync(fileStream);
+                }
+                model.ImageUrl = "/images/products/" + fileName;
+            }
+
+            model.CreatedAt = DateTime.Now;
+            if (string.IsNullOrEmpty(model.Id)) model.Id = Guid.NewGuid().ToString("N");
+            
+            _db.Toppings.Add(model);
+            await _db.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Đã thêm topping thành công!";
+            return RedirectToAction(nameof(Toppings));
+        }
+
+        return View(model);
+    }
+
+    public async Task<IActionResult> ToppingEdit(string id) 
+    { 
+        var g = Guard(); if (g != null) return g; 
+
+        var product = await _db.Toppings.FindAsync(id);
+        if (product == null) return NotFound();
+
+        return View(product); 
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToppingEdit(Topping model, IFormFile? uploadImage)
+    {
+        var g = Guard(); if (g != null) return g;
+
+        if (ModelState.IsValid)
+        {
+            var p = await _db.Toppings.FindAsync(model.Id);
+            if (p == null) return NotFound();
+
+            p.Name = model.Name;
+            p.Price = model.Price;
+            p.IsAvailable = model.IsAvailable;
+            p.UpdatedAt = DateTime.UtcNow;
+            
+            if (uploadImage != null && uploadImage.Length > 0)
+            {
+                string uploadDir = Path.Combine(_webHostEnvironment.WebRootPath, "images", "products");
+                Directory.CreateDirectory(uploadDir);
+
+                string fileName = Guid.NewGuid().ToString() + Path.GetExtension(uploadImage.FileName);
+                string filePath = Path.Combine(uploadDir, fileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await uploadImage.CopyToAsync(fileStream);
+                }
+                p.ImageUrl = "/images/products/" + fileName;
+            }
+
+            _db.Toppings.Update(p);
+            await _db.SaveChangesAsync();
+            
+            TempData["SuccessMessage"] = "Đã cập nhật topping thành công!";
+            return RedirectToAction(nameof(Toppings));
+        }
+        
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToppingDelete(string id)
+    {
+        var g = Guard(); if (g != null) return g;
+
+        var product = await _db.Toppings.FindAsync(id);
+        if (product != null)
+        {
+            _db.Toppings.Remove(product);
+            await _db.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Đã xóa topping thành công!";
+        }
+        return RedirectToAction(nameof(Toppings));
     }
 
     // ---- Quản lý danh mục (CRUD) ----
@@ -512,7 +688,7 @@ public class AdminController : BaseController
         ViewBag.CurrentStatus = status;
 
         // Lọc vai trò
-        if (role != "all") query = query.Where(u => u.Role == role);
+        if (role != "all" && Enum.TryParse<UserRole>(role, out var parsedRole)) query = query.Where(u => u.Role == parsedRole);
         ViewBag.CurrentRole = role;
 
         int pageSize = 10;
@@ -545,7 +721,7 @@ public class AdminController : BaseController
     {
         var g = Guard(); if (g != null) return g;
 
-        var query = _db.Users.Where(u => u.Role != "Customer").AsQueryable();
+        var query = _db.Users.Where(u => u.Role != UserRole.Customer).AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
@@ -565,8 +741,8 @@ public class AdminController : BaseController
                                .ToListAsync();
 
         ViewBag.TotalStaff = totalStaff;
-        ViewBag.WorkingStaff = await _db.Users.CountAsync(u => u.Role != "Customer" && u.IsActive);
-        ViewBag.LeaveStaff = await _db.Users.CountAsync(u => u.Role != "Customer" && !u.IsActive);
+        ViewBag.WorkingStaff = await _db.Users.CountAsync(u => u.Role != UserRole.Customer && u.IsActive);
+        ViewBag.LeaveStaff = await _db.Users.CountAsync(u => u.Role != UserRole.Customer && !u.IsActive);
         ViewBag.CurrentPage = page;
         ViewBag.TotalPages = (int)Math.Ceiling(totalStaff / (double)pageSize);
 
@@ -598,6 +774,8 @@ public class AdminController : BaseController
                 model.Avatar = "/images/avatars/" + fileName;
             }
 
+            model.PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456");
+
             _db.Users.Add(model);
             await _db.SaveChangesAsync();
             TempData["SuccessMessage"] = $"Đã thêm nhân viên \"{model.FullName}\" thành công!";
@@ -612,7 +790,7 @@ public class AdminController : BaseController
         var g = Guard(); if (g != null) return g;
 
         var user = await _db.Users.FindAsync(id);
-        if (user == null || user.Role == "Customer") return NotFound();
+        if (user == null || user.Role == UserRole.Customer) return NotFound();
 
         return View(user);
     }
@@ -624,13 +802,13 @@ public class AdminController : BaseController
         var g = Guard(); if (g != null) return g;
 
         var user = await _db.Users.FindAsync(id);
-        if (user == null || user.Role == "Customer") return NotFound();
+        if (user == null || user.Role == UserRole.Customer) return NotFound();
 
-        if (role == "Admin" || role == "Staff")
+        if (Enum.TryParse<UserRole>(role, out var parsedRole) && (parsedRole == UserRole.Admin || parsedRole == UserRole.Staff))
         {
-            user.Role = role;
+            user.Role = parsedRole;
             await _db.SaveChangesAsync();
-            TempData["SuccessMessage"] = $"Đã cập nhật chức vụ nhân viên \"{user.FullName}\" thành {role}!";
+            TempData["SuccessMessage"] = $"Đã cập nhật chức vụ nhân viên \"{user.FullName}\" thành {parsedRole}!";
             return RedirectToAction(nameof(Staff));
         }
 
@@ -766,7 +944,17 @@ public class AdminController : BaseController
     {
         var g = Guard(); if (g != null) return g;
         var v = await _db.Vouchers.FindAsync(id);
-        if (v != null) { _db.Vouchers.Remove(v); await _db.SaveChangesAsync(); TempData["SuccessMessage"] = "Đã xóa voucher!"; }
+        if (v != null)
+        {
+            // Gỡ FK trước khi xóa: null hóa VoucherId ở các đơn hàng liên quan
+            var relatedOrders = await _db.Orders.Where(o => o.VoucherId == id).ToListAsync();
+            foreach (var order in relatedOrders)
+                order.VoucherId = null;
+
+            _db.Vouchers.Remove(v);
+            await _db.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Đã xóa voucher!";
+        }
         return RedirectToAction(nameof(Promotions));
     }
 }

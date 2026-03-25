@@ -37,7 +37,7 @@ public class AccountController : BaseController
         return user.Role switch
         {
             "Admin" => RedirectToAction("Dashboard", "Admin"),
-            "Staff" => RedirectToAction("Dashboard", "Staff"),
+            "Staff" => RedirectToAction("Orders", "Staff"),
             _       => string.IsNullOrEmpty(returnUrl)
                           ? RedirectToAction("Index", "Home")
                           : Redirect(returnUrl)

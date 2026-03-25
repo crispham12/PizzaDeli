@@ -62,7 +62,7 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate(); // Đảm bảo database đã được tạo
 
-    if (!db.Users.Any(u => u.Role == "Admin"))
+    if (!db.Users.Any(u => u.Role == UserRole.Admin))
     {
         db.Users.Add(new User
         {
@@ -70,14 +70,14 @@ using (var scope = app.Services.CreateScope())
             FullName = "Admin Quản Trị",
             Email = "admin@gmail.com",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("123123"),
-            Role = "Admin",
+            Role = UserRole.Admin,
             Phone = "0999999999",
             IsActive = true,
             CreatedAt = DateTime.Now
         });
     }
 
-    if (!db.Users.Any(u => u.Role == "Staff"))
+    if (!db.Users.Any(u => u.Role == UserRole.Staff))
     {
         db.Users.Add(new User
         {
@@ -85,7 +85,7 @@ using (var scope = app.Services.CreateScope())
             FullName = "Nhân viên",
             Email = "staff@gmail.com",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("123123"),
-            Role = "Staff",
+            Role = UserRole.Staff,
             Phone = "0888888888",
             IsActive = true,
             CreatedAt = DateTime.Now

@@ -22,26 +22,6 @@ namespace PizzaDeli.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("PizzaDeli.Models.CartItem", b =>
-                {
-                    b.Property<string>("UserId")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("ProductId")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("int");
-
-                    b.HasKey("UserId", "ProductId");
-
-                    b.HasIndex("ProductId");
-
-                    b.ToTable("CartItems");
-                });
-
             modelBuilder.Entity("PizzaDeli.Models.Category", b =>
                 {
                     b.Property<int>("Id")
@@ -178,6 +158,23 @@ namespace PizzaDeli.Migrations
                     b.ToTable("Products");
                 });
 
+            modelBuilder.Entity("PizzaDeli.Models.ProductTopping", b =>
+                {
+                    b.Property<string>("ProductId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ToppingId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("ProductId", "ToppingId");
+
+                    b.HasIndex("ToppingId");
+
+                    b.ToTable("ProductToppings");
+                });
+
             modelBuilder.Entity("PizzaDeli.Models.Review", b =>
                 {
                     b.Property<int>("Id")
@@ -215,6 +212,37 @@ namespace PizzaDeli.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Reviews");
+                });
+
+            modelBuilder.Entity("PizzaDeli.Models.Topping", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsAvailable")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Toppings");
                 });
 
             modelBuilder.Entity("PizzaDeli.Models.User", b =>
@@ -262,10 +290,8 @@ namespace PizzaDeli.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -316,25 +342,6 @@ namespace PizzaDeli.Migrations
                     b.ToTable("Vouchers");
                 });
 
-            modelBuilder.Entity("PizzaDeli.Models.CartItem", b =>
-                {
-                    b.HasOne("PizzaDeli.Models.Product", "Product")
-                        .WithMany("CartItems")
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PizzaDeli.Models.User", "User")
-                        .WithMany("CartItems")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Product");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("PizzaDeli.Models.Order", b =>
                 {
                     b.HasOne("PizzaDeli.Models.User", "User")
@@ -380,6 +387,25 @@ namespace PizzaDeli.Migrations
                     b.Navigation("Category");
                 });
 
+            modelBuilder.Entity("PizzaDeli.Models.ProductTopping", b =>
+                {
+                    b.HasOne("PizzaDeli.Models.Product", "Product")
+                        .WithMany("ProductToppings")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PizzaDeli.Models.Topping", "Topping")
+                        .WithMany()
+                        .HasForeignKey("ToppingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Topping");
+                });
+
             modelBuilder.Entity("PizzaDeli.Models.Review", b =>
                 {
                     b.HasOne("PizzaDeli.Models.Product", "Product")
@@ -411,17 +437,15 @@ namespace PizzaDeli.Migrations
 
             modelBuilder.Entity("PizzaDeli.Models.Product", b =>
                 {
-                    b.Navigation("CartItems");
-
                     b.Navigation("OrderDetails");
+
+                    b.Navigation("ProductToppings");
 
                     b.Navigation("Reviews");
                 });
 
             modelBuilder.Entity("PizzaDeli.Models.User", b =>
                 {
-                    b.Navigation("CartItems");
-
                     b.Navigation("Orders");
 
                     b.Navigation("Reviews");

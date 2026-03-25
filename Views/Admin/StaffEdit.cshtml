@@ -234,8 +234,8 @@
             <div class="stf-fg">
                 <label class="stf-label">Chức vụ</label>
                 <select name="role" class="stf-input" required>
-                    <!option value="Staff" @(Model.Role == "Staff" ? "selected" : "")>Nhân viên (Staff)</!option>
-                    <!option value="Admin" @(Model.Role == "Admin" ? "selected" : "")>Quản trị viên (Admin)</!option>
+                    <!option value="Staff" @(Model.Role == PizzaDeli.Models.UserRole.Staff ? "selected" : "")>Nhân viên (Staff)</!option>
+                    <!option value="Admin" @(Model.Role == PizzaDeli.Models.UserRole.Admin ? "selected" : "")>Quản trị viên (Admin)</!option>
                 </select>
             </div>
         </div>

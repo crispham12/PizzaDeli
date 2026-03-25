@@ -1,0 +1,703 @@
+@model List<PizzaDeli.Models.Category>
+@{
+    ViewData["Title"] = "Thực Đơn - PizzaDeli";
+    var isAddMore = Context.Request.Query["addmore"] == "1";
+
+    // Tách danh mục "topping" ra riêng (Drinks & Toppings section)
+    var mainCats  = Model?.Where(c => !c.Name.Contains("topping", StringComparison.OrdinalIgnoreCase)
+                                   && !c.Name.Contains("drink", StringComparison.OrdinalIgnoreCase)
+                                   && !c.Name.Contains("đồ uống", StringComparison.OrdinalIgnoreCase)).ToList()
+                    ?? new();
+    var sideCats  = Model?.Where(c =>  c.Name.Contains("topping", StringComparison.OrdinalIgnoreCase)
+                                   ||  c.Name.Contains("drink", StringComparison.OrdinalIgnoreCase)
+                                   ||  c.Name.Contains("đồ uống", StringComparison.OrdinalIgnoreCase)).ToList()
+                    ?? new();
+
+    // Nếu không tìm được phân loại thì hiện tất cả trong main
+    if (!mainCats.Any() && !sideCats.Any()) mainCats = Model ?? new();
+
+    var firstCat     = mainCats.FirstOrDefault();
+    var featuredProd = firstCat?.Products?.FirstOrDefault();
+}
+
+@section Styles {
+<style>
+/* ===== Layout ===== */
+.menu-page { background: #f7f4f0; min-height: 100vh; }
+
+/* ===== Page header ===== */
+.menu-page-header {
+    background: #fff;
+    border-bottom: 1px solid #ede8e3;
+    padding: 2.5rem 0 0;
+}
+.menu-page-header .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+.menu-page-title { font-size: 2rem; font-weight: 800; color: #1a1a1a; margin: 0 0 .25rem; }
+.menu-page-sub { color: #9ca3af; font-size: .95rem; margin-bottom: 1.5rem; }
+
+/* ===== Category tabs ===== */
+.cat-tabs {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.cat-tab {
+    padding: .45rem 1.15rem;
+    border-radius: 99px;
+    border: 1.5px solid transparent;
+    font-weight: 700;
+    font-size: .88rem;
+    cursor: pointer;
+    background: #f0ebe5;
+    color: #5c3d2e;
+    transition: all .18s;
+    text-decoration: none;
+    white-space: nowrap;
+}
+.cat-tab:hover { background: #e6ded6; color: #3d2518; }
+.cat-tab.active {
+    background: #5c3d2e;
+    color: #fff;
+    border-color: #5c3d2e;
+}
+.tab-filter-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0 0;
+    border-top: 1px solid #ede8e3;
+    margin-top: 1.2rem;
+    gap: 1rem;
+}
+.filter-label { font-size: .82rem; color: #9ca3af; font-weight: 600; margin-right: .35rem; }
+.filter-select {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: .3rem .7rem;
+    font-size: .85rem;
+    color: #374151;
+    background: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+}
+
+/* ===== Main content area ===== */
+.menu-body { max-width: 1100px; margin: 2rem auto; padding: 0 1.5rem 4rem; }
+
+/* ===== Featured hero card ===== */
+.featured-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,.07);
+    margin-bottom: 2.5rem;
+    min-height: 280px;
+}
+.featured-img-wrap { position: relative; overflow: hidden; }
+.featured-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .4s; }
+.featured-card:hover .featured-img-wrap img { transform: scale(1.04); }
+.featured-badge {
+    position: absolute; top: 14px; left: 14px;
+    background: #5c3d2e; color: #fff;
+    font-size: .72rem; font-weight: 800;
+    padding: .3rem .7rem; border-radius: 6px;
+    letter-spacing: .08em; text-transform: uppercase;
+}
+.featured-info {
+    padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: .6rem;
+}
+.featured-cat-label { font-size: .78rem; font-weight: 700; color: #b07850; text-transform: uppercase; letter-spacing: .1em; }
+.featured-name { font-size: 1.7rem; font-weight: 800; color: #1a1a1a; line-height: 1.2; }
+.featured-desc { font-size: .92rem; color: #6b7280; line-height: 1.6; }
+.featured-price { font-size: 1.45rem; font-weight: 800; color: #5c3d2e; margin-top: .5rem; }
+.featured-actions { display: flex; gap: .75rem; margin-top: .5rem; }
+.btn-featured-cart {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: #5c3d2e; color: #fff;
+    border: none; border-radius: 10px;
+    padding: .65rem 1.4rem; font-weight: 700; font-size: .9rem;
+    cursor: pointer; transition: background .18s, transform .15s;
+}
+.btn-featured-cart:hover { background: #4a2e1e; transform: translateY(-1px); }
+.btn-featured-buy {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: #f0ebe5; color: #5c3d2e;
+    border: none; border-radius: 10px;
+    padding: .65rem 1.2rem; font-weight: 700; font-size: .9rem;
+    cursor: pointer; transition: background .18s;
+}
+.btn-featured-buy:hover { background: #e6ded6; }
+
+/* ===== Section label ===== */
+.section-row-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+}
+.section-label {
+    font-size: 1.15rem; font-weight: 800; color: #1a1a1a;
+    margin: 0;
+    white-space: nowrap;
+    order: 0;
+    flex-shrink: 0;
+}
+.section-row-header::after {
+    content: '';
+    flex: 1; height: 1px; background: #e5e7eb;
+    order: 1;
+}
+.section-row-header .mpager-wrap { order: 2; margin-top: 0; flex-shrink: 0; }
+
+/* ===== Products grid ===== */
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 0;
+}
+@@media (max-width: 768px) { .menu-grid { grid-template-columns: repeat(2,1fr); } }
+@@media (max-width: 480px) { .menu-grid { grid-template-columns: 1fr; } .featured-card { grid-template-columns: 1fr; } }
+
+.menu-card {
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,.05);
+    transition: box-shadow .2s, transform .2s;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+}
+.menu-card:hover { box-shadow: 0 8px 32px rgba(92,61,46,.12); transform: translateY(-3px); }
+.menu-card-img { position: relative; height: 170px; overflow: hidden; }
+.menu-card-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s; }
+.menu-card:hover .menu-card-img img { transform: scale(1.06); }
+.menu-card-body { padding: 1rem; flex: 1; display: flex; flex-direction: column; gap: .3rem; }
+.menu-card-name { font-size: 1rem; font-weight: 700; color: #1a1a1a; }
+.menu-card-desc { font-size: .82rem; color: #9ca3af; line-height: 1.5;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.menu-card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: .75rem; }
+.menu-card-price { font-size: 1.05rem; font-weight: 800; color: #5c3d2e; }
+.btn-card-add {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: none; background: #5c3d2e; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: background .15s, transform .15s;
+    flex-shrink: 0;
+}
+.btn-card-add:hover { background: #4a2e1e; transform: scale(1.1); }
+
+/* ===== Pagination ===== */
+.mpager-wrap {
+    display: none;
+    align-items: center;
+    gap: 8px;
+}
+.mpager-wrap.visible { display: flex; }
+.mpager-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    border: 1.5px solid #e5e7eb; background: #fff; color: #374151;
+    border-radius: 99px; padding: .5rem 1.1rem;
+    font-weight: 700; font-size: .88rem; cursor: pointer;
+    transition: all .18s; box-shadow: 0 2px 6px rgba(0,0,0,.04);
+}
+.mpager-btn:hover:not(:disabled) { border-color: #5c3d2e; color: #5c3d2e; background: #fdf8f5; }
+.mpager-btn:disabled { opacity: .3; cursor: default; }
+.mpager-dots { display: flex; gap: 6px; align-items: center; }
+.mpager-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #d1d5db; cursor: pointer;
+    transition: background .2s, transform .2s;
+}
+.mpager-dot.active { background: #5c3d2e; transform: scale(1.35); }
+.mpager-info { font-size: .82rem; color: #9ca3af; font-weight: 600; }
+
+/* ===== Side/Drinks grid ===== */
+.side-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+@@media (max-width: 768px) { .side-grid { grid-template-columns: repeat(2,1fr); } }
+.side-card {
+    background: #fff; border-radius: 14px;
+    overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    cursor: pointer; transition: box-shadow .2s, transform .2s;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 1.25rem 1rem;
+    gap: .5rem;
+}
+.side-card:hover { box-shadow: 0 6px 24px rgba(92,61,46,.1); transform: translateY(-2px); }
+.side-card-img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
+.side-card-name { font-size: .9rem; font-weight: 700; color: #1a1a1a; text-align: center; }
+.side-card-price { font-size: .88rem; font-weight: 800; color: #5c3d2e; }
+
+/* ===== Cat sections ===== */
+.cat-section { display: none; }
+.cat-section.active { display: block; }
+
+/* ===== Empty state ===== */
+.empty-state { text-align: center; padding: 4rem 0; color: #9ca3af; }
+.empty-state .material-symbols-outlined { font-size: 3rem; opacity: .3; }
+/* ===== Dropdown ===== */
+.btn-profile-dropdown {
+    background-color: #f4ede6;
+    color: #1f2937;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 99px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.btn-profile-dropdown:hover { opacity: 0.9; }
+.customer-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    background: #ffffff;
+    color: #1f2937;
+    border-radius: 20px;
+    width: 280px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    z-index: 100;
+    overflow: hidden;
+    flex-direction: column;
+    padding: 0.5rem 0;
+}
+.customer-dropdown-menu.show { display: flex; }
+.c-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 11px 18px;
+    text-decoration: none;
+    color: #374151;
+    transition: background .15s;
+}
+.c-dropdown-item:hover { background: #f9fafb; color: #1f2937; }
+.c-item-icon-wrap {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.c-item-icon-wrap.primary { background: #e1d3c1; color: #533e38; }
+.c-item-icon-wrap.danger-bg { background: #eabfb9; }
+.c-item-text { display: flex; flex-direction: column; }
+.c-item-title { font-weight: 700; font-size: 1rem; color: #533e38; }
+.c-item-desc { font-size: .82rem; color: #8c837f; margin-top: 2px; }
+/* Active nav link */
+.nav-links a.active-nav { color: #c45c2e; font-weight: 800; }
+</style>
+}
+
+<div class="layout-container">
+
+@{
+    var _role  = Context.Session.GetString("USER_ROLE");
+    var _name  = Context.Session.GetString("USER_NAME");
+    var _auth  = !string.IsNullOrEmpty(_role);
+}
+
+<!-- ===== HEADER ===== -->
+<header class="site-header">
+    <div class="container nav-inner">
+        <div class="nav-left">
+            <div class="brand">
+                <span class="material-symbols-outlined">local_pizza</span>
+                <a asp-controller="Home" asp-action="Index" style="text-decoration:none;">
+                    <h2 class="brand-name">PizzaDeli</h2>
+                </a>
+            </div>
+            <nav class="nav-links">
+                <a asp-controller="Home" asp-action="Menu" class="active-nav">Thực đơn</a>
+                <a asp-controller="Home" asp-action="Promotions">Khuyến mãi</a>
+                <a href="#">Liên hệ</a>
+            </nav>
+        </div>
+
+        <div class="nav-actions">
+            @if (_auth)
+            {
+                @if (_role == "Admin")
+                {
+                    <a asp-controller="Admin" asp-action="Dashboard" class="btn-profile">
+                        <span class="material-symbols-outlined">admin_panel_settings</span>
+                        <span class="btn-profile-text">Admin</span>
+                    </a>
+                }
+                else if (_role == "Staff")
+                {
+                    <a asp-controller="Staff" asp-action="Orders" class="btn-profile">
+                        <span class="material-symbols-outlined">badge</span>
+                        <span class="btn-profile-text">Nhân viên</span>
+                    </a>
+                }
+                else
+                {
+                    <div style="position:relative;" id="customerDropdownWrapper">
+                        <button class="btn-profile-dropdown" onclick="toggleCustomerDropdown(event)">
+                            <span class="material-symbols-outlined">person</span>
+                            <span>@_name</span>
+                            <span class="material-symbols-outlined" style="font-size:1.1rem;">keyboard_arrow_down</span>
+                        </button>
+                        <div class="customer-dropdown-menu" id="customerDropdownMenu">
+                            <a href="/Customer/Orders" class="c-dropdown-item">
+                                <div class="c-item-icon-wrap primary"><span class="material-symbols-outlined">receipt_long</span></div>
+                                <div class="c-item-text">
+                                    <div class="c-item-title">Đơn hàng của tôi</div>
+                                    <div class="c-item-desc">Theo dõi &amp; quản lý đơn hàng</div>
+                                </div>
+                            </a>
+                            <a asp-controller="Customer" asp-action="Profile" class="c-dropdown-item">
+                                <div class="c-item-icon-wrap primary"><span class="material-symbols-outlined">person</span></div>
+                                <div class="c-item-text">
+                                    <div class="c-item-title">Thông tin cá nhân</div>
+                                    <div class="c-item-desc">Quản lý tài khoản của bạn</div>
+                                </div>
+                            </a>
+                            <a asp-controller="Account" asp-action="Logout" class="c-dropdown-item">
+                                <div class="c-item-icon-wrap danger-bg">
+                                    <span class="material-symbols-outlined" style="color:#782a2a;transform:scaleX(-1);">logout</span>
+                                </div>
+                                <div class="c-item-text" style="display:flex;align-items:center;">
+                                    <div class="c-item-title" style="color:#782a2a;font-size:1.1rem;margin:0;">Đăng xuất</div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                    <script>
+                        function toggleCustomerDropdown(e) {
+                            if(e) e.stopPropagation();
+                            document.getElementById('customerDropdownMenu').classList.toggle('show');
+                        }
+                        window.addEventListener('click', function(e) {
+                            var menu = document.getElementById('customerDropdownMenu');
+                            var wrapper = document.getElementById('customerDropdownWrapper');
+                            if (menu && menu.classList.contains('show') && !wrapper.contains(e.target))
+                                menu.classList.remove('show');
+                        });
+                    </script>
+                    <a href="javascript:void(0)" onclick="window.PizzaCart.openCartDrawer()" class="btn-cart" aria-label="Giỏ hàng">
+                        <span class="material-symbols-outlined">shopping_cart</span>
+                        <span class="cart-badge" id="cart-count">0</span>
+                    </a>
+                }
+                @if (_role != "Customer")
+                {
+                    <a asp-controller="Account" asp-action="Logout" class="btn-icon" title="Đăng xuất">
+                        <span class="material-symbols-outlined">logout</span>
+                    </a>
+                }
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login" class="btn-profile">
+                    <span class="material-symbols-outlined">login</span>
+                    <span class="btn-profile-text">Đăng nhập</span>
+                </a>
+                <a asp-controller="Account" asp-action="Register" class="btn-cart" style="text-decoration:none;padding:0.5rem 1rem;font-size:.875rem;font-weight:700;">Đăng ký</a>
+            }
+        </div>
+    </div>
+</header>
+
+<div class="menu-page">
+    <!-- ===== Page Header ===== -->
+    <div class="menu-page-header">
+        <div class="container">
+            <h1 class="menu-page-title">Thực Đơn Của Chúng Tôi</h1>
+            <p class="menu-page-sub">Nguyên liệu tươi ngon, chế biến thủ công với niềm đam mê. Khám phá hương vị yêu thích của bạn.</p>
+
+            <!-- Category Tabs -->
+            <div class="cat-tabs" id="catTabs">
+                @if (Model != null && Model.Any())
+                {
+                    bool first = true;
+                    foreach (var cat in Model)
+                    {
+                        <button class="cat-tab @(first ? "active" : "")"
+                                data-cat="cat-@cat.Id"
+                                onclick="switchCat(this)">@cat.Name</button>
+                        first = false;
+                    }
+                }
+            </div>
+
+            <div class="tab-filter-row">
+                <div style="font-size:.82rem; color:#6b7280;">
+                    <span class="material-symbols-outlined" style="font-size:1rem; vertical-align:middle; color:#5c3d2e;">info</span>
+                    Click vào sản phẩm để xem chi tiết và chọn topping
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <span class="filter-label">SẮP XẾP THEO:</span>
+                    <select class="filter-select" id="sortSelect" onchange="applySortAll()">
+                        <option value="default">Mặc định</option>
+                        <option value="price-asc">Giá tăng dần</option>
+                        <option value="price-desc">Giá giảm dần</option>
+                        <option value="name">Tên A-Z</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Menu Body ===== -->
+    <div class="menu-body">
+        @if (Model != null && Model.Any())
+        {
+            int catIdx = 0;
+            foreach (var cat in Model)
+            {
+                var products = cat.Products?.Where(p => p.IsAvailable).ToList() ?? new();
+                var featured = products.FirstOrDefault();
+                var rest     = products.Skip(1).ToList();
+                var catUid   = "cat-" + cat.Id;
+
+                <div class="cat-section @(catIdx == 0 ? "active" : "")" id="@catUid">
+
+                    @* ─── Featured hero card ─── *@
+                    @if (featured != null)
+                    {
+                        <div class="featured-card"
+                             data-product-id="@featured.Id"
+                             data-product-name="@featured.Name"
+                             data-product-price="@featured.Price"
+                             data-product-image="@(featured.ImageUrl ?? "")"
+                             data-product-cat="@cat.Name"
+                             data-product-desc="@featured.Description"
+                             data-product-toppings='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(featured.ProductToppings.Where(pt => pt.Topping != null).Select(pt => new { id = pt.ToppingId, name = pt.Topping!.Name, price = pt.Topping.Price })))'
+                             onclick="onCardItemClick(event, this)">
+                            <div class="featured-img-wrap">
+                                <img src="@(string.IsNullOrEmpty(featured.ImageUrl) ? "/images/no-image.png" : featured.ImageUrl)"
+                                     alt="@featured.Name" />
+                                <span class="featured-badge">Nổi bật</span>
+                            </div>
+                            <div class="featured-info">
+                                <div class="featured-cat-label">@cat.Name</div>
+                                <div class="featured-name">@featured.Name</div>
+                                <div class="featured-desc">@featured.Description</div>
+                                <div class="featured-price">@featured.Price.ToString("N0") ₫</div>
+                                <div class="featured-actions" onclick="event.stopPropagation()">
+                                    @if (isAddMore)
+                                    {
+                                        <button class="btn-featured-cart"
+                                                data-product-id="@featured.Id"
+                                                data-product-name="@featured.Name"
+                                                data-product-price="@featured.Price"
+                                                data-product-image="@(featured.ImageUrl ?? "")"
+                                                data-product-cat="@cat.Name"
+                                                data-product-desc="@featured.Description"
+                                                data-product-toppings='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(featured.ProductToppings.Where(pt => pt.Topping != null).Select(pt => new { id = pt.ToppingId, name = pt.Topping!.Name, price = pt.Topping.Price })))'
+                                                onclick="onAddMoreClick(event, this)">
+                                            <span class="material-symbols-outlined pointer-events-none">add_circle</span>
+                                            Mua thêm
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn-featured-cart"
+                                                data-product-id="@featured.Id"
+                                                data-product-name="@featured.Name"
+                                                data-product-price="@featured.Price"
+                                                data-product-image="@(featured.ImageUrl ?? "")"
+                                                data-product-cat="@cat.Name"
+                                                data-product-desc="@featured.Description"
+                                                data-product-toppings='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(featured.ProductToppings.Where(pt => pt.Topping != null).Select(pt => new { id = pt.ToppingId, name = pt.Topping!.Name, price = pt.Topping.Price })))'
+                                                onclick="onAddToCartClick(event, this)">
+                                            <span class="material-symbols-outlined pointer-events-none">add_shopping_cart</span>
+                                            Thêm vào giỏ
+                                        </button>
+                                        <button class="btn-featured-buy"
+                                                data-product-id="@featured.Id"
+                                                data-product-name="@featured.Name"
+                                                data-product-price="@featured.Price"
+                                                data-product-image="@(featured.ImageUrl ?? "")"
+                                                data-product-cat="@cat.Name"
+                                                data-product-desc="@featured.Description"
+                                                data-product-toppings='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(featured.ProductToppings.Where(pt => pt.Topping != null).Select(pt => new { id = pt.ToppingId, name = pt.Topping!.Name, price = pt.Topping.Price })))'
+                                                onclick="onBuyNowClick(event, this)">
+                                            <span class="material-symbols-outlined pointer-events-none">payments</span>
+                                            Mua ngay
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @* ─── Rest of products grid ─── *@
+                    @if (rest.Any())
+                    {
+                        <div class="section-row-header">
+                            <h2 class="section-label">Các món khác</h2>
+                            <div class="mpager-wrap" id="pager-@catUid"></div>
+                        </div>
+                        <div class="menu-grid" id="grid-@catUid">
+                            @{ int pIdx = 0; }
+                            @foreach (var p in rest)
+                            {
+                                <div class="menu-card menu-paged-item"
+                                     data-page-index="@pIdx"
+                                     data-original-index="@pIdx"
+                                     data-product-id="@p.Id"
+                                     data-product-name="@p.Name"
+                                     data-product-price="@p.Price"
+                                     data-product-image="@(p.ImageUrl ?? "")"
+                                     data-product-cat="@cat.Name"
+                                     data-product-desc="@p.Description"
+                                     data-product-toppings='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(p.ProductToppings.Where(pt => pt.Topping != null).Select(pt => new { id = pt.ToppingId, name = pt.Topping!.Name, price = pt.Topping.Price })))'
+                                     onclick="onCardItemClick(event, this)">
+                                    <div class="menu-card-img">
+                                        <img src="@(string.IsNullOrEmpty(p.ImageUrl) ? "/images/no-image.png" : p.ImageUrl)"
+                                             alt="@p.Name" loading="lazy" />
+                                    </div>
+                                    <div class="menu-card-body">
+                                        <div class="menu-card-name">@p.Name</div>
+                                        <div class="menu-card-desc">@p.Description</div>
+                                        <div class="menu-card-footer">
+                                            <span class="menu-card-price">@p.Price.ToString("N0") ₫</span>
+                                            <button class="btn-card-add"
+                                                    data-product-id="@p.Id"
+                                                    data-product-name="@p.Name"
+                                                    data-product-price="@p.Price"
+                                                    data-product-image="@(p.ImageUrl ?? "")"
+                                                    data-product-cat="@cat.Name"
+                                                    data-product-desc="@p.Description"
+                                                    data-product-toppings='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(p.ProductToppings.Where(pt => pt.Topping != null).Select(pt => new { id = pt.ToppingId, name = pt.Topping!.Name, price = pt.Topping.Price })))'
+                                                    title="Thêm vào giỏ"
+                                                    onclick="@(isAddMore ? "onAddMoreClick(event,this)" : "onAddToCartClick(event,this)")">
+                                                <span class="material-symbols-outlined pointer-events-none" style="font-size:1.1rem;">add</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                pIdx++;
+                            }
+                        </div>
+                    }
+                    else if (featured == null)
+                    {
+                        <div class="empty-state">
+                            <span class="material-symbols-outlined">restaurant_menu</span>
+                            <p style="margin-top:.75rem;font-weight:600;">Chưa có sản phẩm trong danh mục này</p>
+                        </div>
+                    }
+                </div>
+                catIdx++;
+            }
+        }
+        else
+        {
+            <div class="empty-state">
+                <span class="material-symbols-outlined">restaurant_menu</span>
+                <p style="margin-top:1rem;font-size:1.1rem;font-weight:600;">Chưa có danh mục nào</p>
+            </div>
+        }
+    </div>
+</div>
+</div><!-- /layout-container -->
+
+@section Scripts {
+<script>
+(function () {
+    var PAGE_SIZE = 6;
+
+    /* ── Switch tab ── */
+    window.switchCat = function (btn) {
+        document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        var catId = btn.getAttribute('data-cat');
+        document.querySelectorAll('.cat-section').forEach(s => s.classList.remove('active'));
+        var target = document.getElementById(catId);
+        if (target) target.classList.add('active');
+    };
+
+    /* ── Pagination per grid ── */
+    function initPager(gridEl) {
+        var catUid = gridEl.id.replace('grid-', '');
+        var pager  = document.getElementById('pager-' + catUid);
+        if (!pager) return;
+
+        var items = Array.from(gridEl.querySelectorAll('.menu-paged-item'));
+        if (items.length <= PAGE_SIZE) return;
+
+        var totalPages = Math.ceil(items.length / PAGE_SIZE);
+        var cur = 0;
+
+        function show(page) {
+            cur = page;
+            items.forEach(function (item, idx) {
+                var pg = Math.floor(idx / PAGE_SIZE);
+                item.style.display = pg === cur ? '' : 'none';
+            });
+            render();
+        }
+
+        function render() {
+            pager.classList.add('visible');
+            var dots = '';
+            for (var i = 0; i < totalPages; i++)
+                dots += '<span class="mpager-dot' + (i === cur ? ' active' : '') + '" data-pg="' + i + '"></span>';
+
+            pager.innerHTML =
+                '<button class="mpager-btn" id="prev-' + catUid + '"' + (cur === 0 ? ' disabled' : '') + '>'
+                + '<span class="material-symbols-outlined" style="font-size:1.1rem;">arrow_back</span> Trước</button>'
+                + '<div class="mpager-dots" id="dots-' + catUid + '">' + dots + '</div>'
+                + '<span class="mpager-info">' + (cur + 1) + ' / ' + totalPages + '</span>'
+                + '<button class="mpager-btn" id="next-' + catUid + '"' + (cur === totalPages - 1 ? ' disabled' : '') + '>'
+                + 'Tiếp <span class="material-symbols-outlined" style="font-size:1.1rem;">arrow_forward</span></button>';
+
+            var prev = document.getElementById('prev-' + catUid);
+            var next = document.getElementById('next-' + catUid);
+            if (prev) prev.onclick = function () { if (cur > 0) show(cur - 1); };
+            if (next) next.onclick = function () { if (cur < totalPages - 1) show(cur + 1); };
+            document.querySelectorAll('#dots-' + catUid + ' .mpager-dot').forEach(function (d) {
+                d.onclick = function () { show(parseInt(this.getAttribute('data-pg'))); };
+            });
+        }
+
+        show(0);
+    }
+
+    /* ── Sort ── */
+    window.applySortAll = function () {
+        var val = document.getElementById('sortSelect').value;
+        document.querySelectorAll('.menu-grid').forEach(function (grid) {
+            var items = Array.from(grid.querySelectorAll('.menu-paged-item'));
+            items.sort(function (a, b) {
+                if (val === 'price-asc')  return parseFloat(a.dataset.productPrice) - parseFloat(b.dataset.productPrice);
+                if (val === 'price-desc') return parseFloat(b.dataset.productPrice) - parseFloat(a.dataset.productPrice);
+                if (val === 'name')       return (a.dataset.productName || '').localeCompare(b.dataset.productName || '');
+                return parseInt(a.dataset.originalIndex) - parseInt(b.dataset.originalIndex);
+            });
+            items.forEach(function (item) { grid.appendChild(item); });
+            // re-init pager
+            var catUid = grid.id.replace('grid-', '');
+            var pager  = document.getElementById('pager-' + catUid);
+            if (pager) { pager.innerHTML = ''; pager.classList.remove('visible'); }
+            initPager(grid);
+        });
+    };
+
+    /* ── Init all grids on load ── */
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.menu-grid').forEach(initPager);
+    });
+})();
+</script>
+}

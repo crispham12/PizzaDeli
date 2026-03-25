@@ -10,10 +10,16 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
+@inject PizzaDeli.Data.ApplicationDbContext DbContext
 @{
     var role   = Context.Session.GetString("USER_ROLE");
     var uname  = Context.Session.GetString("USER_NAME");
     var isAuth = !string.IsNullOrEmpty(role);
+
+    // Lấy danh sách Topping đang kinh doanh từ CSDL
+    var activeToppings = DbContext.Products
+        .Where(p => p.Category != null && p.Category.Name.ToLower().Contains("topping") && p.IsAvailable)
+        .ToList();
 }
 
 @* Dashboard pages dùng layout riêng (dash-page), chỉ render body *@
@@ -124,11 +130,14 @@
 
                 <div class="pz-opt-group">
                     <label class="pz-opt-label">TOPPING THÊM</label>
-                    <div class="pz-btn-group">
-                        <label class="pz-check-btn"><input type="checkbox" name="pz-topping" value="Pepperoni" onclick="updatePzCheck(this)"><div class="c-indicator"></div> Pepperoni</label>
-                        <label class="pz-check-btn"><input type="checkbox" name="pz-topping" value="Nấm" onclick="updatePzCheck(this)"><div class="c-indicator"></div> Nấm</label>
-                        <label class="pz-check-btn"><input type="checkbox" name="pz-topping" value="Hành tây" onclick="updatePzCheck(this)"><div class="c-indicator"></div> Hành tây</label>
-                        <label class="pz-check-btn"><input type="checkbox" name="pz-topping" value="Ớt chuông" onclick="updatePzCheck(this)"><div class="c-indicator"></div> Ớt chuông</label>
+                    <div class="pz-btn-group" id="pzToppingList">
+                        @foreach (var top in activeToppings)
+                        {
+                            <label class="pz-check-btn">
+                                <input type="checkbox" name="pz-topping" value="@top.Name" data-price="@top.Price" onclick="updatePzCheck(this)">
+                                <div class="c-indicator"></div> @top.Name (+@top.Price.ToString("N0")đ)
+                            </label>
+                        }
                     </div>
                 </div>
             </div>

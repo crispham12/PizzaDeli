@@ -32,6 +32,10 @@ public class Product
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
-    public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
     public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
+    
+    public virtual ICollection<ProductTopping> ProductToppings { get; set; } = new List<ProductTopping>();
+
+    [NotMapped]
+    public List<string> SelectedToppings { get; set; } = new List<string>();
 }

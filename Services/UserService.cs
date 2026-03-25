@@ -15,7 +15,7 @@ public class UserService
         => await _db.Users.OrderByDescending(u => u.CreatedAt).ToListAsync();
 
     // ---- Lấy danh sách theo Role ----
-    public async Task<List<User>> GetByRoleAsync(string role)
+    public async Task<List<User>> GetByRoleAsync(UserRole role)
         => await _db.Users.Where(u => u.Role == role).ToListAsync();
 
     // ---- Lấy chi tiết 1 tài khoản ----
@@ -78,7 +78,7 @@ public class UserService
             Email        = email,
             PasswordHash = passwordHash,
             Phone        = phone,
-            Role         = "Staff",
+            Role         = UserRole.Staff,
             IsActive     = true,
             CreatedAt    = DateTime.Now
         };

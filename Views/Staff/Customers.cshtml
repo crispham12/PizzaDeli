@@ -1,0 +1,45 @@
+@{
+    ViewData["Title"] = "Hỗ trợ khách hàng";
+    Layout = "_StaffLayout";
+}
+
+<div class="page-header">
+    <div class="ph-titles">
+        <h2>Hỗ trợ khách hàng</h2>
+        <p>Giải đáp thắc mắc, xử lý khiếu nại của khách hàng.</p>
+    </div>
+</div>
+
+<div class="product-list-container">
+    <div class="table-responsive">
+        <table class="dash-table">
+            <thead>
+                <tr>
+                    <th>Khách hàng</th>
+                    <th>Liên hệ</th>
+                    <th>Vấn đề</th>
+                    <th>Tình trạng</th>
+                    <th class="actions-col">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Lê Văn C</strong></td>
+                    <td>
+                        <div class="tbl-product-info">
+                            <div class="tbl-text">
+                                <span class="tbl-name">c.le@email.com</span>
+                                <span class="tbl-cat">0912123123</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>Phản ánh bánh nướng hơi khét</td>
+                    <td><span class="status-badge st-danger">Chưa xử lý</span></td>
+                    <td class="actions-col">
+                        <button class="action-btn delete-btn" title="Xử lý ngay" style="background:#ef4444;color:#fff;border-radius:6px;padding:4px 8px;"><span class="material-symbols-outlined" style="font-size:18px;">support_agent</span></button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,52 @@
+@{
+    ViewData["Title"] = "Quản lý bình luận";
+    Layout = "_StaffLayout";
+}
+
+<div class="page-header">
+    <div class="ph-titles">
+        <h2>Quản lý bình luận</h2>
+        <p>Kiểm duyệt và phản hồi các đánh giá của khách hàng về món ăn.</p>
+    </div>
+</div>
+
+<div class="product-list-container">
+    <div class="table-responsive">
+        <table class="dash-table">
+            <thead>
+                <tr>
+                    <th>Khách hàng</th>
+                    <th>Sản phẩm</th>
+                    <th>Bình luận</th>
+                    <th>Đánh giá</th>
+                    <th>Ngày đăng</th>
+                    <th class="actions-col">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Phạm Thị D</strong></td>
+                    <td>
+                        <div class="tbl-product-info">
+                            <div class="tbl-text">
+                                <span class="tbl-name">Pizza Vừa (Hải sản)</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>"Ngon nhưng giao hơi chậm 5 phút so với hẹn nha shop!"</td>
+                    <td><span style="color:#f59e0b;" class="material-symbols-outlined">star star star star star_half</span></td>
+                    <td>Hôm qua</td>
+                    <td class="actions-col">
+                        <form asp-action="ReplyComment" method="post" style="display:inline;">
+                            <input type="hidden" name="id" value="1" />
+                            <input type="hidden" name="reply" value="Cảm ơn bạn góp ý!" />
+                            <button class="action-btn success-btn" title="Trả lời ngay" style="background:#3b82f6;color:#fff;border-radius:6px;padding:4px 8px;">
+                                <span class="material-symbols-outlined" style="font-size:18px;">reply</span>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

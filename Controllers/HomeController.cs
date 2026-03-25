@@ -23,10 +23,34 @@ public class HomeController : BaseController
         var categories = _db.Categories
             .Where(c => c.IsActive)
             .Include(c => c.Products.Where(p => p.IsAvailable))
+                .ThenInclude(p => p.ProductToppings)
+                .ThenInclude(pt => pt.Topping)
             .OrderBy(c => c.Id)
             .ToList();
 
         return View(categories);
+    }
+
+    public IActionResult Menu()
+    {
+        var categories = _db.Categories
+            .Where(c => c.IsActive)
+            .Include(c => c.Products.Where(p => p.IsAvailable))
+                .ThenInclude(p => p.ProductToppings)
+                .ThenInclude(pt => pt.Topping)
+            .OrderBy(c => c.Id)
+            .ToList();
+
+        return View(categories);
+    }
+
+    public IActionResult Promotions()
+    {
+        var vouchers = _db.Vouchers
+            .Where(v => v.IsActive)
+            .OrderBy(v => v.ExpiryDate)
+            .ToList();
+        return View(vouchers);
     }
 
     public IActionResult Privacy() => View();

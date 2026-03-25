@@ -3,6 +3,7 @@
     ViewData["Title"] = "Chỉnh sửa sản phẩm";
     Layout = "_AdminLayout";
     var categories = ViewBag.Categories as List<PizzaDeli.Models.Category> ?? new List<PizzaDeli.Models.Category>();
+    var toppings = ViewBag.Toppings as List<PizzaDeli.Models.Topping> ?? new List<PizzaDeli.Models.Topping>();
 }
 
 <div class="form-page-header">
@@ -65,9 +66,22 @@
                         </div>
                     </div>
                 </div>
-                <div class="fg-group" style="margin-bottom: 0;">
+                <div class="fg-group">
                     <label>Mô tả sản phẩm</label>
                     <textarea asp-for="Description" class="fg-input" placeholder="Mô tả thành phần, hương vị của sản phẩm..."></textarea>
+                </div>
+                <div class="fg-group" style="margin-bottom: 0;">
+                    <label>Topping thêm (Extra Toppings) <span style="font-weight:normal; font-size:0.85rem; color:#6b7280;">(Có thể chọn nhiều)</span></label>
+                    <div class="topping-checkbox-list" style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem;">
+                        @foreach (var top in toppings)
+                        {
+                            bool isChecked = Model.SelectedToppings != null && Model.SelectedToppings.Contains(top.Id);
+                            <label class="radio-item" style="display:flex; align-items:center; gap:0.5rem; background:#f9fafb; padding:0.5rem 1rem; border-radius:8px; border:1px solid #e5e7eb; cursor:pointer; margin:0; width:calc(50% - 0.375rem);">
+                                <input type="checkbox" name="SelectedToppings" value="@top.Id" @(isChecked ? "checked" : "") style="width: 1.1rem; height: 1.1rem; accent-color:#5C3D2E;" />
+                                <span style="font-size: 0.95rem;">@top.Name <span style="color:#5C3D2E; font-size:0.85rem;">+@top.Price.ToString("N0")đ</span></span>
+                            </label>
+                        }
+                    </div>
                 </div>
             </div>
 

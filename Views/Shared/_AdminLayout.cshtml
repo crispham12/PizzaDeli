@@ -36,6 +36,9 @@
             <a asp-controller="Admin" asp-action="Products" class="dash-nav-item @(action == "Products" || action == "ProductCreate" || action == "ProductEdit" ? "active" : "")">
                 <span class="material-symbols-outlined">restaurant_menu</span> Sản phẩm
             </a>
+            <a asp-controller="Admin" asp-action="Toppings" class="dash-nav-item @(action == "Toppings" ? "active" : "")">
+                <span class="material-symbols-outlined">cookie</span> Topping
+            </a>
             <a asp-controller="Admin" asp-action="Categories" class="dash-nav-item @(action == "Categories" ? "active" : "")">
                 <span class="material-symbols-outlined">category</span> Danh mục
             </a>
@@ -49,7 +52,7 @@
                 <span class="material-symbols-outlined">bar_chart</span> Thống kê
             </a>
 
-            <div class="dash-nav-title">HỆ THỐNG</div>
+            <div class="dash-nav-title">Nhân sự</div>
 
             <a asp-controller="Admin" asp-action="Accounts" class="dash-nav-item @(action == "Accounts" ? "active" : "")">
                 <span class="material-symbols-outlined">person</span> Tài khoản

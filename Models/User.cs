@@ -35,15 +35,12 @@ public class User
 
     public string? Avatar { get; set; }
 
-    [Required]
-    [MaxLength(20)]
-    public string Role { get; set; } = "Customer"; // Admin, Staff, Customer
+    public UserRole Role { get; set; } = UserRole.Customer; // Admin = 1, Staff = 2, Customer = 3
 
     public bool IsActive { get; set; } = true;
 
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
-    public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 }

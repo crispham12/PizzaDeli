@@ -8,65 +8,12 @@ namespace PizzaDeli.Services;
 public class OrderService
 {
     private readonly ApplicationDbContext _db;
-    private readonly CartService _cart;
     private readonly VoucherService _voucher;
 
-    public OrderService(ApplicationDbContext db, CartService cart, VoucherService voucher)
+    public OrderService(ApplicationDbContext db, VoucherService voucher)
     {
         _db      = db;
-        _cart    = cart;
         _voucher = voucher;
-    }
-
-    // ---- Customer: Đặt hàng từ giỏ hàng ----
-    public async Task<Order?> PlaceOrderAsync(string userId, string shippingAddress,
-                                              string paymentMethod, string? voucherCode)
-    {
-        var cartItems = await _cart.GetCartAsync(userId);
-        if (!cartItems.Any()) return null;
-
-        var totalAmount = cartItems.Sum(c => c.Quantity * c.Product!.Price);
-        decimal discount = 0;
-
-        // Áp dụng Voucher nếu có
-        Voucher? voucher = null;
-        if (!string.IsNullOrEmpty(voucherCode))
-        {
-            voucher = await _voucher.ValidateAsync(voucherCode, totalAmount);
-            if (voucher != null)
-                discount = voucher.DiscountAmount ?? 0;
-        }
-
-        var order = new Order
-        {
-            Id              = Guid.NewGuid().ToString("N"),
-            UserId          = userId,
-            ShippingAddress = shippingAddress,
-            PaymentMethod   = paymentMethod,
-            TotalAmount     = totalAmount,
-            DiscountAmount  = discount,
-            FinalAmount     = totalAmount - discount,
-            VoucherId       = voucher?.Id,
-            Status          = "Pending",
-            OrderDate       = DateTime.Now
-        };
-
-        // Chi tiết đơn hàng
-        order.OrderDetails = cartItems.Select(c => new OrderDetail
-        {
-            OrderId   = order.Id,
-            ProductId = c.ProductId,
-            Quantity  = c.Quantity,
-            UnitPrice = c.Product!.Price
-        }).ToList();
-
-        _db.Orders.Add(order);
-        await _db.SaveChangesAsync();
-
-        // Xóa giỏ hàng sau khi đặt thành công
-        await _cart.ClearCartAsync(userId);
-
-        return order;
     }
 
     // ---- Customer: Xem lịch sử đơn hàng của mình ----

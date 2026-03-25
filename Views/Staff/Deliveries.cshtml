@@ -1,0 +1,48 @@
+@{
+    ViewData["Title"] = "Xử lý giao hàng";
+    Layout = "_StaffLayout";
+}
+
+<div class="page-header">
+    <div class="ph-titles">
+        <h2>Xử lý giao hàng</h2>
+        <p>Theo dõi tình trạng vận chuyển của các đơn hàng.</p>
+    </div>
+</div>
+
+<div class="product-list-container">
+    <div class="table-responsive">
+        <table class="dash-table">
+            <thead>
+                <tr>
+                    <th>Mã Vận Đơn</th>
+                    <th>Khách hàng</th>
+                    <th>Địa chỉ giao</th>
+                    <th>Trạng thái</th>
+                    <th>Khởi Hành</th>
+                    <th class="actions-col">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Dữ liệu mẫu -->
+                <tr>
+                    <td><strong>#DLV-002</strong></td>
+                    <td>
+                        <div class="tbl-product-info">
+                            <div class="tbl-text">
+                                <span class="tbl-name">Trần Thị B</span>
+                                <span class="tbl-cat">0987123123</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>123 Lê Lợi, P.Bến Nghé, Q.1</td>
+                    <td><span class="status-badge st-warning">Đang giao</span></td>
+                    <td>10:45 AM</td>
+                    <td class="actions-col">
+                        <button class="action-btn success-btn" title="Hoàn tất" style="background:#10b981;color:#fff;border-radius:6px;padding:4px 8px;"><span class="material-symbols-outlined" style="font-size:18px;">check</span></button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

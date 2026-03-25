@@ -19,7 +19,7 @@
         font-size: 1.875rem;
         font-weight: 800;
         color: #1e293b;
-        margin-bottom: 0.5rem;
+        margin-bottom:                        0.5rem;
     }
     .orders-header p {
         color: #64748b;
@@ -250,7 +250,7 @@
                     {
                         <div class="o-item-row">
                             <div class="o-item-name">@detail.Quantity x @(detail.Product?.Name ?? "Sản phẩm")</div>
-                            <div class="o-item-price">@((detail.UnitPrice * detail.Quantity).ToString("N0"))đ</div>
+                            <div class="o-item-price">@detail.TotalPrice.ToString("N0")đ</div>
                         </div>
                     }
                 }

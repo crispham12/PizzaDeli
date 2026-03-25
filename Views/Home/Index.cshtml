@@ -147,7 +147,147 @@
             color: #3b82f6; /* icon blue mũi tên */
             font-weight: 600;
         }
+        /* ---- Menu Grid Pagination ---- */
+        .menu-paged-item.hidden-page {
+            display: none !important;
+        }
+        .menu-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        .menu-pagination:empty { display: none; }
+        .mpager-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0.55rem 1.2rem;
+            border-radius: 99px;
+            border: 1.5px solid #e5e7eb;
+            background: #fff;
+            color: #374151;
+            font-weight: 700;
+            font-size: 0.92rem;
+            cursor: pointer;
+            transition: all 0.18s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .mpager-btn:hover:not(:disabled) {
+            border-color: #5c3d2e;
+            color: #5c3d2e;
+            background: #fdf8f5;
+            box-shadow: 0 4px 14px rgba(92,61,46,0.10);
+        }
+        .mpager-btn:disabled {
+            opacity: 0.3;
+            cursor: default;
+        }
+        .mpager-dots {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .mpager-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #d1d5db;
+            transition: background 0.2s, transform 0.2s;
+            cursor: pointer;
+        }
+        .mpager-dot.active {
+            background: #5c3d2e;
+            transform: scale(1.35);
+        }
+        .mpager-info {
+            font-size: 0.88rem;
+            color: #9ca3af;
+            font-weight: 600;
+        }
     </style>
+}
+
+@section Scripts {
+<script>
+(function() {
+    var PAGE_SIZE = 6;
+
+    function initGridPagination() {
+        document.querySelectorAll('.products-grid[data-cat-id]').forEach(function(grid) {
+            var catId = grid.getAttribute('data-cat-id');
+            var items = Array.from(grid.querySelectorAll('.menu-paged-item'));
+            var total = items.length;
+            if (total <= PAGE_SIZE) return; // no pagination needed
+
+            var totalPages = Math.ceil(total / PAGE_SIZE);
+            var currentPage = 0;
+
+            function showPage(page) {
+                currentPage = page;
+                items.forEach(function(item, idx) {
+                    var pageOfItem = Math.floor(idx / PAGE_SIZE);
+                    if (pageOfItem === currentPage) {
+                        item.classList.remove('hidden-page');
+                    } else {
+                        item.classList.add('hidden-page');
+                    }
+                });
+                renderPager();
+            }
+
+            function renderPager() {
+                var pager = document.getElementById('pager-' + catId);
+                if (!pager) return;
+
+                var prevDisabled = currentPage === 0 ? 'disabled' : '';
+                var nextDisabled = currentPage === totalPages - 1 ? 'disabled' : '';
+
+                var dots = '';
+                for (var i = 0; i < totalPages; i++) {
+                    dots += '<span class="mpager-dot' + (i === currentPage ? ' active' : '') + '" data-pg="' + i + '"></span>';
+                }
+
+                pager.innerHTML =
+                    '<button class="mpager-btn" id="mprev-' + catId + '" ' + prevDisabled + '>'
+                    + '<span class="material-symbols-outlined" style="font-size:1.1rem;">arrow_back</span> Trước'
+                    + '</button>'
+                    + '<div class="mpager-dots" id="mdots-' + catId + '">' + dots + '</div>'
+                    + '<span class="mpager-info">' + (currentPage + 1) + ' / ' + totalPages + '</span>'
+                    + '<button class="mpager-btn" id="mnext-' + catId + '" ' + nextDisabled + '>'
+                    + 'Tiếp <span class="material-symbols-outlined" style="font-size:1.1rem;">arrow_forward</span>'
+                    + '</button>';
+
+                // Bind prev/next
+                var prevBtn = document.getElementById('mprev-' + catId);
+                var nextBtn = document.getElementById('mnext-' + catId);
+                if (prevBtn) prevBtn.addEventListener('click', function() { if (currentPage > 0) showPage(currentPage - 1); });
+                if (nextBtn) nextBtn.addEventListener('click', function() { if (currentPage < totalPages - 1) showPage(currentPage + 1); });
+
+                // Bind dots
+                var dotsEl = document.getElementById('mdots-' + catId);
+                if (dotsEl) {
+                    dotsEl.querySelectorAll('.mpager-dot').forEach(function(dot) {
+                        dot.addEventListener('click', function() {
+                            var pg = parseInt(this.getAttribute('data-pg'));
+                            showPage(pg);
+                        });
+                    });
+                }
+            }
+
+            showPage(0); // init
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initGridPagination);
+    } else {
+        initGridPagination();
+    }
+})();
+</script>
 }
 
 <div class="layout-container">
@@ -163,9 +303,9 @@
                     <h2 class="brand-name">PizzaDeli</h2>
                 </div>
                 <nav class="nav-links">
-                    <a href="#">Thực đơn</a>
-                    <a href="#">Khuyến mãi</a>
-                    <a href="#">Liên hệ</a>
+                    <a asp-controller="Home" asp-action="Menu">Thực đơn</a>
+                    <a asp-controller="Home" asp-action="Promotions">Khuyến mãi</a>
+                    <a href="#footer">Liên hệ</a>
                 </nav>
             </div>
 
@@ -202,7 +342,7 @@
                     }
                     else if (_role == "Staff")
                     {
-                        <a asp-controller="Staff" asp-action="Dashboard" class="btn-profile">
+                        <a asp-controller="Staff" asp-action="Orders" class="btn-profile">
                             <span class="material-symbols-outlined">badge</span>
                             <span class="btn-profile-text">Nhân viên</span>
                         </a>
@@ -234,7 +374,7 @@
                                         <div class="c-item-desc">Quản lý tài khoản của bạn</div>
                                     </div>
                                 </a>
-                                <a asp-controller="Customer" asp-action="Profile" class="c-dropdown-item">
+                                <a asp-controller="Customer" asp-action="ChangePassword" class="c-dropdown-item">
                                     <div class="c-item-icon-wrap primary">
                                         <span class="material-symbols-outlined c-item-icon">lock_reset</span>
                                     </div>
@@ -360,18 +500,24 @@
                             </div>
                         </div>
 
-                        <div class="products-grid">
+                        @{
+                            var catId = "cat-" + cat.Id.ToString().Replace("-","");
+                        }
+                        <div class="products-grid" id="grid-@catId" data-cat-id="@catId">
                             @if (products.Any())
                             {
+                                int pIdx = 0;
                                 foreach (var p in products)
                                 {
-                                    <div class="product-card" style="cursor: pointer;"
+                                    <div class="product-card menu-paged-item" style="cursor: pointer;"
+                                         data-page-index="@pIdx"
                                          data-product-id="@p.Id"
                                          data-product-name="@p.Name"
                                          data-product-price="@p.Price"
                                          data-product-image="@(p.ImageUrl ?? "")"
                                          data-product-cat="@cat.Name"
                                          data-product-desc="@p.Description"
+                                         data-product-toppings='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(p.ProductToppings.Where(pt => pt.Topping != null).Select(pt => new { id = pt.ToppingId, name = pt.Topping!.Name, price = pt.Topping.Price })))'
                                          onclick="onCardItemClick(event, this)">
                                         <div class="card-img-wrapper">
                                             <img src="@(string.IsNullOrEmpty(p.ImageUrl) ? "/images/no-image.png" : p.ImageUrl)"
@@ -398,6 +544,7 @@
                                                             data-product-image="@(p.ImageUrl ?? "")"
                                                             data-product-cat="@cat.Name"
                                                             data-product-desc="@p.Description"
+                                                            data-product-toppings='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(p.ProductToppings.Where(pt => pt.Topping != null).Select(pt => new { id = pt.ToppingId, name = pt.Topping!.Name, price = pt.Topping.Price })))'
                                                             onclick="onAddMoreClick(event, this)">
                                                         <span class="material-symbols-outlined pointer-events-none">add_circle</span>
                                                         <span class="pointer-events-none" style="margin-left: 0.5rem;">Mua thêm</span>
@@ -406,23 +553,25 @@
                                                 else
                                                 {
                                                     <button type="button" class="btn-add-cart" title="Thêm vào giỏ"
-                                                            data-product-id="@p.Id"
-                                                            data-product-name="@p.Name"
-                                                            data-product-price="@p.Price"
-                                                            data-product-image="@(p.ImageUrl ?? "")"
-                                                            data-product-cat="@cat.Name"
-                                                            data-product-desc="@p.Description"
-                                                            onclick="onAddToCartClick(event, this)">
+                                                                data-product-id="@p.Id"
+                                                                data-product-name="@p.Name"
+                                                                data-product-price="@p.Price"
+                                                                data-product-image="@(p.ImageUrl ?? "")"
+                                                                data-product-cat="@cat.Name"
+                                                                data-product-desc="@p.Description"
+                                                                data-product-toppings='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(p.ProductToppings.Where(pt => pt.Topping != null).Select(pt => new { id = pt.ToppingId, name = pt.Topping!.Name, price = pt.Topping.Price })))'
+                                                                onclick="onAddToCartClick(event, this)">
                                                         <span class="material-symbols-outlined pointer-events-none">add_shopping_cart</span>
                                                     </button>
                                                     <button type="button" class="btn-buy-now" title="Mua ngay"
-                                                            data-product-id="@p.Id"
-                                                            data-product-name="@p.Name"
-                                                            data-product-price="@p.Price"
-                                                            data-product-image="@(p.ImageUrl ?? "")"
-                                                            data-product-cat="@cat.Name"
-                                                            data-product-desc="@p.Description"
-                                                            onclick="onBuyNowClick(event, this)">
+                                                                data-product-id="@p.Id"
+                                                                data-product-name="@p.Name"
+                                                                data-product-price="@p.Price"
+                                                                data-product-image="@(p.ImageUrl ?? "")"
+                                                                data-product-cat="@cat.Name"
+                                                                data-product-desc="@p.Description"
+                                                                data-product-toppings='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(p.ProductToppings.Where(pt => pt.Topping != null).Select(pt => new { id = pt.ToppingId, name = pt.Topping!.Name, price = pt.Topping.Price })))'
+                                                                onclick="onBuyNowClick(event, this)">
                                                         <span class="material-symbols-outlined pointer-events-none">payments</span>
                                                         <span class="pointer-events-none">Mua ngay</span>
                                                     </button>
@@ -430,6 +579,7 @@
                                             </div>
                                         </div>
                                     </div>
+                                    pIdx++;
                                 }
                             }
                             else
@@ -440,6 +590,8 @@
                                 </div>
                             }
                         </div>
+                        <!-- Pagination controls rendered by JS -->
+                        <div class="menu-pagination" id="pager-@catId"></div>
                     </div>
                 </section>
                 isAlt = !isAlt;
@@ -458,7 +610,7 @@
     </main>
 
     <!-- ===================== FOOTER ===================== -->
-    <footer class="site-footer">
+    <footer class="site-footer" id="footer">
         <div class="container">
             <div class="footer-grid">
 
