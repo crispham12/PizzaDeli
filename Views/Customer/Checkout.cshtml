@@ -132,6 +132,13 @@
     border-color: #ef4444 !important;
     box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
 }
+
+.voucher-option:hover {
+    background-color: #f8fafc;
+}
+.voucher-option:last-child {
+    border-bottom: none !important;
+}
 </style>
 
 <div class="checkout-page bg-light-gray" style="padding-bottom: 4rem;">
@@ -482,6 +489,7 @@
                         </div>
                         
                         <div style="text-align: right; margin-top: 1rem;">
+                            <span id="reviewSubmitMessage" style="font-size: 0.875rem; font-weight: 600; color: #16a34a; margin-right: 1rem; display: none;"></span>
                             <button type="button" class="btn-back-link" onclick="window.location.href='/'" style="margin-right: 1.5rem; margin-bottom: 0;">Quay lại trang chủ</button>
                             <button type="button" class="btn-place-order" style="display: inline-block; width: auto; padding: 0.75rem 2rem;" onclick="submitAllReviews()">Gửi tất cả đánh giá</button>
                         </div>
@@ -497,7 +505,7 @@
             <!-- Cột phải: Order Summary -->
             <div class="checkout-sidebar">
                 <div class="summary-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                         <h3 class="summary-title" style="margin-bottom: 0;">Tóm tắt đơn hàng</h3>
                         <div style="display: flex; gap: 0.5rem; align-items: center;">
                             <a href="javascript:goToAddMore()" id="btnSidebarAddMore" style="font-size: 0.85rem; font-weight: 600; color:var(--primary); text-decoration: none; padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--primary);">+ Đặt thêm món</a>
@@ -506,6 +514,7 @@
                             </button>
                         </div>
                     </div>
+                    <div id="reorderSubmitMessage" style="font-size: 0.8rem; font-weight: 600; margin-bottom: 1rem; text-align: right; display: none;"></div>
                     
                     <!-- Chứa danh sách SP bằng JS -->
                     <div class="checkout-items" id="checkoutItemsList">
@@ -515,10 +524,36 @@
                     <!-- Voucher box -->
                     <div class="voucher-box" id="step-voucher-box" style="display:flex; flex-direction: column; gap: 0.5rem; margin: 1.5rem 0; padding: 1.5rem 0; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; border-left:none; border-right:none; border-width: 1px 0;">
                         <label style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; display:block;">MÃ VOUCHER</label>
-                        <div style="display: flex; gap: 0.5rem;">
-                            <input type="text" id="voucherCode" placeholder="Nhập mã" style="flex: 1; border: 1px solid #e2e8f0; border-radius: 999px; padding: 0.625rem 1rem; outline: none; transition: border-color 0.2s; font-size: 0.875rem; color: #1e293b;">
+                        <div style="display: flex; gap: 0.5rem; position: relative;">
+                            <div style="flex: 1; position: relative;" id="voucherInputContainer">
+                                <input type="text" id="voucherCode" placeholder="Nhập mã" autocomplete="off" onfocus="document.getElementById('voucherDropdown').style.display='block'" onblur="setTimeout(() => document.getElementById('voucherDropdown').style.display='none', 200)" style="width: 100%; border: 1px solid #e2e8f0; border-radius: 999px; padding: 0.625rem 2.5rem 0.625rem 1rem; outline: none; transition: border-color 0.2s; font-size: 0.875rem; color: #1e293b;">
+                                <span class="material-symbols-outlined" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 1.25rem; pointer-events: none;">expand_more</span>
+                                
+                                <div id="voucherDropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); z-index: 50; max-height: 250px; overflow-y: auto;">
+                                    @if (ViewBag.ActiveVouchers != null)
+                                    {
+                                        var vouchers = (IEnumerable<PizzaDeli.Models.Voucher>)ViewBag.ActiveVouchers;
+                                        if (vouchers.Any())
+                                        {
+                                            foreach (var v in vouchers)
+                                            {
+                                                var discountText = v.DiscountPercent.HasValue ? $"Giảm {v.DiscountPercent:G0}%" : (v.DiscountAmount.HasValue ? $"Giảm {v.DiscountAmount:N0} ₫" : "Free Delivery");
+                                                <div class="voucher-option" onclick="document.getElementById('voucherCode').value = '@v.Code'; document.getElementById('voucherDropdown').style.display='none';" style="padding: 0.75rem 1rem; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 0.5rem; transition: background 0.15s;">
+                                                    <span style="font-weight: 700; color: #5c433b; font-size: 0.875rem;">@v.Code</span>
+                                                    <span style="color: #64748b; font-size: 0.875rem;">- @discountText</span>
+                                                </div>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <div style="padding: 0.75rem 1rem; color: #94a3b8; font-size: 0.875rem; text-align: center;">Không có mã giảm giá</div>
+                                        }
+                                    }
+                                </div>
+                            </div>
                             <button type="button" class="btn-apply-voucher" onclick="applyCheckoutVoucher()" style="background-color: var(--primary); color: white; border-radius: 999px; padding: 0.5rem 1.5rem; font-weight: 600; border: none; cursor: pointer; font-size: 0.875rem;">Dùng</button>
                         </div>
+                        <span id="voucherMessage" style="font-size: 0.875rem; font-weight: 600; margin-top: 0.25rem; display: none;"></span>
                     </div>
 
                     <div class="summary-totals">
@@ -544,6 +579,9 @@
                     <button type="button" id="btnActionFlow" class="btn-place-order" onclick="gotoNextStep()" style="font-size: 1.05rem; padding: 1.15rem;">
                         Tiếp tục thanh toán <span class="material-symbols-outlined">chevron_right</span>
                     </button>
+                    <div style="text-align: center; margin-top: 0.75rem;">
+                        <span id="orderSubmitMessage" style="font-size: 0.875rem; font-weight: 600; color: #ef4444; display: none;"></span>
+                    </div>
 
                     <!-- Success Popup Modal -->
                     <div id="orderSuccessModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
@@ -942,9 +980,15 @@
                 }
             }
 
-            alert('Đã gửi thành công đánh giá của bạn. Cảm ơn vì đã mua sắm tại PizzaDeli!');
+            const reviewMsg = document.getElementById('reviewSubmitMessage');
+            if(reviewMsg) {
+                reviewMsg.textContent = '✓ Đã gửi thành công. Đang chuyển trang...';
+                reviewMsg.style.display = 'inline-block';
+            }
             if (window.PizzaCart) window.PizzaCart.renderCartDrawer();
-            window.location.href = '/Customer/Orders'; 
+            setTimeout(() => {
+                window.location.href = '/Customer/Orders'; 
+            }, 1500);
         }
 
         function goToAddMore() {
@@ -1037,19 +1081,26 @@
                 });
                 
                 const data = await response.json();
+                const msgEl = document.getElementById('voucherMessage');
+                msgEl.style.display = 'block';
                 if (data.success) {
                     currentDiscount = data.discount;
                     document.getElementById('hiddenVoucherCode').value = code; // Send to backend when Complete
-                    alert(data.message);
+                    msgEl.textContent = '✓ ' + data.message;
+                    msgEl.style.color = '#16a34a';
                     renderCheckoutItems(); // Re-render to update
                 } else {
-                    alert(data.message);
+                    msgEl.textContent = data.message;
+                    msgEl.style.color = '#ef4444';
                     currentDiscount = 0;
                     document.getElementById('hiddenVoucherCode').value = '';
                     renderCheckoutItems();
                 }
             } catch(e) {
-                alert('Lỗi khi áp dụng mã giảm giá.');
+                const msgEl = document.getElementById('voucherMessage');
+                msgEl.style.display = 'block';
+                msgEl.textContent = 'Lỗi kết nối khi áp dụng mã giảm giá.';
+                msgEl.style.color = '#ef4444';
                 console.error(e);
             }
         }
@@ -1059,8 +1110,14 @@
 
             // Lấy items theo mode
             const cart = CHECKOUT_ITEMS;
+            const orderMsg = document.getElementById('orderSubmitMessage');
+            if (orderMsg) orderMsg.style.display = 'none';
+
             if(cart.length === 0) {
-                alert('Không có sản phẩm để thanh toán!');
+                if (orderMsg) {
+                    orderMsg.textContent = 'Không có sản phẩm để thanh toán!';
+                    orderMsg.style.display = 'inline-block';
+                }
                 return;
             }
             tempReviewItems = [...cart]; // Lưu lại cho bước 3
@@ -1143,13 +1200,19 @@
                     const modal = document.getElementById('orderSuccessModal');
                     modal.style.display = 'flex';
                 } else {
-                    alert(data.message || 'Đặt hàng thất bại. Vui lòng thử lại!');
+                    if (orderMsg) {
+                        orderMsg.textContent = data.message || 'Đặt hàng thất bại. Vui lòng thử lại!';
+                        orderMsg.style.display = 'inline-block';
+                    }
                     btn.disabled = false;
                     btn.innerHTML = 'Xác nhận <span class="material-symbols-outlined">check_circle</span>';
                 }
             } catch(e) {
                 console.error(e);
-                alert('Lỗi kết nối. Vui lòng thử lại!');
+                if (orderMsg) {
+                    orderMsg.textContent = 'Lỗi kết nối. Vui lòng thử lại!';
+                    orderMsg.style.display = 'inline-block';
+                }
                 btn.disabled = false;
                 btn.innerHTML = 'Xác nhận <span class="material-symbols-outlined">check_circle</span>';
             }
@@ -1221,23 +1284,37 @@
         function reorderLatest() {
             if (!confirm('Bạn có chắc muốn làm mới giỏ hàng bằng đơn hàng gần đây nhất của mình không?')) return;
             
+            const msgEl = document.getElementById('reorderSubmitMessage');
+            if(msgEl) msgEl.style.display = 'none';
+
             fetch('/Customer/GetLatestOrder')
             .then(res => res.json())
             .then(data => {
+                if(msgEl) msgEl.style.display = 'block';
                 if (data.success && data.items && data.items.length > 0) {
                     if (window.PizzaCart) {
                         window.PizzaCart.saveCart(data.items);
-                        alert('Đã tải lại đơn hàng gần nhất thành công!');
+                        if(msgEl) {
+                            msgEl.textContent = '✓ Tải lại đơn thành công!';
+                            msgEl.style.color = '#10b981';
+                        }
                         // Chuyển hướng về trang chủ addmore=1 hoặc load lại chính trang Checkout.
                         // Bắt buộc bỏ param ?mode=buynow nếu đang có
-                        window.location.href = '/Customer/Checkout';
+                        setTimeout(() => window.location.href = '/Customer/Checkout', 500);
                     }
                 } else {
-                    alert(data.message || 'Lỗi khi lấy thông tin đơn hàng cũ.');
+                    if(msgEl) {
+                        msgEl.textContent = data.message || 'Lỗi khi lấy thông tin đơn hàng cũ.';
+                        msgEl.style.color = '#ef4444';
+                    }
                 }
             })
             .catch(err => {
-                alert('Có lỗi mạng khi truy xuất đơn hàng! Vui lòng thử lại.');
+                if(msgEl) {
+                    msgEl.style.display = 'block';
+                    msgEl.textContent = 'Có lỗi mạng khi truy xuất đơn hàng! Vui lòng thử lại.';
+                    msgEl.style.color = '#ef4444';
+                }
                 console.error(err);
             });
         }

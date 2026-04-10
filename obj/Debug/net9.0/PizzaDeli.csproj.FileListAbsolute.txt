@@ -223,4 +223,8 @@ C:\Users\Admin\Desktop\Lamnhom-net\obj\Debug\net9.0\PizzaDeli.sourcelink.json
 C:\Users\Admin\Desktop\Lamnhom-net\bin\Debug\net9.0\BouncyCastle.Cryptography.dll
 C:\Users\Admin\Desktop\Lamnhom-net\bin\Debug\net9.0\MailKit.dll
 C:\Users\Admin\Desktop\Lamnhom-net\bin\Debug\net9.0\MimeKit.dll
-C:\Users\Admin\Desktop\Lamnhom-net\obj\Debug\net9.0\compressed\kzfjzmpyqt-l1v5feecld.gz
+C:\Users\Admin\Desktop\Lamnhom-net\bin\Debug\net9.0\AiService\venv\Lib\site-packages\hf_xet-1.4.2.dist-info\sboms\hf_xet.cyclonedx.json
+C:\Users\Admin\Desktop\Lamnhom-net\bin\Debug\net9.0\AiService\venv\Lib\site-packages\setuptools\config\distutils.schema.json
+C:\Users\Admin\Desktop\Lamnhom-net\bin\Debug\net9.0\AiService\venv\Lib\site-packages\setuptools\config\setuptools.schema.json
+C:\Users\Admin\Desktop\Lamnhom-net\bin\Debug\net9.0\AiService\venv\Lib\site-packages\torch\_dynamo\graph_break_registry.json
+C:\Users\Admin\Desktop\Lamnhom-net\obj\Debug\net9.0\compressed\kzfjzmpyqt-7r0peq0iph.gz

@@ -276,7 +276,7 @@
         
         <form onsubmit="submitReview(event)">
             <input type="hidden" id="rvProdId" />
-            <input type="hidden" id="rvRating" value="5" />
+            <input type="hidden" id="rvRating" value="0" />
             
             <div class="rv-m-stars" id="rvStarGroup">
                 <span class="material-symbols-outlined active" data-val="1">star</span>
@@ -288,6 +288,10 @@
 
             <textarea class="rv-m-input" id="rvComment" placeholder="Hãy chia sẻ trải nghiệm của bạn về món ăn này nhé..." required></textarea>
             
+            <div style="text-align: center; margin-bottom: 1rem;">
+                <span id="rvModalMessage" style="font-size: 0.875rem; font-weight: 600; display: none;"></span>
+            </div>
+
             <button type="submit" class="btn-action-primary rv-m-submit">
                 Gửi đánh giá
             </button>
@@ -321,9 +325,12 @@
         document.getElementById('rvProdName').innerText = pname;
         document.getElementById('rvComment').value = '';
         
-        // Reset 5 sao
-        ratingInput.value = 5;
-        stars.forEach(s => s.classList.add('active'));
+        const msgEl = document.getElementById('rvModalMessage');
+        if (msgEl) msgEl.style.display = 'none';
+
+        // Reset về 0 sao để bắt buộc người dùng chọn
+        ratingInput.value = 0;
+        stars.forEach(s => s.classList.remove('active'));
 
         document.getElementById('reviewModal').style.display = 'flex';
     }
@@ -336,8 +343,21 @@
         e.preventDefault();
         
         const pid = document.getElementById('rvProdId').value;
-        const rating = document.getElementById('rvRating').value;
+        const rating = parseInt(document.getElementById('rvRating').value) || 0;
         const comment = document.getElementById('rvComment').value;
+
+        const msgEl = document.getElementById('rvModalMessage');
+        
+        if (rating === 0) {
+            if (msgEl) {
+                msgEl.style.display = 'inline-block';
+                msgEl.textContent = 'Vui lòng chọn số sao đánh giá sản phẩm!';
+                msgEl.style.color = '#ef4444';
+            }
+            return;
+        }
+
+        if (msgEl) msgEl.style.display = 'none';
 
         const formData = new FormData();
         formData.append('productId', pid);
@@ -350,15 +370,29 @@
         })
         .then(res => res.json())
         .then(data => {
+            const msgEl = document.getElementById('rvModalMessage');
+            if(msgEl) msgEl.style.display = 'inline-block';
+
             if(data.success) {
-                alert('Cảm ơn bạn đã đánh giá!');
-                closeReviewModal();
+                if(msgEl) {
+                    msgEl.textContent = '✓ Cảm ơn bạn đã đánh giá!';
+                    msgEl.style.color = '#10b981';
+                }
+                setTimeout(() => closeReviewModal(), 1500);
             } else {
-                alert(data.message || 'Lỗi gửi đánh giá');
+                if(msgEl) {
+                    msgEl.textContent = data.message || 'Lỗi gửi đánh giá';
+                    msgEl.style.color = '#ef4444';
+                }
             }
         })
         .catch(err => {
-            alert('Lỗi kết nối mạng!');
+            const msgEl = document.getElementById('rvModalMessage');
+            if(msgEl) {
+                msgEl.style.display = 'inline-block';
+                msgEl.textContent = 'Lỗi kết nối mạng!';
+                msgEl.style.color = '#ef4444';
+            }
             console.error(err);
         });
     }

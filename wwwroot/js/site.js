@@ -221,6 +221,21 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // --- Preserve Query Params Across Navbar ---
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('addmore') || urlParams.has('mode')) {
+        document.querySelectorAll('a').forEach(a => {
+            if (a.href && !a.href.startsWith('javascript') && !a.href.includes('#') && a.hostname === window.location.hostname) {
+                try {
+                    const url = new URL(a.href);
+                    if (urlParams.has('addmore')) url.searchParams.set('addmore', urlParams.get('addmore'));
+                    if (urlParams.has('mode')) url.searchParams.set('mode', urlParams.get('mode'));
+                    a.href = url.toString();
+                } catch(e) {}
+            }
+        });
+    }
+
 });
 
 // ==========================================

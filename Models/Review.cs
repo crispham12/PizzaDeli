@@ -25,6 +25,9 @@ public class Review
     public int Rating { get; set; }
 
     public string? Comment { get; set; }
+    
+    [MaxLength(1000)]
+    public string? AdminReply { get; set; }
 
     public bool IsHidden { get; set; } = false;
 

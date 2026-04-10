@@ -249,7 +249,16 @@ public class CustomerController : BaseController
     public IActionResult Cart()                 { var g = Guard(); if (g != null) return g; return View(); }
 
     // ---- Đặt hàng ----
-    public IActionResult Checkout()             { var g = Guard(); if (g != null) return g; return View(); }
+    public IActionResult Checkout()
+    {
+        var g = Guard(); if (g != null) return g;
+        ViewBag.ActiveVouchers = _context.Vouchers
+            .Where(v => v.IsActive && 
+                        (!v.StartDate.HasValue || v.StartDate <= DateTime.Now) && 
+                        (!v.ExpiryDate.HasValue || v.ExpiryDate >= DateTime.Now))
+            .ToList();
+        return View();
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]

@@ -1,45 +1,572 @@
+@model List<PizzaDeli.Models.ContactRequest>
 @{
     ViewData["Title"] = "Hỗ trợ khách hàng";
     Layout = "_StaffLayout";
 }
 
-<div class="page-header">
-    <div class="ph-titles">
-        <h2>Hỗ trợ khách hàng</h2>
-        <p>Giải đáp thắc mắc, xử lý khiếu nại của khách hàng.</p>
+@section Styles {
+    <style>
+        .support-wrapper {
+            display: flex;
+            gap: 1.5rem;
+            height: calc(100vh - 120px);
+            margin-top: -1rem; /* Bù trừ khoảng trống mặc định */
+        }
+
+        /* ----- Cột trái: Hàng chờ ----- */
+        .queue-col {
+            width: 380px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            flex-shrink: 0;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+        
+        /* Custom scrollbar cho hàng chờ */
+        .queue-col::-webkit-scrollbar { width: 6px; }
+        .queue-col::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+
+        .queue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .queue-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #1e293b;
+        }
+        .badge-active-count {
+            background: #5c433b;
+            color: #fff;
+            padding: 0.25rem 0.75rem;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .ticket-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 1.25rem;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .ticket-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08); }
+        .ticket-card.active {
+            border-color: #5c433b;
+            box-shadow: 0 10px 20px -5px rgba(92,67,59,0.15);
+        }
+
+        .tc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+        .tc-user {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .tc-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        .avatar-lh { background: #ffe4e6; color: #be123c; }
+        .avatar-ma { background: #f1f5f9; color: #64748b; }
+        .avatar-tq { background: #fef3c7; color: #b45309; }
+        .avatar-pd { background: #e0e7ff; color: #4338ca; }
+        
+        .ticket-card.active .avatar-lh { background: #f3dfd6; color: #4a2c22; }
+
+        .tc-name {
+            font-weight: 800;
+            color: #1e293b;
+            font-size: 1.05rem;
+            line-height: 1.2;
+        }
+        .tc-meta {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 2px;
+            font-weight: 500;
+        }
+        
+        .tc-status {
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .status-processing { background: #ffedd5; color: #c2410c; }
+        .status-waiting { background: #e0f2fe; color: #0369a1; }
+
+        .tc-snippet {
+            font-size: 0.85rem;
+            color: #475569;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .ticket-card.active .tc-snippet { font-style: italic; color: #5c433b; }
+
+        /* ----- Cột phải: Khung Chat ----- */
+        .chat-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            min-width: 0; /* fix overflow flex */
+        }
+
+        /* Profile Top Box */
+        .profile-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .pc-avatar {
+            width: 80px;
+            height: 80px;
+            background: #5c433b;
+            color: #fff;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 800;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .pc-status-dot {
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            width: 20px;
+            height: 20px;
+            background: #22c55e;
+            border: 4px solid #fff;
+            border-radius: 50%;
+        }
+
+        .pc-info { flex: 1; }
+        .pc-name-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+        .pc-name {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1e293b;
+            line-height: 1.1;
+        }
+        .pc-badge {
+            background: #ffe4e6;
+            color: #be123c;
+            padding: 0.25rem 0.75rem;
+            border-radius: 99px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        
+        .pc-details {
+            display: flex;
+            gap: 2rem;
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+        .pc-detail-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        .pc-detail-item .material-symbols-outlined { font-size: 1.1rem; color: #94a3b8; }
+
+        .pc-spending {
+            text-align: right;
+        }
+        .pc-spending-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+        .pc-spending-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1e293b;
+        }
+
+        /* Live Chat Panel */
+        .live-chat-panel {
+            flex: 1;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .chat-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chat-title {
+            font-weight: 800;
+            color: #1e293b;
+            font-size: 1.1rem;
+        }
+        .chat-actions {
+            display: flex;
+            gap: 1rem;
+            color: #64748b;
+        }
+        .chat-actions .material-symbols-outlined { cursor: pointer; transition: color 0.2s; }
+        .chat-actions .material-symbols-outlined:hover { color: #5c433b; }
+
+        .chat-history {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            background: #fafafa;
+        }
+
+        .msg-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            max-width: 85%;
+        }
+        .msg-row.me { align-self: flex-end; flex-direction: row-reverse; }
+        .msg-row.them { align-self: flex-start; }
+
+        .msg-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+            margin-top: auto;
+            margin-bottom: auto;
+        }
+        .msg-row.me .msg-avatar { background: #5c433b; color: #fff; }
+        .msg-row.them .msg-avatar { background: #f3dfd6; color: #5c433b; }
+
+        .msg-bubble {
+            padding: 1rem 1.25rem;
+            border-radius: 16px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            position: relative;
+        }
+        .msg-row.me .msg-bubble {
+            background: #4a2c22;
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+        .msg-row.them .msg-bubble {
+            background: #ffffff;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .chat-input-area {
+            padding: 1.25rem 1.5rem;
+            background: #ffffff;
+            border-top: 1px solid #f1f5f9;
+        }
+        .chat-input-box {
+            display: flex;
+            align-items: center;
+            background: #f8fafc;
+            border-radius: 99px;
+            padding: 0.5rem 0.5rem 0.5rem 1.5rem;
+            border: 1px solid #e2e8f0;
+        }
+        .chat-input-box input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 0.95rem;
+            color: #1e293b;
+            padding-right: 1rem;
+        }
+        .chat-input-box input::placeholder { color: #94a3b8; }
+        
+        .btn-send-msg {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #4a2c22;
+            color: #fff;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .btn-send-msg:hover { background: #5c433b; transform: scale(1.05); }
+    </style>
+}
+
+<!-- Nút chức năng Filter giả lập trên Header chung -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const titleArea = document.querySelector('.header-title');
+        if(titleArea) {
+            const searchBox = document.createElement('div');
+            searchBox.innerHTML = `
+                <div style="display:flex; align-items:center; background:#f1f5f9; border-radius:99px; padding:0.5rem 1rem; margin-left: 2rem; width:300px;">
+                    <span class="material-symbols-outlined" style="color:#94a3b8; font-size:1.1rem; margin-right:0.5rem;">search</span>
+                    <input type="text" placeholder="Search support tickets..." style="border:none;background:transparent;outline:none;font-size:0.85rem;width:100%;">
+                </div>
+            `;
+            titleArea.appendChild(searchBox);
+        }
+    });
+</script>
+
+<div class="support-wrapper">
+    <!-- Cột trái: Hàng đợi -->
+    <div class="queue-col">
+        <div class="queue-header">
+            <h2 class="queue-title">Waiting Queue</h2>
+            <span class="badge-active-count">@Model.Count() Active</span>
+        </div>
+
+        @foreach (var ticket in Model)
+        {
+            <div class="ticket-card" 
+                 onclick="openTicket(this)"
+                 data-id="@ticket.Id"
+                 data-fullname="@ticket.FullName"
+                 data-avatar="@(ticket.FullName.Substring(0, Math.Min(2, ticket.FullName.Length)).ToUpper())"
+                 data-message="@ticket.Message"
+                 data-phone="@(!string.IsNullOrEmpty(ticket.Phone) ? ticket.Phone : "Không có số điện thoại")"
+                 data-address="@(!string.IsNullOrEmpty(ticket.Address) ? ticket.Address : "Không có địa chỉ")">
+                <div class="tc-header" style="align-items: center; margin-bottom: 0.5rem;">
+                    <div class="tc-user" style="flex-direction:row; justify-content:space-between; width: 100%; flex-wrap: wrap; gap: 0.5rem;">
+                        <div style="display:flex; align-items:center; gap:0.75rem;">
+                            <div class="tc-avatar avatar-lh">@(ticket.FullName.Substring(0, Math.Min(2, ticket.FullName.Length)).ToUpper())</div>
+                            <div style="display:flex; align-items:center; gap:0.5rem;">
+                                <span class="tc-name">@ticket.FullName</span>
+                                @if(!string.IsNullOrEmpty(ticket.OrderCode)) {
+                                    <span class="tc-meta" style="margin-top:0; font-size: 0.7rem;">&bull; @ticket.OrderCode</span>
+                                }
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:0.5rem;">
+                            <span style="font-size:0.65rem; font-weight:800; padding:0.25rem 0.6rem; border-radius:99px; text-transform:uppercase; background:#e2e8f0; color:#475569;">@ticket.IssueType</span>
+                            <span class="tc-status @(ticket.Status == "Waiting" ? "status-waiting" : "status-processing")" style="border-radius:99px;">@ticket.Status</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="tc-snippet">"@ticket.Message"</div>
+            </div>
+        }
+    </div>
+
+    <!-- Placeholder khi chưa chọn -->
+    <div id="chat-placeholder" style="flex: 1; display: flex; align-items: center; justify-content: center; background: #ffffff; border-radius: 20px; color: #94a3b8; font-weight: 600; font-size: 1.1rem; border: 2px dashed #e2e8f0;">
+        <div style="text-align: center;">
+            <span class="material-symbols-outlined" style="font-size: 4rem; opacity: 0.5; margin-bottom: 1rem;">forum</span>
+            <div>Chọn một yêu cầu hỗ trợ để xem chi tiết</div>
+        </div>
+    </div>
+
+    <!-- Cột phải: Chat & Info (ẩn ban đầu) -->
+    <div class="chat-col" id="chat-col" style="display: none;">
+        <!-- Khung Thông tin chi tiết khách hàng -->
+        <div class="profile-card">
+            <div class="pc-avatar" id="pc-avatar-text">
+                LH
+                <div class="pc-status-dot"></div>
+            </div>
+            <div class="pc-info">
+                <div class="pc-name-row">
+                    <div class="pc-name" id="pc-name-text">Lê Hoàng</div>
+                </div>
+                <div class="pc-details">
+                    <div class="pc-detail-item">
+                        <span class="material-symbols-outlined">location_on</span>
+                        <span id="pc-address-text">123 Phố Huế,<br/>Hai Bà Trưng, Hà Nội</span>
+                    </div>
+                    <div class="pc-detail-item">
+                        <span class="material-symbols-outlined">call</span>
+                        <span id="pc-phone-text">090 445 2XXX</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Khung Trò chuyện -->
+        <div class="live-chat-panel">
+            <div class="chat-header">
+                <div class="chat-title">Live Assistance Panel</div>
+                <div class="chat-actions">
+                    <span class="material-symbols-outlined">videocam</span>
+                    <span class="material-symbols-outlined">call</span>
+                    <span class="material-symbols-outlined">more_vert</span>
+                </div>
+            </div>
+            
+            <div class="chat-history" id="chat-history-container">
+                <!-- Sẽ được fill bằng JS -->
+            </div>
+
+            <!-- Ô nhập liệu -->
+            <div class="chat-input-area">
+                <div class="chat-input-box">
+                    <input type="text" placeholder="Type your response here...">
+                    <button class="btn-send-msg">
+                        <span class="material-symbols-outlined" style="transform: rotate(-30deg) translateX(2px) translateY(-1px);">send</span>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="product-list-container">
-    <div class="table-responsive">
-        <table class="dash-table">
-            <thead>
-                <tr>
-                    <th>Khách hàng</th>
-                    <th>Liên hệ</th>
-                    <th>Vấn đề</th>
-                    <th>Tình trạng</th>
-                    <th class="actions-col">Thao tác</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>Lê Văn C</strong></td>
-                    <td>
-                        <div class="tbl-product-info">
-                            <div class="tbl-text">
-                                <span class="tbl-name">c.le@email.com</span>
-                                <span class="tbl-cat">0912123123</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>Phản ánh bánh nướng hơi khét</td>
-                    <td><span class="status-badge st-danger">Chưa xử lý</span></td>
-                    <td class="actions-col">
-                        <button class="action-btn delete-btn" title="Xử lý ngay" style="background:#ef4444;color:#fff;border-radius:6px;padding:4px 8px;"><span class="material-symbols-outlined" style="font-size:18px;">support_agent</span></button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
+@section Scripts {
+    <script>
+        let currentTicketId = null;
+        let currentAvatar = "XX";
+        let chatInterval = null;
+        let lastMsgCount = 0;
+
+        function openTicket(el) {
+            // 1. Xóa class active ở tất cả thẻ
+            document.querySelectorAll('.ticket-card').forEach(c => c.classList.remove('active'));
+            // 2. Thêm active vào thẻ đang click
+            el.classList.add('active');
+
+            // 3. Ẩn placeholder, hiện khung chat
+            document.getElementById('chat-placeholder').style.display = 'none';
+            document.getElementById('chat-col').style.display = 'flex';
+
+            // 4. Lấy data từ thẻ
+            currentTicketId = el.getAttribute('data-id');
+            const fullname = el.getAttribute('data-fullname');
+            const avatar = el.getAttribute('data-avatar');
+            const phone = el.getAttribute('data-phone');
+            const address = el.getAttribute('data-address');
+            const message = el.getAttribute('data-message');
+            
+            currentAvatar = avatar;
+            lastMsgCount = 0; // reset tin nhắn đã fetch
+
+            // 5. Cập nhật Profile Info
+            document.getElementById('pc-avatar-text').childNodes[0].nodeValue = avatar;
+            document.getElementById('pc-name-text').innerText = fullname;
+            document.getElementById('pc-phone-text').innerText = phone;
+            document.getElementById('pc-address-text').innerHTML = address;
+
+            // 6. Cập nhật Chat History (Hiển thị tin nhắn gốc của khách trước tiên)
+            const chatContainer = document.getElementById('chat-history-container');
+            chatContainer.innerHTML = `
+                <div class="msg-row them">
+                    <div class="msg-avatar">${avatar}</div>
+                    <div class="msg-bubble">
+                        ${message}
+                    </div>
+                </div>
+            `;
+            
+            // 7. Khởi động AJAX Polling
+            if(chatInterval) clearInterval(chatInterval);
+            fetchMessages(); // Lấy ngay lập tức 1 lần
+            chatInterval = setInterval(fetchMessages, 2000); // Lặp lại mỗi 2 giây
+        }
+
+        function fetchMessages() {
+            if (!currentTicketId) return;
+            fetch('/api/contactchat/' + currentTicketId)
+                .then(r => r.json())
+                .then(msgs => {
+                    if (msgs.length > lastMsgCount) {
+                        const chatContainer = document.getElementById('chat-history-container');
+                        for(let i = lastMsgCount; i < msgs.length; i++) {
+                            let m = msgs[i];
+                            let isMe = m.sender === 'Staff';
+                            chatContainer.insertAdjacentHTML('beforeend', `
+                                <div class="msg-row ${isMe ? 'me' : 'them'}">
+                                    <div class="msg-avatar">${isMe ? 'ME' : currentAvatar}</div>
+                                    <div class="msg-bubble">${m.content}</div>
+                                </div>
+                            `);
+                        }
+                        lastMsgCount = msgs.length;
+                        chatContainer.scrollTop = chatContainer.scrollHeight; // Cuộn xuống cuối
+                    }
+                });
+        }
+
+        // 8. Gửi tin nhắn
+        document.querySelector('.btn-send-msg').addEventListener('click', () => {
+            const input = document.querySelector('.chat-input-box input');
+            const txt = input.value.trim();
+            if(!txt || !currentTicketId) return;
+            
+            const fd = new FormData();
+            fd.append("ticketId", currentTicketId);
+            fd.append("sender", "Staff");
+            fd.append("content", txt);
+
+            // Gửi API
+            fetch('/api/contactchat/send', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(res => {
+                if(res.success) {
+                    input.value = '';
+                    fetchMessages(); // Cập nhật màn hình ngay
+                }
+            });
+        });
+        
+        // Nhấn Enter để gửi
+        document.querySelector('.chat-input-box input').addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') document.querySelector('.btn-send-msg').click();
+        });
+    </script>
+}

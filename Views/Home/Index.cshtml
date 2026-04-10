@@ -305,7 +305,8 @@
                 <nav class="nav-links">
                     <a asp-controller="Home" asp-action="Menu">Thực đơn</a>
                     <a asp-controller="Home" asp-action="Promotions">Khuyến mãi</a>
-                    <a href="#footer">Liên hệ</a>
+                    <a asp-controller="Home" asp-action="Scan">Quét ảnh</a>
+                    <a asp-controller="Home" asp-action="Support">Liên hệ</a>
                 </nav>
             </div>
 
@@ -392,6 +393,15 @@
                                         <div class="c-item-desc">Nhận xét của bạn</div>
                                     </div>
                                 </a>
+                                <a asp-controller="Home" asp-action="Response" class="c-dropdown-item">
+                                    <div class="c-item-icon-wrap primary">
+                                        <span class="material-symbols-outlined c-item-icon">support_agent</span>
+                                    </div>
+                                    <div class="c-item-text">
+                                        <div class="c-item-title">Hồi đáp vấn đề</div>
+                                        <div class="c-item-desc">Liên hệ hỗ trợ</div>
+                                    </div>
+                                </a>
                                 <a asp-controller="Account" asp-action="Logout" class="c-dropdown-item logout-item">
                                     <div class="c-item-icon-wrap danger-bg">
                                         <span class="material-symbols-outlined c-item-icon" style="color:#782a2a; transform: scaleX(-1);">logout</span>
@@ -467,7 +477,7 @@
                     <div class="hero-text">
                         <h1 class="hero-title">PizzaDeli</h1>
                         <p class="hero-desc">
-                            Trải nghiệm hương vị pizza nướng bằng lò gỗ chính thống, giao tận tay còn nóng hổi.
+                            Trải nghiệm hương vị pizza nướng bằng lò gỗ chính thống, giao tận tay khách hàng bằng cả trái tim.
                         </p>
                         <button class="btn-order">
                             <span class="material-symbols-outlined">rocket_launch</span>
@@ -690,5 +700,4 @@
             </div>
         </div>
     </footer>
-
 </div>

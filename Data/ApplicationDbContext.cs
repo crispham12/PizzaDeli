@@ -19,6 +19,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<OrderDetail> OrderDetails { get; set; }
     public DbSet<Topping> Toppings { get; set; }
     public DbSet<ProductTopping> ProductToppings { get; set; }
+    public DbSet<ContactRequest> ContactRequests { get; set; }
+    public DbSet<ContactMessage> ContactMessages { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

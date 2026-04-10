@@ -9,10 +9,12 @@ namespace PizzaDeli.Controllers;
 public class StaffController : BaseController
 {
     private readonly ApplicationDbContext _db;
+    private readonly PizzaDeli.Services.ContactRequestService _contactService;
 
-    public StaffController(ApplicationDbContext db)
+    public StaffController(ApplicationDbContext db, PizzaDeli.Services.ContactRequestService contactService)
     {
         _db = db;
+        _contactService = contactService;
     }
 
     private IActionResult? Guard() => RequireRole("Staff", "Admin");
@@ -88,25 +90,74 @@ public class StaffController : BaseController
     }
 
     // ---- Hỗ trợ khách hàng ----
-    public IActionResult Customers()            { var g = Guard(); if (g != null) return g; return View(); }
+    public async Task<IActionResult> Customers()
+    {
+        var g = Guard(); if (g != null) return g;
+        var tickets = await _contactService.GetAllAsync();
+        return View(tickets);
+    }
     public IActionResult CustomerDetail(string id) { var g = Guard(); if (g != null) return g; ViewBag.Id = id; return View(); }
 
     // ---- Quản lý bình luận ----
-    public IActionResult Comments()             { var g = Guard(); if (g != null) return g; return View(); }
-
-    [HttpPost]
-    public IActionResult HideComment(string id)
+    public async Task<IActionResult> Comments(int rating = 0)
     {
         var g = Guard(); if (g != null) return g;
-        TempData["Success"] = "Đã ẩn bình luận vi phạm.";
+        
+        // Quản lý nên thấy TẤT CẢ bình luận (không filter IsHidden)
+        var query = _db.Reviews.Include(r => r.User).Include(r => r.Product).AsQueryable();
+
+        var totalReviews = await query.CountAsync();
+        ViewBag.TotalReviews = totalReviews;
+        ViewBag.AverageRating = totalReviews > 0 ? await query.AverageAsync(r => r.Rating) : 0.0;
+        ViewBag.PendingReplies = await query.CountAsync(r => r.Rating <= 3 && string.IsNullOrEmpty(r.AdminReply));
+        
+        if (rating > 0)
+        {
+            if (rating == 2) query = query.Where(r => r.Rating <= 2);
+            else query = query.Where(r => r.Rating == rating);
+        }
+        
+        var reviews = await query.OrderByDescending(r => r.CreatedAt).ToListAsync();
+        ViewBag.CurrentRatingFilter = rating;
+        return View(reviews);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ToggleVisibility(int id)
+    {
+        var g = Guard(); if (g != null) return g;
+        var review = await _db.Reviews.FindAsync(id);
+        if (review != null) {
+            review.IsHidden = !review.IsHidden;
+            await _db.SaveChangesAsync();
+            TempData["Success"] = review.IsHidden ? "Đã ẩn bình luận." : "Đã hiển thị lại bình luận.";
+        }
         return RedirectToAction("Comments");
     }
 
     [HttpPost]
-    public IActionResult ReplyComment(string id, string reply)
+    public async Task<IActionResult> DeleteComment(int id)
     {
         var g = Guard(); if (g != null) return g;
-        TempData["Success"] = "Đã trả lời bình luận.";
+        var review = await _db.Reviews.FindAsync(id);
+        if (review != null) {
+            _db.Reviews.Remove(review);
+            await _db.SaveChangesAsync();
+            TempData["Success"] = "Đã xóa vĩnh viễn bình luận.";
+        }
+        return RedirectToAction("Comments");
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ReplyComment(int id, string reply)
+    {
+        var g = Guard(); if (g != null) return g;
+        var review = await _db.Reviews.FindAsync(id);
+        if (review != null) {
+            review.AdminReply = reply;
+            await _db.SaveChangesAsync();
+            TempData["Success"] = "Đã phản hồi bình luận thành công.";
+        }
         return RedirectToAction("Comments");
     }
 }

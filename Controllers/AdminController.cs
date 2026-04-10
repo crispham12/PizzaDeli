@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PizzaDeli.Data;
 using PizzaDeli.Models;
+using PizzaDeli.Services;
 using System.IO;
 
 namespace PizzaDeli.Controllers;
@@ -11,11 +12,13 @@ public class AdminController : BaseController
 {
     private readonly ApplicationDbContext _db;
     private readonly IWebHostEnvironment _webHostEnvironment;
+    private readonly AiIntegratorService _aiService;
 
-    public AdminController(ApplicationDbContext db, IWebHostEnvironment webHostEnvironment)
+    public AdminController(ApplicationDbContext db, IWebHostEnvironment webHostEnvironment, AiIntegratorService aiService)
     {
         _db = db;
         _webHostEnvironment = webHostEnvironment;
+        _aiService = aiService;
     }
 
     // Guard tất cả action
@@ -286,6 +289,20 @@ public class AdminController : BaseController
                     await uploadImage.CopyToAsync(fileStream);
                 }
                 model.ImageUrl = "/images/products/" + fileName;
+
+                // 🤖 Tự động tạo Image Embedding ngay khi upload ảnh mới
+                try
+                {
+                    using var embStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+                    var embedding = await _aiService.GetImageEmbeddingAsync(embStream, fileName);
+                    model.ImageEmbedding = System.Text.Json.JsonSerializer.Serialize(embedding);
+                }
+                catch (Exception aiEx)
+                {
+                    // Không chặn luồng chính nếu AI service chưa chạy
+                    model.ImageEmbedding = null;
+                    TempData["AiWarning"] = $"Ảnh đã lưu nhưng chưa tạo được AI vector: {aiEx.Message}";
+                }
             }
 
             model.CreatedAt = DateTime.Now;
@@ -359,6 +376,19 @@ public class AdminController : BaseController
                     await uploadImage.CopyToAsync(fileStream);
                 }
                 p.ImageUrl = "/images/products/" + fileName;
+
+                // 🤖 Tự động tạo lại Image Embedding khi đổi ảnh
+                try
+                {
+                    using var embStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+                    var embedding = await _aiService.GetImageEmbeddingAsync(embStream, fileName);
+                    p.ImageEmbedding = System.Text.Json.JsonSerializer.Serialize(embedding);
+                }
+                catch (Exception aiEx)
+                {
+                    p.ImageEmbedding = null;
+                    TempData["AiWarning"] = $"Ảnh đã lưu nhưng chưa tạo được AI vector: {aiEx.Message}";
+                }
             }
 
             _db.Products.Update(p);
@@ -402,6 +432,8 @@ public class AdminController : BaseController
         }
         return RedirectToAction(nameof(Products));
     }
+
+
 
     // ==========================================
     // ---- Quản lý Topping (CRUD) ----
@@ -956,5 +988,82 @@ public class AdminController : BaseController
             TempData["SuccessMessage"] = "Đã xóa voucher!";
         }
         return RedirectToAction(nameof(Promotions));
+    }
+
+    // ============================================================
+    // ---- AI: Đồng bộ Image Embedding cho toàn bộ sản phẩm ----
+    // ============================================================
+
+    /// <summary>
+    /// POST: Sync embedding cho 1 sản phẩm cụ thể hoặc toàn bộ (id = null).
+    /// Trả về JSON { success, synced, failed, errors }
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> SyncEmbeddings(string? productId = null)
+    {
+        var g = Guard(); if (g != null) return Json(new { success = false, message = "Không có quyền." });
+
+        // Lấy danh sách sản phẩm cần sync
+        IQueryable<Product> query = _db.Products.Where(p => p.IsAvailable && !string.IsNullOrEmpty(p.ImageUrl));
+        if (!string.IsNullOrEmpty(productId))
+            query = query.Where(p => p.Id == productId);
+        else
+            query = query.Where(p => string.IsNullOrEmpty(p.ImageEmbedding)); // Chỉ những sản phẩm chưa có vector
+
+        var products = await query.ToListAsync();
+
+        if (!products.Any())
+            return Json(new { success = true, synced = 0, failed = 0, message = "Tất cả sản phẩm đã có vector AI." });
+
+        int synced = 0, failed = 0;
+        var errors = new List<string>();
+
+        foreach (var p in products)
+        {
+            try
+            {
+                // Xử lý ImageUrl: có thể là đường dẫn tương đối /images/... hoặc URL đầy đủ
+                string localPath;
+                if (p.ImageUrl!.StartsWith("/"))
+                {
+                    localPath = Path.Combine(_webHostEnvironment.WebRootPath, p.ImageUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+                }
+                else
+                {
+                    errors.Add($"{p.Name}: ImageUrl không phải đường dẫn local ({p.ImageUrl})");
+                    failed++;
+                    continue;
+                }
+
+                if (!System.IO.File.Exists(localPath))
+                {
+                    errors.Add($"{p.Name}: File ảnh không tồn tại ({localPath})");
+                    failed++;
+                    continue;
+                }
+
+                using var stream = System.IO.File.OpenRead(localPath);
+                var embedding = await _aiService.GetImageEmbeddingAsync(stream, Path.GetFileName(localPath));
+                p.ImageEmbedding = System.Text.Json.JsonSerializer.Serialize(embedding);
+                synced++;
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"{p.Name}: {ex.Message}");
+                failed++;
+            }
+        }
+
+        await _db.SaveChangesAsync();
+
+        return Json(new
+        {
+            success = true,
+            synced,
+            failed,
+            total = products.Count,
+            errors,
+            message = $"Đồng bộ xong: {synced} thành công, {failed} thất bại."
+        });
     }
 }

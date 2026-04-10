@@ -50,6 +50,90 @@ namespace PizzaDeli.Migrations
                     b.ToTable("Categories");
                 });
 
+            modelBuilder.Entity("PizzaDeli.Models.ContactMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ContactRequestId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Sender")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContactRequestId");
+
+                    b.ToTable("ContactMessages");
+                });
+
+            modelBuilder.Entity("PizzaDeli.Models.ContactRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("IssueType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("OrderCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ContactRequests");
+                });
+
             modelBuilder.Entity("PizzaDeli.Models.Order", b =>
                 {
                     b.Property<string>("Id")
@@ -137,6 +221,9 @@ namespace PizzaDeli.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("ImageEmbedding")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("ImageUrl")
                         .HasColumnType("nvarchar(max)");
 
@@ -182,6 +269,10 @@ namespace PizzaDeli.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AdminReply")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("Comment")
                         .HasColumnType("nvarchar(max)");
@@ -342,6 +433,26 @@ namespace PizzaDeli.Migrations
                     b.ToTable("Vouchers");
                 });
 
+            modelBuilder.Entity("PizzaDeli.Models.ContactMessage", b =>
+                {
+                    b.HasOne("PizzaDeli.Models.ContactRequest", "ContactRequest")
+                        .WithMany("MessagesList")
+                        .HasForeignKey("ContactRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ContactRequest");
+                });
+
+            modelBuilder.Entity("PizzaDeli.Models.ContactRequest", b =>
+                {
+                    b.HasOne("PizzaDeli.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("PizzaDeli.Models.Order", b =>
                 {
                     b.HasOne("PizzaDeli.Models.User", "User")
@@ -428,6 +539,11 @@ namespace PizzaDeli.Migrations
             modelBuilder.Entity("PizzaDeli.Models.Category", b =>
                 {
                     b.Navigation("Products");
+                });
+
+            modelBuilder.Entity("PizzaDeli.Models.ContactRequest", b =>
+                {
+                    b.Navigation("MessagesList");
                 });
 
             modelBuilder.Entity("PizzaDeli.Models.Order", b =>

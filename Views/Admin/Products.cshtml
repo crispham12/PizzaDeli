@@ -13,6 +13,12 @@
         <p>Danh sách thực đơn hiện tại trong hệ thống.</p>
     </div>
     <div class="ph-actions">
+        <!-- Nút Đồng bộ AI Vector -->
+        <button id="btnSyncAi" class="btn-pill" style="background:#1e40af; color:#fff; border:none; gap:0.4rem;"
+                onclick="doSyncEmbeddings()" title="Đồng bộ AI vector cho sản phẩm chưa có embedding">
+            <span class="material-symbols-outlined" id="syncIcon">auto_awesome</span>
+            Đồng bộ AI
+        </button>
         <a asp-action="ProductCreate" class="btn-pill primary add-btn">
             <span class="material-symbols-outlined">add_circle</span>
             Thêm sản phẩm mới
@@ -26,6 +32,30 @@
         @TempData["SuccessMessage"]
     </div>
 }
+@if (TempData["AiWarning"] != null)
+{
+    <div style="background: #fef9c3; color: #854d0e; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; display:flex; align-items:center; gap:0.5rem;">
+        <span class="material-symbols-outlined" style="font-size:1.2rem;">warning</span>
+        @TempData["AiWarning"]
+    </div>
+}
+
+<!-- Modal kết quả Sync AI -->
+<div id="syncModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:16px; padding:2rem; max-width:480px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1rem;">
+            <span class="material-symbols-outlined" style="color:#1e40af; font-size:1.6rem;">smart_toy</span>
+            <h3 style="margin:0; font-size:1.1rem; color:#111827;">Kết quả Đồng bộ AI</h3>
+        </div>
+        <div id="syncResult" style="font-size:0.95rem; color:#374151;"></div>
+        <div style="text-align:right; margin-top:1.5rem;">
+            <button onclick="document.getElementById('syncModal').style.display='none'"
+                    style="padding:0.5rem 1.5rem; border-radius:8px; border:none; background:#5c3d2e; color:#fff; font-weight:700; cursor:pointer;">
+                Đóng
+            </button>
+        </div>
+    </div>
+</div>
 
 <div class="product-list-container">
     <!-- Toolbar: Search & Filter -->
@@ -91,6 +121,18 @@
                         <td>
                             <div class="pt-name">@item.Name</div>
                             <div class="pt-code">#@item.Id.Substring(0, 8).ToUpper()</div>
+                            @if (!string.IsNullOrEmpty(item.ImageEmbedding))
+                            {
+                                <span title="Đã có AI vector" style="display:inline-flex;align-items:center;gap:2px;background:#dbeafe;color:#1e40af;font-size:0.7rem;font-weight:700;border-radius:4px;padding:1px 5px;margin-top:2px;">
+                                    <span class="material-symbols-outlined" style="font-size:0.8rem;">auto_awesome</span> AI
+                                </span>
+                            }
+                            else
+                            {
+                                <span title="Chưa có AI vector" style="display:inline-flex;align-items:center;gap:2px;background:#f3f4f6;color:#9ca3af;font-size:0.7rem;font-weight:700;border-radius:4px;padding:1px 5px;margin-top:2px;">
+                                    <span class="material-symbols-outlined" style="font-size:0.8rem;">auto_awesome</span> Chưa sync
+                                </span>
+                            }
                         </td>
                         <td>
                             <!-- Fake color logic per category ID for demo -->
@@ -186,4 +228,67 @@
             if (btn) btn.classList.remove('open');
         }
     });
+
+    // ---- AI Sync Embeddings ----
+    async function doSyncEmbeddings() {
+        const btn = document.getElementById('btnSyncAi');
+        const icon = document.getElementById('syncIcon');
+        if (!btn) return;
+
+        if (!confirm('Đồng bộ AI vector cho tất cả sản phẩm chưa có embedding?\n(Yêu cầu Python AI Service đang chạy tại localhost:8000)'))
+            return;
+
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        icon.textContent = 'hourglass_top';
+        icon.style.animation = 'spin 1s linear infinite';
+
+        if (!document.getElementById('ai-spin-style')) {
+            const s = document.createElement('style');
+            s.id = 'ai-spin-style';
+            s.innerHTML = '@@keyframes spin { 100% { transform: rotate(360deg); } }';
+            document.head.appendChild(s);
+        }
+
+        try {
+            const token = document.querySelector('meta[name="__RequestVerificationToken"]')?.content
+                       || document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                       || '';
+
+            const res = await fetch('/Admin/SyncEmbeddings', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/json' }
+            });
+            const json = await res.json();
+
+            // Hiển thị kết quả qua modal
+            const resultEl = document.getElementById('syncResult');
+            let html = `<div style="padding:0.75rem; background:#f0fdf4; border-radius:8px; margin-bottom:1rem;">
+                <b style="color:#16a34a;">✔️ Đồng bộ hoàn tất!</b><br/>
+                <span style="color:#374151;">
+                    ✅ Thành công: <b>${json.synced || 0}</b> &nbsp;|&nbsp;
+                    ❌ Thất bại: <b>${json.failed || 0}</b> &nbsp;|&nbsp;
+                    📦 Tổng cộng: <b>${json.total || 0}</b>
+                </span>
+            </div>`;
+            if (json.errors && json.errors.length > 0) {
+                html += `<div style="font-size:0.85rem;color:#6b7280;"><b>Chi tiết lỗi:</b><ul style="margin:0.5rem 0 0 1rem; padding:0;">`;
+                json.errors.forEach(e => { html += `<li>${e}</li>`; });
+                html += `</ul></div>`;
+            }
+            resultEl.innerHTML = html;
+            document.getElementById('syncModal').style.display = 'flex';
+
+            // Reload trang sau 2.5 giây nếu có sync thành công
+            if (json.synced > 0) setTimeout(() => location.reload(), 2500);
+
+        } catch (err) {
+            alert('Đồng bộ thất bại. Kiểm tra AI Service (đầu tiên chạy run-ai.bat).\n' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            icon.textContent = 'auto_awesome';
+            icon.style.animation = '';
+        }
+    }
 </script>

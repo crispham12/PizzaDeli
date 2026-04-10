@@ -1,52 +1,254 @@
+@model List<PizzaDeli.Models.Review>
 @{
     ViewData["Title"] = "Quản lý bình luận";
     Layout = "_StaffLayout";
+    
+    int currentRating = ViewBag.CurrentRatingFilter ?? 0;
+    string avgRatingStr = ViewBag.AverageRating?.ToString() ?? "0.0";
+    double avgRating = double.Parse(avgRatingStr);
+    int fullStars = (int)Math.Floor(avgRating);
 }
 
-<div class="page-header">
-    <div class="ph-titles">
-        <h2>Quản lý bình luận</h2>
-        <p>Kiểm duyệt và phản hồi các đánh giá của khách hàng về món ăn.</p>
+@section Styles {
+    <style>
+        .cmd-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .cmd-title { font-size: 1.6rem; font-weight: 800; color: #5c3e34; margin: 0; }
+        .cmd-subtitle { font-size: 0.9rem; color: #64748b; margin-top: 0.25rem; }
+        .cmd-filters { display: flex; gap: 0.5rem; background: #fff; padding: 0.25rem; border-radius: 99px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+        .cmd-filter-btn { border: none; background: transparent; padding: 0.4rem 1.25rem; border-radius: 99px; font-weight: 800; font-size: 0.8rem; color: #64748b; cursor: pointer; text-decoration: none; transition: 0.2s; }
+        .cmd-filter-btn.active { background: #5c3e34; color: #fff; }
+        .cmd-filter-btn:hover:not(.active) { background: #f1f5f9; }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { background: #fff; border-radius: 20px; padding: 1.5rem; box-shadow: 0 4px 10px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: center; border: 1px solid #f8fafc;}
+        .stat-label { font-size: 0.75rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+        .stat-value { font-size: 2.2rem; font-weight: 800; color: #5c3e34; margin-bottom: 0.5rem; line-height: 1; }
+        .stat-sub { font-size: 0.8rem; font-weight: 700; }
+        .stat-sub.green { color: #10b981; }
+        .stat-sub.red { color: #ef4444; }
+        
+        .ai-card { background: #5c3e34; color: #fff; justify-content: center; align-items: center; text-align: center; cursor: pointer; transition: 0.25s; border-radius: 20px;}
+        .ai-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px -5px rgba(92,62,52,0.4); }
+        .ai-icon { margin-bottom: 0.25rem; }
+        .ai-title { font-weight: 800; font-size: 1.05rem; }
+        .ai-subtitle { font-size: 0.8rem; opacity: 0.8; }
+
+        .rv-list { display: flex; flex-direction: column; gap: 1.5rem; padding-bottom: 2rem; }
+        .rv-card { background: #fff; border-radius: 24px; padding: 1.75rem 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; position: relative; overflow: hidden; border-left: 6px solid transparent; transition: all 0.2s; }
+        .rv-card:hover { box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .rv-card.bad { border-left-color: #5c3e34; }
+        .rv-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+        .rv-user { display: flex; gap: 1rem; align-items: center; }
+        .rv-avatar { width: 50px; height: 50px; border-radius: 16px; background: #0f172a; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; overflow: hidden; }
+        .rv-name { font-weight: 800; font-size: 1.1rem; color: #1e293b; margin-bottom: 0.1rem; }
+        .rv-rating { color: #f59e0b; font-size: 0.9rem; letter-spacing: 2px; }
+        .rv-date { font-size: 0.75rem; color: #94a3b8; font-weight: 800; text-transform: uppercase; margin-left: 0.5rem; }
+        .rv-meta { display: flex; align-items: center; gap: 1rem; }
+        .rv-status { font-size: 0.7rem; font-weight: 800; background: #f1f5f9; color: #64748b; padding: 0.3rem 0.8rem; border-radius: 99px; letter-spacing: 0.05em; text-transform: uppercase; }
+        .rv-status.reported { background: #ffe4e6; color: #be123c; }
+        .rv-product { font-size: 0.95rem; font-weight: 700; color: #475569; }
+        .rv-content { font-size: 1.05rem; color: #334155; line-height: 1.6; margin-bottom: 1.5rem; font-weight: 500; }
+
+        .rv-ai-suggest { background: #fafafa; border: 1px solid #f1f5f9; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; }
+        .ai-suggest-label { font-size: 0.75rem; font-weight: 800; color: #64748b; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items:center; gap:0.25rem;}
+        .ai-suggest-text { font-size: 0.95rem; color: #475569; font-style: italic; line-height: 1.5;}
+
+        .rv-actions { display: flex; gap: 1rem; align-items: center; }
+        .btn-reply { background: #5c3e34; color: #fff; font-weight: 700; font-size: 0.85rem; padding: 0.6rem 1.25rem; border-radius: 99px; border: none; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; text-decoration: none; transition: 0.2s;}
+        .btn-reply:hover { background: #4a2c22; }
+        .btn-hide { background: #f1f5f9; color: #64748b; font-weight: 800; font-size: 0.85rem; padding: 0.6rem 1.25rem; border-radius: 99px; border: none; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: 0.2s; }
+        .btn-hide:hover { background: #e2e8f0; color: #1e293b; }
+        .btn-icon-only { background: transparent; color: #94a3b8; border: none; cursor: pointer; padding: 0.5rem; transition: 0.2s;}
+        .btn-icon-only:hover { color: #ef4444; }
+        
+        .floating-chat-btn { position: absolute; top: 1.5rem; right: -3rem; background: #5c3e34; color: #fff; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); opacity: 0;}
+        .rv-card:hover .floating-chat-btn { right: 1.5rem; opacity: 1; }
+    </style>
+}
+
+<div class="cmd-header">
+    <div>
+        <h1 class="cmd-title">Comment Management</h1>
+        <div class="cmd-subtitle">Monitor customer feedback and maintain service quality.</div>
+    </div>
+    <div class="cmd-filters">
+        <a asp-action="Comments" asp-route-rating="0" class="cmd-filter-btn @(currentRating == 0 ? "active" : "")">ALL</a>
+        <a asp-action="Comments" asp-route-rating="5" class="cmd-filter-btn @(currentRating == 5 ? "active" : "")">5 &#9733;</a>
+        <a asp-action="Comments" asp-route-rating="4" class="cmd-filter-btn @(currentRating == 4 ? "active" : "")">4 &#9733;</a>
+        <a asp-action="Comments" asp-route-rating="3" class="cmd-filter-btn @(currentRating == 3 ? "active" : "")">3 &#9733;</a>
+        <a asp-action="Comments" asp-route-rating="2" class="cmd-filter-btn @(currentRating == 2 ? "active" : "")">2-1 &#9733;</a>
     </div>
 </div>
 
-<div class="product-list-container">
-    <div class="table-responsive">
-        <table class="dash-table">
-            <thead>
-                <tr>
-                    <th>Khách hàng</th>
-                    <th>Sản phẩm</th>
-                    <th>Bình luận</th>
-                    <th>Đánh giá</th>
-                    <th>Ngày đăng</th>
-                    <th class="actions-col">Thao tác</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>Phạm Thị D</strong></td>
-                    <td>
-                        <div class="tbl-product-info">
-                            <div class="tbl-text">
-                                <span class="tbl-name">Pizza Vừa (Hải sản)</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>"Ngon nhưng giao hơi chậm 5 phút so với hẹn nha shop!"</td>
-                    <td><span style="color:#f59e0b;" class="material-symbols-outlined">star star star star star_half</span></td>
-                    <td>Hôm qua</td>
-                    <td class="actions-col">
-                        <form asp-action="ReplyComment" method="post" style="display:inline;">
-                            <input type="hidden" name="id" value="1" />
-                            <input type="hidden" name="reply" value="Cảm ơn bạn góp ý!" />
-                            <button class="action-btn success-btn" title="Trả lời ngay" style="background:#3b82f6;color:#fff;border-radius:6px;padding:4px 8px;">
-                                <span class="material-symbols-outlined" style="font-size:18px;">reply</span>
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">TOTAL REVIEWS</div>
+        <div class="stat-value">@ViewBag.TotalReviews.ToString("N0")</div>
+        <div class="stat-sub green"><span class="material-symbols-outlined" style="font-size:0.9rem; vertical-align:-2px;">trending_up</span> +12% this month</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">AVERAGE RATING</div>
+        <div class="stat-value">@avgRatingStr</div>
+        <div class="stat-sub" style="color: #f59e0b; letter-spacing: 2px;">
+            @for(int i=0; i<fullStars; i++){ <span>&#9733;</span> }
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">PENDING REPLIES</div>
+        <div class="stat-value">@ViewBag.PendingReplies</div>
+        <div class="stat-sub red">Requires Action</div>
+    </div>
+    <div class="ai-card stat-card">
+        <div class="ai-icon"><span class="material-symbols-outlined">auto_awesome</span></div>
+        <div class="ai-title">Generate Summary</div>
+        <div class="ai-subtitle">AI Review Analysis</div>
     </div>
 </div>
+
+<div class="rv-list">
+    @foreach (var review in Model)
+    {
+        string userName = review.User?.FullName ?? "Khách hàng";
+        string shortName = userName.Length >= 2 ? userName.Substring(0, 2).ToUpper() : "KH";
+        string productName = review.Product?.Name ?? "Sản phẩm";
+        string dateStr = review.CreatedAt.ToString("MMM dd, yyyy").ToUpper();
+        bool isBad = review.Rating <= 3;
+        
+        <div class="rv-card @(isBad ? "bad" : "")">
+            <div class="rv-header">
+                <div class="rv-user">
+                    <div class="rv-avatar">
+                        <span class="material-symbols-outlined" style="font-size: 1.8rem; color:#cbd5e1;">face</span>
+                    </div>
+                    <div>
+                        <div class="rv-name">@userName</div>
+                        <div>
+                            <span class="rv-rating">
+                                @for (int i = 0; i < review.Rating; i++) { <span>&#9733;</span> }
+                            </span>
+                            <span class="rv-date">@dateStr</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="rv-meta">
+                    <span class="rv-status @(isBad ? "reported" : "")">@(isBad ? "REPORTED" : "DELIVERED")</span>
+                    <span class="rv-product">@productName</span>
+                </div>
+            </div>
+            
+            <div class="rv-content">
+                "@review.Comment"
+            </div>
+
+            @if (isBad)
+            {
+                <div class="rv-ai-suggest">
+                    <div class="ai-suggest-label">
+                        <span class="material-symbols-outlined" style="font-size:0.9rem;">auto_awesome</span> DRAFT SUGGESTION(AI):
+                    </div>
+                    <div class="ai-suggest-text">
+                        "Hi @userName, we are incredibly sorry for the delay and the condition of your order. We value your feedback and would like to offer a full refund and a voucher for your next visit. Please check your email."
+                    </div>
+                </div>
+                
+                <!-- Display existing Admin Reply -->
+                @if (!string.IsNullOrEmpty(review.AdminReply))
+                {
+                    <div style="background: #f1f5f9; border-left: 4px solid #5c3e34; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                        <div style="font-size: 0.75rem; font-weight: 800; color: #5c3e34; margin-bottom: 0.25rem;"><span class="material-symbols-outlined" style="font-size:1rem; vertical-align:-2px;">support_agent</span> STAFF REPLY</div>
+                        <div style="font-size: 0.95rem; color: #334155;">@review.AdminReply</div>
+                    </div>
+                }
+
+                <div class="rv-actions">
+                    @if (string.IsNullOrEmpty(review.AdminReply))
+                    {
+                        <form asp-action="ReplyComment" method="post" id="reply-form-@review.Id" style="display:inline;">
+                            <input type="hidden" name="id" value="@review.Id" />
+                            <input type="hidden" name="reply" id="reply-input-@review.Id" value="" />
+                            <button type="button" class="btn-reply" onclick="promptReply(@review.Id, '@userName.Split(' ')[0]')">
+                                <span class="material-symbols-outlined" style="font-size:1.1rem;">send</span> Send Resolution
+                            </button>
+                        </form>
+                    }
+                    
+                    <form asp-action="ToggleVisibility" method="post" style="display:inline;">
+                        <input type="hidden" name="id" value="@review.Id" />
+                        <button class="btn-hide">
+                            <span class="material-symbols-outlined" style="font-size:1.1rem;">@(review.IsHidden ? "visibility" : "flag")</span> @(review.IsHidden ? "Unhide Review" : "Flag Review")
+                        </button>
+                    </form>
+                    <form asp-action="DeleteComment" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc muốn xoá vĩnh viễn đánh giá này?');">
+                        <input type="hidden" name="id" value="@review.Id" />
+                        <button class="btn-icon-only" title="Delete">
+                            <span class="material-symbols-outlined" style="font-size:1.1rem;">delete</span>
+                        </button>
+                    </form>
+                </div>
+            }
+            else
+            {
+                <!-- Display existing Admin Reply -->
+                @if (!string.IsNullOrEmpty(review.AdminReply))
+                {
+                    <div style="background: #f1f5f9; border-left: 4px solid #5c3e34; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                        <div style="font-size: 0.75rem; font-weight: 800; color: #5c3e34; margin-bottom: 0.25rem;"><span class="material-symbols-outlined" style="font-size:1rem; vertical-align:-2px;">support_agent</span> STAFF REPLY</div>
+                        <div style="font-size: 0.95rem; color: #334155;">@review.AdminReply</div>
+                    </div>
+                }
+
+                <div class="rv-actions">
+                    @if (string.IsNullOrEmpty(review.AdminReply))
+                    {
+                        <form asp-action="ReplyComment" method="post" id="reply-form-@review.Id" style="display:inline;">
+                            <input type="hidden" name="id" value="@review.Id" />
+                            <input type="hidden" name="reply" id="reply-input-@review.Id" value="" />
+                            <button type="button" class="btn-reply" onclick="promptReply(@review.Id, '@userName.Split(' ')[0]')">
+                                <span class="material-symbols-outlined" style="font-size:1.1rem;">reply</span> Reply to @userName.Split(' ')[0]
+                            </button>
+                        </form>
+                    }
+                    
+                    <form asp-action="ToggleVisibility" method="post" style="display:inline;">
+                        <input type="hidden" name="id" value="@review.Id" />
+                        <button class="btn-hide">
+                            <span class="material-symbols-outlined" style="font-size:1.1rem;">@(review.IsHidden ? "visibility" : "visibility_off")</span> @(review.IsHidden ? "Unhide" : "Hide")
+                        </button>
+                    </form>
+                    <form asp-action="DeleteComment" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc muốn xoá vĩnh viễn đánh giá này?');">
+                        <input type="hidden" name="id" value="@review.Id" />
+                        <button class="btn-icon-only" title="Delete">
+                            <span class="material-symbols-outlined" style="font-size:1.1rem;">delete</span>
+                        </button>
+                    </form>
+                </div>
+            }
+            
+            <!-- Hover action -->
+            @if(isBad) {
+                <div class="floating-chat-btn">
+                    <span class="material-symbols-outlined">forum</span>
+                </div>
+            }
+        </div>
+    }
+
+    @if(!Model.Any()) {
+        <div style="text-align: center; color: #94a3b8; font-weight: 700; margin-top: 2rem;">
+            <div class="material-symbols-outlined" style="font-size: 3rem; margin-bottom: 0.5rem; opacity:0.5;">find_in_page</div>
+            <div>No reviews found.</div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function promptReply(reviewId, userName) {
+            const replyMsg = prompt(`Nhập nội dung phản hồi cho khách hàng ${userName}:`);
+            if (replyMsg && replyMsg.trim() !== '') {
+                document.getElementById('reply-input-' + reviewId).value = replyMsg;
+                document.getElementById('reply-form-' + reviewId).submit();
+            }
+        }
+    </script>
+}

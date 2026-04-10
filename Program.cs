@@ -30,6 +30,9 @@ builder.Services.AddScoped<VoucherService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<ReviewService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<ContactRequestService>();
+builder.Services.AddHttpClient<AiIntegratorService>();
+builder.Services.AddScoped<AiIntegratorService>();
 
 // ---- Database ----
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

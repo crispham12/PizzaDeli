@@ -22,6 +22,8 @@ public class Product
 
     public string? ImageUrl { get; set; }
 
+    public string? ImageEmbedding { get; set; }
+
     public int? CategoryId { get; set; }
     
     [ForeignKey("CategoryId")]
