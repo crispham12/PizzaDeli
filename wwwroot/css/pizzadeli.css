@@ -262,7 +262,7 @@ body.dark .site-header {
     display: none;
 }
 
-.btn-cart {
+.btn-cart, .btn-register {
     position: relative;
     padding: 0.5rem;
     border-radius: var(--radius-xl);
@@ -274,7 +274,7 @@ body.dark .site-header {
     justify-content: center;
 }
 
-.btn-cart:hover {
+.btn-cart:hover, .btn-register:hover {
     background-color: var(--primary-20);
 }
 
@@ -1748,4 +1748,20 @@ body.dark .card-desc {
     .pizza-modal-left { height: 30%; flex: none; }
     .pizza-modal-right { padding: 1.5rem; }
     .pz-modal-header h2 { font-size:1.5rem; }
+}
+
+.btn-register {
+    position: relative;
+    padding: 0.5rem;
+    border-radius: var(--radius-xl);
+    background-color: var(--primary-10);
+    color: var(--primary);
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-register:hover {
+    background-color: var(--primary-20);
 }

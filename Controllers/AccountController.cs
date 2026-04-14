@@ -7,7 +7,13 @@ namespace PizzaDeli.Controllers;
 public class AccountController : BaseController
 {
     private readonly AuthService _auth;
-    public AccountController(AuthService auth) => _auth = auth;
+    private readonly PizzaDeli.Data.ApplicationDbContext _db;
+
+    public AccountController(AuthService auth, PizzaDeli.Data.ApplicationDbContext db)
+    {
+        _auth = auth;
+        _db = db;
+    }
 
     // ==================== LOGIN ====================
     [HttpGet]
@@ -73,6 +79,114 @@ public class AccountController : BaseController
     public IActionResult Logout()
     {
         ClearSession();
+        return RedirectToAction("Login");
+    }
+
+    // ==================== FORGOT PASSWORD ====================
+    [HttpGet]
+    public IActionResult ForgotPassword()
+    {
+        if (IsLoggedIn) return RedirectToRoleDashboard();
+        return View();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult SendForgotPasswordOtp(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return Json(new { success = false, message = "Vui lòng nhập email!" });
+
+        var user = _db.Users.FirstOrDefault(u => u.Email.ToLower() == email.Trim().ToLower());
+        if (user == null)
+            return Json(new { success = false, message = "Email không tồn tại trong hệ thống!" });
+
+        Random rnd = new Random();
+        string code = rnd.Next(100000, 999999).ToString();
+
+        HttpContext.Session.SetString("FPWD_OTP", code);
+        HttpContext.Session.SetString("FPWD_EMAIL", email.Trim().ToLower());
+        HttpContext.Session.SetString("FPWD_OTP_VALIDATED", "false");
+
+        try 
+        {
+            var client = new System.Net.Mail.SmtpClient("smtp.gmail.com", 587)
+            {
+                EnableSsl = true,
+                UseDefaultCredentials = false,
+                Credentials = new System.Net.NetworkCredential("phamanhkhoa56789@gmail.com", "ejff yemk uhwd wdtv")
+            };
+
+            var mailMessage = new System.Net.Mail.MailMessage
+            {
+                From = new System.Net.Mail.MailAddress("pizzadelidemo1@gmail.com", "PizzaDeli Security"),
+                Subject = "PizzaDeli - Khôi phục Mật khẩu",
+                Body = $"<h2>Yêu cầu khôi phục mật khẩu tài khoản {user.FullName}</h2><hr/>" +
+                       $"<p>Chào bạn,</p>" +
+                       $"<p>Đây là mã xác nhận (OTP) 6 chữ số để lấy lại mật khẩu của bạn:</p>" +
+                       $"<h1 style='color: #16a34a; letter-spacing: 0.2em;'>{code}</h1>" +
+                       $"<p>Vui lòng tuyệt đối không tiết lộ mã này cho bất kỳ ai.</p>",
+                IsBodyHtml = true,
+            };
+            mailMessage.To.Add(user.Email);
+            client.Send(mailMessage);
+
+            return Json(new { success = true, message = "Mã xác nhận đã được gửi về email của bạn!" });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = $"Gặp lỗi hệ thống gửi mail: {ex.Message}" });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult VerifyForgotPasswordOtp(string email, string code)
+    {
+        var savedOtp = HttpContext.Session.GetString("FPWD_OTP");
+        var savedEmail = HttpContext.Session.GetString("FPWD_EMAIL");
+
+        if (string.IsNullOrEmpty(savedOtp) || string.IsNullOrEmpty(savedEmail))
+            return Json(new { success = false, message = "Phiên làm việc không hợp lệ hoặc đã hết hạn!" });
+
+        if (savedEmail != email.Trim().ToLower())
+            return Json(new { success = false, message = "Thông tin email không khớp!" });
+
+        if (savedOtp != code)
+            return Json(new { success = false, message = "Mã xác nhận không hợp lệ!" });
+
+        HttpContext.Session.SetString("FPWD_OTP_VALIDATED", "true");
+        return Json(new { success = true });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult ResetPassword(string email, string newPassword)
+    {
+        var savedEmail = HttpContext.Session.GetString("FPWD_EMAIL");
+        var isValidated = HttpContext.Session.GetString("FPWD_OTP_VALIDATED");
+
+        if (isValidated != "true" || string.IsNullOrEmpty(savedEmail) || savedEmail != email.Trim().ToLower())
+        {
+            TempData["Error"] = "Bạn chưa hoàn tất xác minh mã OTP hợp lệ!";
+            return RedirectToAction("ForgotPassword");
+        }
+
+        var user = _db.Users.FirstOrDefault(u => u.Email.ToLower() == savedEmail);
+        if (user == null)
+        {
+            TempData["Error"] = "Tài khoản không tồn tại!";
+            return RedirectToAction("ForgotPassword");
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        _db.SaveChanges();
+
+        HttpContext.Session.Remove("FPWD_OTP");
+        HttpContext.Session.Remove("FPWD_EMAIL");
+        HttpContext.Session.Remove("FPWD_OTP_VALIDATED");
+
+        TempData["Success"] = "Đặt lại mật khẩu thành công! Vui lòng đăng nhập.";
         return RedirectToAction("Login");
     }
 
