@@ -68,11 +68,11 @@
 
 <div class="cmd-header">
     <div>
-        <h1 class="cmd-title">Comment Management</h1>
-        <div class="cmd-subtitle">Monitor customer feedback and maintain service quality.</div>
+        <h1 class="cmd-title">Quản lý bình luận</h1>
+        <div class="cmd-subtitle">Theo dõi phản hồi của khách hàng và duy trì chất lượng dịch vụ.</div>
     </div>
     <div class="cmd-filters">
-        <a asp-action="Comments" asp-route-rating="0" class="cmd-filter-btn @(currentRating == 0 ? "active" : "")">ALL</a>
+        <a asp-action="Comments" asp-route-rating="0" class="cmd-filter-btn @(currentRating == 0 ? "active" : "")">TẤT CẢ</a>
         <a asp-action="Comments" asp-route-rating="5" class="cmd-filter-btn @(currentRating == 5 ? "active" : "")">5 &#9733;</a>
         <a asp-action="Comments" asp-route-rating="4" class="cmd-filter-btn @(currentRating == 4 ? "active" : "")">4 &#9733;</a>
         <a asp-action="Comments" asp-route-rating="3" class="cmd-filter-btn @(currentRating == 3 ? "active" : "")">3 &#9733;</a>
@@ -82,26 +82,26 @@
 
 <div class="stats-grid">
     <div class="stat-card">
-        <div class="stat-label">TOTAL REVIEWS</div>
+        <div class="stat-label">TỔNG BÌNH LUẬN</div>
         <div class="stat-value">@ViewBag.TotalReviews.ToString("N0")</div>
-        <div class="stat-sub green"><span class="material-symbols-outlined" style="font-size:0.9rem; vertical-align:-2px;">trending_up</span> +12% this month</div>
+        <div class="stat-sub green"><span class="material-symbols-outlined" style="font-size:0.9rem; vertical-align:-2px;">trending_up</span> +12% tháng này</div>
     </div>
     <div class="stat-card">
-        <div class="stat-label">AVERAGE RATING</div>
+        <div class="stat-label">ĐÁNH GIÁ TRUNG BÌNH</div>
         <div class="stat-value">@avgRatingStr</div>
         <div class="stat-sub" style="color: #f59e0b; letter-spacing: 2px;">
             @for(int i=0; i<fullStars; i++){ <span>&#9733;</span> }
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-label">PENDING REPLIES</div>
+        <div class="stat-label">CHỜ PHẢN HỒI</div>
         <div class="stat-value">@ViewBag.PendingReplies</div>
-        <div class="stat-sub red">Requires Action</div>
+        <div class="stat-sub red">Cần xử lý</div>
     </div>
     <div class="ai-card stat-card">
         <div class="ai-icon"><span class="material-symbols-outlined">auto_awesome</span></div>
-        <div class="ai-title">Generate Summary</div>
-        <div class="ai-subtitle">AI Review Analysis</div>
+        <div class="ai-title">Tạo tóm tắt</div>
+        <div class="ai-subtitle">AI phân tích bình luận</div>
     </div>
 </div>
 
@@ -131,7 +131,7 @@
                     </div>
                 </div>
                 <div class="rv-meta">
-                    <span class="rv-status @(isBad ? "reported" : "")">@(isBad ? "REPORTED" : "DELIVERED")</span>
+                    <span class="rv-status @(isBad ? "reported" : "")">@(isBad ? "BỊ TỐ CÁO" : "ĐÃ GIAO")</span>
                     <span class="rv-product">@productName</span>
                 </div>
             </div>
@@ -144,10 +144,10 @@
             {
                 <div class="rv-ai-suggest">
                     <div class="ai-suggest-label">
-                        <span class="material-symbols-outlined" style="font-size:0.9rem;">auto_awesome</span> DRAFT SUGGESTION(AI):
+                        <span class="material-symbols-outlined" style="font-size:0.9rem;">auto_awesome</span> GỢI Ý TỪ AI:
                     </div>
                     <div class="ai-suggest-text">
-                        "Hi @userName, we are incredibly sorry for the delay and the condition of your order. We value your feedback and would like to offer a full refund and a voucher for your next visit. Please check your email."
+                        "Chào @userName, chúng tôi vô cùng xin lỗi vì sự chậm trễ và tình trạng đơn hàng của bạn. Chúng tôi trân trọng phản hồi của bạn và xin gửi tặng bạn hoàn tiền 100% cùng một voucher cho lần đặt sau. Vui lòng kiểm tra email của bạn."
                     </div>
                 </div>
                 
@@ -155,7 +155,7 @@
                 @if (!string.IsNullOrEmpty(review.AdminReply))
                 {
                     <div style="background: #f1f5f9; border-left: 4px solid #5c3e34; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
-                        <div style="font-size: 0.75rem; font-weight: 800; color: #5c3e34; margin-bottom: 0.25rem;"><span class="material-symbols-outlined" style="font-size:1rem; vertical-align:-2px;">support_agent</span> STAFF REPLY</div>
+                        <div style="font-size: 0.75rem; font-weight: 800; color: #5c3e34; margin-bottom: 0.25rem;"><span class="material-symbols-outlined" style="font-size:1rem; vertical-align:-2px;">support_agent</span> NHÂN VIÊN PHẢN HỒI</div>
                         <div style="font-size: 0.95rem; color: #334155;">@review.AdminReply</div>
                     </div>
                 }
@@ -167,7 +167,7 @@
                             <input type="hidden" name="id" value="@review.Id" />
                             <input type="hidden" name="reply" id="reply-input-@review.Id" value="" />
                             <button type="button" class="btn-reply" onclick="promptReply(@review.Id, '@userName.Split(' ')[0]')">
-                                <span class="material-symbols-outlined" style="font-size:1.1rem;">send</span> Send Resolution
+                                <span class="material-symbols-outlined" style="font-size:1.1rem;">send</span> Gửi cách giải quyết
                             </button>
                         </form>
                     }
@@ -175,7 +175,7 @@
                     <form asp-action="ToggleVisibility" method="post" style="display:inline;">
                         <input type="hidden" name="id" value="@review.Id" />
                         <button class="btn-hide">
-                            <span class="material-symbols-outlined" style="font-size:1.1rem;">@(review.IsHidden ? "visibility" : "flag")</span> @(review.IsHidden ? "Unhide Review" : "Flag Review")
+                            <span class="material-symbols-outlined" style="font-size:1.1rem;">@(review.IsHidden ? "visibility" : "flag")</span> @(review.IsHidden ? "Hiện đánh giá" : "Báo cáo xấu")
                         </button>
                     </form>
                     <form asp-action="DeleteComment" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc muốn xoá vĩnh viễn đánh giá này?');">
@@ -192,7 +192,7 @@
                 @if (!string.IsNullOrEmpty(review.AdminReply))
                 {
                     <div style="background: #f1f5f9; border-left: 4px solid #5c3e34; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
-                        <div style="font-size: 0.75rem; font-weight: 800; color: #5c3e34; margin-bottom: 0.25rem;"><span class="material-symbols-outlined" style="font-size:1rem; vertical-align:-2px;">support_agent</span> STAFF REPLY</div>
+                        <div style="font-size: 0.75rem; font-weight: 800; color: #5c3e34; margin-bottom: 0.25rem;"><span class="material-symbols-outlined" style="font-size:1rem; vertical-align:-2px;">support_agent</span> NHÂN VIÊN PHẢN HỒI</div>
                         <div style="font-size: 0.95rem; color: #334155;">@review.AdminReply</div>
                     </div>
                 }
@@ -204,7 +204,7 @@
                             <input type="hidden" name="id" value="@review.Id" />
                             <input type="hidden" name="reply" id="reply-input-@review.Id" value="" />
                             <button type="button" class="btn-reply" onclick="promptReply(@review.Id, '@userName.Split(' ')[0]')">
-                                <span class="material-symbols-outlined" style="font-size:1.1rem;">reply</span> Reply to @userName.Split(' ')[0]
+                                <span class="material-symbols-outlined" style="font-size:1.1rem;">reply</span> Phản hồi @userName.Split(' ')[0]
                             </button>
                         </form>
                     }
@@ -212,7 +212,7 @@
                     <form asp-action="ToggleVisibility" method="post" style="display:inline;">
                         <input type="hidden" name="id" value="@review.Id" />
                         <button class="btn-hide">
-                            <span class="material-symbols-outlined" style="font-size:1.1rem;">@(review.IsHidden ? "visibility" : "visibility_off")</span> @(review.IsHidden ? "Unhide" : "Hide")
+                            <span class="material-symbols-outlined" style="font-size:1.1rem;">@(review.IsHidden ? "visibility" : "visibility_off")</span> @(review.IsHidden ? "Hiện" : "Ẩn")
                         </button>
                     </form>
                     <form asp-action="DeleteComment" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc muốn xoá vĩnh viễn đánh giá này?');">
@@ -236,7 +236,7 @@
     @if(!Model.Any()) {
         <div style="text-align: center; color: #94a3b8; font-weight: 700; margin-top: 2rem;">
             <div class="material-symbols-outlined" style="font-size: 3rem; margin-bottom: 0.5rem; opacity:0.5;">find_in_page</div>
-            <div>No reviews found.</div>
+            <div>Không có đánh giá nào.</div>
         </div>
     }
 </div>

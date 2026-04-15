@@ -29,9 +29,9 @@ public class StaffController : BaseController
         var tomorrow = today.AddDays(1);
 
         // Stats
-        ViewBag.TotalToday = await _db.Orders.CountAsync(o => o.OrderDate >= today && o.OrderDate < tomorrow);
-        ViewBag.PendingOrders = await _db.Orders.CountAsync(o => o.Status == "Pending" || o.Status == "Chờ xử lý");
-        ViewBag.DeliveringOrders = await _db.Orders.CountAsync(o => o.Status == "Shipping" || o.Status == "Đang giao hàng");
+        ViewBag.TotalToday      = await _db.Orders.CountAsync(o => o.OrderDate >= today && o.OrderDate < tomorrow);
+        ViewBag.PendingOrders   = await _db.Orders.CountAsync(o => o.Status == "Pending" || o.Status == "Confirmed");
+        ViewBag.DeliveringOrders = await _db.Orders.CountAsync(o => o.Status == "Shipping");
 
         // Fetch Orders
         int pageSize = 15;
@@ -79,13 +79,63 @@ public class StaffController : BaseController
     }
 
     // ---- Xử lý giao hàng ----
-    public IActionResult Deliveries()           { var g = Guard(); if (g != null) return g; return View(); }
-
-    [HttpPost]
-    public IActionResult UpdateDeliveryStatus(string id, string status)
+    public async Task<IActionResult> Deliveries(string filter = "all")
     {
         var g = Guard(); if (g != null) return g;
-        TempData["Success"] = $"Đã cập nhật giao hàng #{id} → {status}";
+
+        var today = DateTime.Today;
+        var tomorrow = today.AddDays(1);
+
+        // Stats
+        ViewBag.ActiveDeliveries = await _db.Orders.CountAsync(o => o.Status == "Shipping");
+        ViewBag.PendingPickup    = await _db.Orders.CountAsync(o =>
+            (o.Status == "Confirmed" || o.Status == "Processing") && o.OrderDate >= today && o.OrderDate < tomorrow);
+        ViewBag.CompletedToday   = await _db.Orders.CountAsync(o =>
+            o.Status == "Completed" && o.OrderDate >= today && o.OrderDate < tomorrow);
+
+        // Fetch delivery orders
+        var query = _db.Orders
+            .Include(o => o.User)
+            .Include(o => o.OrderDetails)
+                .ThenInclude(od => od.Product)
+            .AsQueryable();
+
+        if (filter == "active")
+            query = query.Where(o => o.Status == "Shipping");
+        else if (filter == "pending")
+            query = query.Where(o => o.Status == "Confirmed" || o.Status == "Processing" || o.Status == "Pending");
+        else if (filter == "completed")
+            query = query.Where(o => o.Status == "Completed" && o.OrderDate >= today && o.OrderDate < tomorrow);
+        else
+            query = query.Where(o =>
+                o.Status == "Shipping"
+                || o.Status == "Confirmed"
+                || o.Status == "Processing"
+                || o.Status == "Pending"
+                || (o.Status == "Completed" && o.OrderDate >= today && o.OrderDate < tomorrow));
+
+        var orders = await query.OrderByDescending(o => o.OrderDate).ToListAsync();
+        ViewBag.CurrentFilter = filter;
+
+        return View(orders);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateDeliveryStatus(string id, string status)
+    {
+        var g = Guard(); if (g != null) return g;
+        var order = await _db.Orders.FindAsync(id);
+        if (order != null)
+        {
+            order.Status = status;
+            await _db.SaveChangesAsync();
+            TempData["Success"] = $"Đã cập nhật giao hàng #{id.Substring(0, 8).ToUpper()} → {status}";
+        }
+        else
+        {
+            TempData["Error"] = "Không tìm thấy đơn hàng.";
+        }
         return RedirectToAction("Deliveries");
     }
 

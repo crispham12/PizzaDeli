@@ -1,48 +1,799 @@
+@model IEnumerable<PizzaDeli.Models.Order>
 @{
     ViewData["Title"] = "Xử lý giao hàng";
     Layout = "_StaffLayout";
+
+    int activeDeliveries = ViewBag.ActiveDeliveries ?? 0;
+    int pendingPickup = ViewBag.PendingPickup ?? 0;
+    int completedToday = ViewBag.CompletedToday ?? 0;
+    string currentFilter = ViewBag.CurrentFilter ?? "all";
+
+    // Status helpers
+    (string label, string dotColor) GetDeliveryStatus(string st) => st switch
+    {
+        "Shipping" or "Đang giao hàng" => ("Đang giao", "#f59e0b"),
+        "Confirmed" or "Đã xác nhận" => ("Đã lấy hàng", "#3b82f6"),
+        "Pending" or "Chờ xử lý" => ("Đang chờ", "#ef4444"),
+        "Completed" or "Đã hoàn thành" => ("Đã đến", "#10b981"),
+        "Cancelled" or "Đã hủy" => ("Đã hủy", "#6b7280"),
+        _ => (st, "#6b7280")
+    };
 }
 
-<div class="page-header">
-    <div class="ph-titles">
-        <h2>Xử lý giao hàng</h2>
-        <p>Theo dõi tình trạng vận chuyển của các đơn hàng.</p>
+<style>
+    /* ===== DELIVERY DASHBOARD ===== */
+
+    .dlv-stats-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+
+    .dlv-stat-card {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 1.75rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+        border: 2px solid transparent;
+    }
+
+    .dlv-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    }
+
+    .dlv-stat-card.active-card {
+        border-color: #5C3D2E;
+    }
+
+    .dlv-stat-card .dlv-stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+
+    .dlv-stat-card .dlv-stat-value {
+        font-size: 2.75rem;
+        font-weight: 800;
+        color: #111827;
+        line-height: 1;
+        margin-bottom: 0.25rem;
+    }
+
+    .dlv-stat-card .dlv-stat-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #9ca3af;
+        margin: 0;
+    }
+
+    .dlv-stat-card .dlv-stat-badge {
+        position: absolute;
+        top: 1.25rem;
+        right: 1.25rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.2rem 0.6rem;
+        border-radius: 20px;
+    }
+
+    /* Completed Today card - dark brown style */
+    .dlv-stat-card.card-completed {
+        background: #5C3D2E;
+    }
+    .dlv-stat-card.card-completed .dlv-stat-value { color: #ffffff; }
+    .dlv-stat-card.card-completed .dlv-stat-label { color: rgba(255,255,255,0.65); }
+
+    /* ===== SHIPMENTS SECTION ===== */
+    .dlv-shipments-container {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 1.75rem;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+
+    .dlv-shipments-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+    }
+
+    .dlv-shipments-header h2 {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #111827;
+        margin: 0 0 0.2rem 0;
+    }
+
+    .dlv-shipments-header p {
+        margin: 0;
+        font-size: 0.8125rem;
+        color: #9ca3af;
+    }
+
+    .dlv-filter-btns {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .dlv-filter-btn {
+        background: #ffffff;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 0.45rem 1rem;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #374151;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        transition: all 0.15s;
+    }
+
+    .dlv-filter-btn:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+    }
+
+    .dlv-filter-btn.active {
+        background: #5C3D2E;
+        color: #ffffff;
+        border-color: #5C3D2E;
+    }
+
+    /* ===== SHIPMENT CARDS ===== */
+    .dlv-shipment-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .dlv-shipment-card {
+        background: #fafaf9;
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
+        display: grid;
+        grid-template-columns: auto 1fr auto auto auto auto;
+        align-items: center;
+        gap: 1.25rem;
+        transition: all 0.2s;
+        border: 1.5px solid transparent;
+    }
+
+    .dlv-shipment-card:hover {
+        background: #f5f0eb;
+        border-color: #e8ddd4;
+        box-shadow: 0 4px 15px rgba(92,61,46,0.06);
+    }
+
+    /* Product thumbnail */
+    .dlv-product-thumb {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        overflow: hidden;
+        background: #f3f4f6;
+        flex-shrink: 0;
+    }
+
+    .dlv-product-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .dlv-product-thumb .dlv-thumb-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #fbbf24, #f59e0b);
+        color: #fff;
+        font-size: 1.5rem;
+    }
+
+    /* Customer info */
+    .dlv-customer-info {
+        min-width: 0;
+    }
+
+    .dlv-order-id {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #9ca3af;
+        letter-spacing: 0.03em;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: 0.15rem;
+    }
+
+    .dlv-order-id .dlv-premium-badge {
+        background: linear-gradient(135deg, #5C3D2E, #8B6F47);
+        color: #fff;
+        font-size: 0.55rem;
+        font-weight: 800;
+        padding: 0.1rem 0.4rem;
+        border-radius: 4px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .dlv-customer-name {
+        font-size: 0.9375rem;
+        font-weight: 700;
+        color: #111827;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .dlv-customer-address {
+        font-size: 0.75rem;
+        color: #9ca3af;
+        margin: 0.1rem 0 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 260px;
+    }
+
+    /* Shipper info */
+    .dlv-shipper-info {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .dlv-shipper-icon {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-bottom: 0.1rem;
+    }
+
+    .dlv-shipper-icon .material-symbols-outlined {
+        font-size: 16px;
+        color: #5C3D2E;
+    }
+
+    .dlv-shipper-name {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .dlv-shipper-status {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    .dlv-shipper-status .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    /* ETA */
+    .dlv-eta {
+        text-align: center;
+    }
+
+    .dlv-eta-label {
+        font-size: 0.625rem;
+        font-weight: 700;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 0.15rem;
+    }
+
+    .dlv-eta-time {
+        font-size: 0.9375rem;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    /* Action buttons */
+    .dlv-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .dlv-update-btn {
+        background: #ffffff;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 0.45rem 1rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #374151;
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+    }
+
+    .dlv-update-btn:hover {
+        background: #5C3D2E;
+        color: #fff;
+        border-color: #5C3D2E;
+    }
+
+    .dlv-detail-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: #5C3D2E;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-decoration: none;
+    }
+
+    .dlv-detail-btn:hover {
+        background: #4a3125;
+        transform: scale(1.05);
+    }
+
+    .dlv-detail-btn .material-symbols-outlined {
+        color: #fff;
+        font-size: 18px;
+    }
+
+    /* Empty state */
+    .dlv-empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .dlv-empty-state .material-symbols-outlined {
+        font-size: 64px;
+        color: #d1d5db;
+        margin-bottom: 1rem;
+    }
+
+    .dlv-empty-state h3 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #6b7280;
+        margin: 0 0 0.5rem;
+    }
+
+    .dlv-empty-state p {
+        color: #9ca3af;
+        font-size: 0.875rem;
+        margin: 0;
+    }
+
+    /* Toast notification */
+    .dlv-toast {
+        position: fixed;
+        top: 1.5rem;
+        right: 1.5rem;
+        background: #065f46;
+        color: #ffffff;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        animation: dlvSlideIn 0.3s ease-out, dlvSlideOut 0.3s ease-in 3s forwards;
+    }
+
+    .dlv-toast.error {
+        background: #991b1b;
+    }
+
+    @@keyframes dlvSlideIn {
+        from { transform: translateX(120%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @@keyframes dlvSlideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(120%); opacity: 0; }
+    }
+
+    /* Modal */
+    .dlv-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.4);
+        backdrop-filter: blur(4px);
+        z-index: 9000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        animation: dlvFadeIn 0.2s;
+    }
+
+    .dlv-modal-overlay.show { display: flex; }
+
+    .dlv-modal {
+        background: #fff;
+        border-radius: 20px;
+        padding: 2rem;
+        width: 100%;
+        max-width: 420px;
+        box-shadow: 0 25px 60px rgba(0,0,0,0.2);
+        animation: dlvModalIn 0.3s ease-out;
+    }
+
+    @@keyframes dlvFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @@keyframes dlvModalIn {
+        from { transform: scale(0.9) translateY(20px); opacity: 0; }
+        to { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    .dlv-modal h3 {
+        font-size: 1.125rem;
+        font-weight: 800;
+        color: #111827;
+        margin: 0 0 0.5rem;
+    }
+
+    .dlv-modal p {
+        color: #6b7280;
+        font-size: 0.8125rem;
+        margin: 0 0 1.5rem;
+    }
+
+    .dlv-modal-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .dlv-modal-action-btn {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border-radius: 12px;
+        border: 1.5px solid #e5e7eb;
+        background: #fff;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #374151;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        transition: all 0.15s;
+    }
+
+    .dlv-modal-action-btn:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+    }
+
+    .dlv-modal-action-btn.btn-shipping {
+        background: #fef3c7;
+        border-color: #fbbf24;
+        color: #92400e;
+    }
+
+    .dlv-modal-action-btn.btn-complete {
+        background: #d1fae5;
+        border-color: #10b981;
+        color: #065f46;
+    }
+
+    .dlv-modal-action-btn.btn-cancel {
+        background: #fee2e2;
+        border-color: #ef4444;
+        color: #991b1b;
+    }
+
+    .dlv-modal-close {
+        margin-top: 0.75rem;
+        width: 100%;
+        padding: 0.65rem;
+        border-radius: 12px;
+        border: none;
+        background: #f3f4f6;
+        color: #6b7280;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+    .dlv-modal-close:hover {
+        background: #e5e7eb;
+    }
+
+    /* Responsive */
+    @@media (max-width: 1100px) {
+        .dlv-shipment-card {
+            grid-template-columns: auto 1fr auto auto;
+        }
+        .dlv-shipper-info { display: none; }
+        .dlv-eta { display: none; }
+    }
+
+    @@media (max-width: 768px) {
+        .dlv-stats-row {
+            grid-template-columns: 1fr;
+        }
+        .dlv-shipment-card {
+            grid-template-columns: auto 1fr;
+            gap: 0.75rem;
+        }
+        .dlv-actions {
+            grid-column: 1 / -1;
+            justify-content: flex-end;
+        }
+    }
+</style>
+
+<!-- Toast notifications -->
+@if (TempData["Success"] != null)
+{
+    <div class="dlv-toast">
+        <span class="material-symbols-outlined" style="font-size:18px;">check_circle</span>
+        @TempData["Success"]
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="dlv-toast error">
+        <span class="material-symbols-outlined" style="font-size:18px;">error</span>
+        @TempData["Error"]
+    </div>
+}
+
+<!-- ===== STAT CARDS ===== -->
+<div class="dlv-stats-row">
+    <!-- Active Deliveries -->
+    <a href="@Url.Action("Deliveries", new { filter = "active" })" style="text-decoration:none;">
+        <div class="dlv-stat-card @(currentFilter == "active" ? "active-card" : "")">
+            <div class="dlv-stat-icon" style="background:#fce7e7; color:#854d0e;">
+                <span class="material-symbols-outlined" style="font-size:22px;">local_shipping</span>
+            </div>
+            <div class="dlv-stat-badge" style="background:#d1fae5; color:#065f46;">+12%</div>
+            <div class="dlv-stat-value">@activeDeliveries</div>
+            <p class="dlv-stat-label">Đơn Đang Giao</p>
+        </div>
+    </a>
+
+    <!-- Pending Pickup -->
+    <a href="@Url.Action("Deliveries", new { filter = "pending" })" style="text-decoration:none;">
+        <div class="dlv-stat-card @(currentFilter == "pending" ? "active-card" : "")">
+            <div class="dlv-stat-icon" style="background:#fef3c7; color:#92400e;">
+                <span class="material-symbols-outlined" style="font-size:22px;">inventory_2</span>
+            </div>
+            <div class="dlv-stat-badge" style="background:#fee2e2; color:#991b1b;">
+                @(pendingPickup > 0 ? $"{pendingPickup} đơn chờ" : "0")
+            </div>
+            <div class="dlv-stat-value">@pendingPickup</div>
+            <p class="dlv-stat-label">Chờ Lấy Hàng</p>
+        </div>
+    </a>
+
+    <!-- Completed Today -->
+    <a href="@Url.Action("Deliveries", new { filter = "completed" })" style="text-decoration:none;">
+        <div class="dlv-stat-card card-completed @(currentFilter == "completed" ? "active-card" : "")" style="@(currentFilter == "completed" ? "border-color:#fff;" : "")">
+            <div class="dlv-stat-icon" style="background:rgba(255,255,255,0.15); color:#fff;">
+                <span class="material-symbols-outlined" style="font-size:22px;">task_alt</span>
+            </div>
+            <div class="dlv-stat-value">@completedToday</div>
+            <p class="dlv-stat-label">Hoàn Thành Hôm Nay</p>
+        </div>
+    </a>
+</div>
+
+<!-- ===== ACTIVE SHIPMENTS ===== -->
+<div class="dlv-shipments-container">
+    <div class="dlv-shipments-header">
+        <div>
+            <h2>Đơn Đang Vận Chuyển</h2>
+            <p>Theo dõi thời gian thực lịch trình giao hàng</p>
+        </div>
+        <div class="dlv-filter-btns">
+            <!-- Đã bỏ nút Filter và Latest -->
+        </div>
+    </div>
+
+    <div class="dlv-shipment-list">
+        @if (!Model.Any())
+        {
+            <div class="dlv-empty-state">
+                <span class="material-symbols-outlined">local_shipping</span>
+                <h3>Không có đơn giao hàng nào</h3>
+                <p>Hiện tại chưa có đơn hàng nào trong trạng thái giao hàng.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var order in Model)
+            {
+                var shortId = "#PD-" + order.Id.Substring(0, 4).ToUpper();
+                var deliveryStatus = GetDeliveryStatus(order.Status);
+                var firstProduct = order.OrderDetails?.FirstOrDefault()?.Product;
+                var productImg = firstProduct?.ImageUrl;
+                var customerName = order.User?.FullName ?? "Khách vãng lai";
+                var address = order.ShippingAddress ?? "Chưa có địa chỉ";
+                var eta = order.OrderDate.AddMinutes(30).ToString("h:mm tt");
+                // Simulated shipper names based on order
+                var shipperNames = new[] { "Lê Văn Nam", "Trần Quốc Bảo", "Hoàng Anh Tuấn", "Nguyễn Thành Đạt", "Phạm Minh Khoa" };
+                var shipperName = shipperNames[Math.Abs(order.Id.GetHashCode()) % shipperNames.Length];
+                var totalItems = order.OrderDetails?.Sum(od => od.Quantity) ?? 0;
+
+                <div class="dlv-shipment-card">
+                    <!-- Product thumbnail -->
+                    <div class="dlv-product-thumb">
+                        @if (!string.IsNullOrEmpty(productImg))
+                        {
+                            <img src="@productImg" alt="Product" loading="lazy" />
+                        }
+                        else
+                        {
+                            <div class="dlv-thumb-placeholder">
+                                <span class="material-symbols-outlined">local_pizza</span>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Customer info -->
+                    <div class="dlv-customer-info">
+                        <div class="dlv-order-id">
+                            @shortId
+                            @if (totalItems >= 3)
+                            {
+                                <span class="dlv-premium-badge">PREMIUM</span>
+                            }
+                        </div>
+                        <p class="dlv-customer-name">@customerName</p>
+                        <p class="dlv-customer-address">@address</p>
+                    </div>
+
+                    <!-- Shipper -->
+                    <div class="dlv-shipper-info">
+                        <div class="dlv-shipper-icon">
+                            <span class="material-symbols-outlined">person</span>
+                            <span class="dlv-shipper-name">@shipperName</span>
+                        </div>
+                        <div class="dlv-shipper-status">
+                            <span class="status-dot" style="background:@deliveryStatus.dotColor;"></span>
+                            <span style="color:@deliveryStatus.dotColor;">@deliveryStatus.label</span>
+                        </div>
+                    </div>
+
+                    <!-- ETA -->
+                    <div class="dlv-eta">
+                        <div class="dlv-eta-label">THỜI GIAN ĐẾN</div>
+                        <div class="dlv-eta-time">@eta</div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="dlv-actions">
+                        <button class="dlv-update-btn" onclick="openUpdateModal('@order.Id', '@order.Status', '@shortId')">Cập nhật trạng thái</button>
+                        <a href="@Url.Action("OrderDetail", "Staff", new { id = order.Id })" class="dlv-detail-btn" title="Chi tiết">
+                            <span class="material-symbols-outlined">description</span>
+                        </a>
+                    </div>
+                </div>
+            }
+        }
     </div>
 </div>
 
-<div class="product-list-container">
-    <div class="table-responsive">
-        <table class="dash-table">
-            <thead>
-                <tr>
-                    <th>Mã Vận Đơn</th>
-                    <th>Khách hàng</th>
-                    <th>Địa chỉ giao</th>
-                    <th>Trạng thái</th>
-                    <th>Khởi Hành</th>
-                    <th class="actions-col">Thao tác</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Dữ liệu mẫu -->
-                <tr>
-                    <td><strong>#DLV-002</strong></td>
-                    <td>
-                        <div class="tbl-product-info">
-                            <div class="tbl-text">
-                                <span class="tbl-name">Trần Thị B</span>
-                                <span class="tbl-cat">0987123123</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>123 Lê Lợi, P.Bến Nghé, Q.1</td>
-                    <td><span class="status-badge st-warning">Đang giao</span></td>
-                    <td>10:45 AM</td>
-                    <td class="actions-col">
-                        <button class="action-btn success-btn" title="Hoàn tất" style="background:#10b981;color:#fff;border-radius:6px;padding:4px 8px;"><span class="material-symbols-outlined" style="font-size:18px;">check</span></button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+<!-- ===== UPDATE STATUS MODAL ===== -->
+<div class="dlv-modal-overlay" id="updateModal">
+    <div class="dlv-modal">
+        <h3 id="modalTitle">Cập nhật trạng thái</h3>
+        <p id="modalDesc">Chọn trạng thái mới cho đơn hàng</p>
+        <div class="dlv-modal-actions" id="modalActions">
+            <!-- Dynamically filled -->
+        </div>
+        <button class="dlv-modal-close" onclick="closeUpdateModal()">Đóng</button>
     </div>
 </div>
+
+<script>
+    function openUpdateModal(orderId, currentStatus, shortId) {
+        const modal = document.getElementById('updateModal');
+        const title = document.getElementById('modalTitle');
+        const desc = document.getElementById('modalDesc');
+        const actions = document.getElementById('modalActions');
+
+        title.textContent = `Cập nhật ${shortId}`;
+        desc.textContent = `Chọn trạng thái mới cho đơn hàng ${shortId}`;
+        actions.innerHTML = '';
+
+        const statusFlow = [];
+
+        // Determine next possible statuses
+        if (currentStatus === 'Pending' || currentStatus === 'Chờ xử lý') {
+            statusFlow.push({ status: 'Đã xác nhận', label: 'Xác nhận đơn', icon: 'verified', cls: 'btn-shipping' });
+            statusFlow.push({ status: 'Đang giao hàng', label: 'Giao hàng ngay', icon: 'local_shipping', cls: 'btn-shipping' });
+        }
+        if (currentStatus === 'Confirmed' || currentStatus === 'Đã xác nhận') {
+            statusFlow.push({ status: 'Đang giao hàng', label: 'Bắt đầu giao hàng', icon: 'local_shipping', cls: 'btn-shipping' });
+        }
+        if (currentStatus === 'Shipping' || currentStatus === 'Đang giao hàng') {
+            statusFlow.push({ status: 'Đã hoàn thành', label: 'Giao hàng thành công', icon: 'check_circle', cls: 'btn-complete' });
+        }
+
+        // Cancel option (if not already completed/cancelled)
+        if (currentStatus !== 'Completed' && currentStatus !== 'Đã hoàn thành'
+            && currentStatus !== 'Cancelled' && currentStatus !== 'Đã hủy') {
+            statusFlow.push({ status: 'Đã hủy', label: 'Hủy đơn hàng', icon: 'cancel', cls: 'btn-cancel' });
+        }
+
+        statusFlow.forEach(item => {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '@Url.Action("UpdateDeliveryStatus", "Staff")';
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                          || '@Html.AntiForgeryToken()'.match(/value="([^"]+)"/)?.[1] || '';
+
+            form.innerHTML = `
+                <input type="hidden" name="__RequestVerificationToken" value="${token}" />
+                <input type="hidden" name="id" value="${orderId}" />
+                <input type="hidden" name="status" value="${item.status}" />
+                <button type="submit" class="dlv-modal-action-btn ${item.cls}">
+                    <span class="material-symbols-outlined" style="font-size:20px;">${item.icon}</span>
+                    ${item.label}
+                </button>
+            `;
+            actions.appendChild(form);
+        });
+
+        if (statusFlow.length === 0) {
+            actions.innerHTML = '<p style="text-align:center; color:#6b7280; padding:1rem;">Đơn hàng này đã hoàn thành.</p>';
+        }
+
+        modal.classList.add('show');
+    }
+
+    function closeUpdateModal() {
+        document.getElementById('updateModal').classList.remove('show');
+    }
+
+    // Close on backdrop click
+    document.getElementById('updateModal').addEventListener('click', function(e) {
+        if (e.target === this) closeUpdateModal();
+    });
+
+    // Auto-dismiss toast
+    setTimeout(() => {
+        document.querySelectorAll('.dlv-toast').forEach(t => t.remove());
+    }, 3500);
+</script>
+
+<!-- Hidden anti-forgery token for JS -->
+<form style="display:none;">
+    @Html.AntiForgeryToken()
+</form>

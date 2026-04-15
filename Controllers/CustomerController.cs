@@ -257,6 +257,16 @@ public class CustomerController : BaseController
                         (!v.StartDate.HasValue || v.StartDate <= DateTime.Now) && 
                         (!v.ExpiryDate.HasValue || v.ExpiryDate >= DateTime.Now))
             .ToList();
+
+        // Truyền thông tin profile để tự động điền form giao hàng
+        var user = _context.Users.Find(CurrentUserId);
+        if (user != null)
+        {
+            ViewBag.UserFullName = user.FullName ?? "";
+            ViewBag.UserPhone    = user.Phone    ?? "";
+            ViewBag.UserAddress  = user.Address  ?? "";
+        }
+
         return View();
     }
 
@@ -419,39 +429,43 @@ public class CustomerController : BaseController
     public IActionResult Vouchers()             { var g = Guard(); if (g != null) return g; return View(); }
 
     [HttpPost]
-    public IActionResult ApplyVoucher(string code, decimal currentSubtotal)
+    public IActionResult ApplyVoucher(string code, string currentSubtotal)
     {
-        var g = Guard(); if (g != null) return g;
-        
+        if (!IsLoggedIn)
+            return Json(new { success = false, message = "Vui lòng đăng nhập." });
+
         if (string.IsNullOrWhiteSpace(code))
             return Json(new { success = false, message = "Vui lòng nhập mã." });
+
+        // Parse subtotal an toàn, xử lý cả dấu phẩy lẫn dấu chấm
+        if (!decimal.TryParse(
+                currentSubtotal?.Replace(",", "").Replace(" ", ""),
+                System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out decimal subtotal))
+            subtotal = 0;
 
         var voucher = _context.Vouchers.FirstOrDefault(v => v.Code == code && v.IsActive);
         if (voucher == null)
             return Json(new { success = false, message = "Mã giảm giá không tồn tại hoặc đã bị khóa." });
 
-        // Check date
+        // Kiểm tra ngày
         if (voucher.StartDate.HasValue && voucher.StartDate > DateTime.Now)
             return Json(new { success = false, message = "Mã này chưa đến thời gian áp dụng." });
 
         if (voucher.ExpiryDate.HasValue && voucher.ExpiryDate < DateTime.Now)
             return Json(new { success = false, message = "Mã giảm giá đã quá hạn." });
 
-        // Check MinOrderValue
-        if (voucher.MinOrderValue > currentSubtotal)
+        // Kiểm tra giá trị đơn tối thiểu
+        if (voucher.MinOrderValue > subtotal)
             return Json(new { success = false, message = $"Đơn hàng phải từ {voucher.MinOrderValue:N0} ₫ để dùng mã này." });
 
-        // Tính toán discount
+        // Tính giảm giá
         decimal discountAmount = 0;
         if (voucher.DiscountAmount.HasValue && voucher.DiscountAmount > 0)
-        {
             discountAmount = voucher.DiscountAmount.Value;
-        }
         else if (voucher.DiscountPercent.HasValue && voucher.DiscountPercent > 0)
-        {
-            // Trừ theo phần trăm
-            discountAmount = currentSubtotal * (voucher.DiscountPercent.Value / 100);
-        }
+            discountAmount = subtotal * (voucher.DiscountPercent.Value / 100m);
 
         return Json(new { success = true, discount = discountAmount, message = "Áp dụng mã giảm giá thành công!" });
     }

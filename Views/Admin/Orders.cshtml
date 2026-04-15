@@ -28,12 +28,13 @@
     // Nhãn & màu trạng thái
     (string label, string bg, string color) GetStatus(string status) => status switch
     {
-        "Pending"    => ("Chờ xử lý",    "#fef3c7", "#d97706"),
-        "Processing" => ("Đang chế biến","#dbeafe",  "#2563eb"),
-        "Delivering" => ("Đang giao",    "#dcfce7",  "#16a34a"),
-        "Completed"  => ("Hoàn thành",   "#f0fdf4",  "#15803d"),
-        "Cancelled"  => ("Đã hủy",       "#fee2e2",  "#dc2626"),
-        _            => (status,          "#f3f4f6",  "#6b7280")
+        "Pending"     => ("Chờ xử lý",    "#fef3c7", "#d97706"),
+        "Confirmed"   => ("Xác nhận",      "#ede9fe", "#7c3aed"),
+        "Processing"  => ("Đang chế biến","#dbeafe", "#2563eb"),
+        "Shipping"    => ("Đang giao",     "#dcfce7", "#16a34a"),
+        "Completed"   => ("Hoàn thành",    "#f0fdf4", "#15803d"),
+        "Cancelled"   => ("Đã hủy",        "#fee2e2", "#dc2626"),
+        _             => (status,           "#f3f4f6", "#6b7280")
     };
 }
 
@@ -68,13 +69,14 @@
         <div class="ord-status-tabs">
             @{
                 var tabs = new[]
-                {
-                    ("all", "Tất cả"),
-                    ("Pending", "Chờ xử lý"),
-                    ("Processing", "Đang chế biến"),
-                    ("Delivering", "Đang giao"),
-                    ("Cancelled", "Đã hủy"),
-                };
+            {
+                ("all",         "Tất cả"),
+                ("Pending",     "Chờ xử lý"),
+                ("Confirmed",   "Xác nhận"),
+                ("Processing",  "Đang chế biến"),
+                ("Shipping",    "Đang giao"),
+                ("Cancelled",   "Đã hủy"),
+            };
             }
             @foreach (var (val, label) in tabs)
             {
@@ -104,7 +106,36 @@
                     var (statusLabel, statusBg, statusColor) = GetStatus(order.Status);
                     var initials = GetInitials(order.User?.FullName);
                     var avatarBg = GetAvatarColor(order.User?.FullName);
-                    var ordCode = "#ORD-" + order.Id.Substring(0, 4).ToUpper();
+                    var ordCode  = "#ORD-" + order.Id.Substring(0, 4).ToUpper();
+
+                    var nextStatus = order.Status switch {
+                        "Pending"    => "Confirmed",
+                        "Confirmed"  => "Processing",
+                        "Processing" => "Shipping",
+                        "Shipping"   => "Completed",
+                        _ => ""
+                    };
+                    var nextLabel = nextStatus switch {
+                        "Confirmed"  => "Đồng ý đơn",
+                        "Processing" => "Đang chế biến",
+                        "Shipping"   => "Giao hàng",
+                        "Completed"  => "Hoàn thành",
+                        _ => ""
+                    };
+                    var nextIcon = nextStatus switch {
+                        "Confirmed"  => "check_circle",
+                        "Processing" => "local_fire_department",
+                        "Shipping"   => "local_shipping",
+                        "Completed"  => "done_all",
+                        _ => ""
+                    };
+                    var btnColor = nextStatus switch {
+                        "Confirmed"  => "#7c3aed",
+                        "Processing" => "#2563eb",
+                        "Shipping"   => "#16a34a",
+                        "Completed"  => "#15803d",
+                        _ => "#5c433b"
+                    };
 
                     <tr>
                         <td>
@@ -127,47 +158,31 @@
                         </td>
                         <td style="text-align:right;">
                             <div style="display:flex; align-items:center; justify-content:flex-end; gap:0.5rem;">
-                                @if (order.Status != "Completed" && order.Status != "Cancelled")
+                                @if (!string.IsNullOrEmpty(nextStatus))
                                 {
-                                    <form method="post" asp-action="OrderUpdateStatus" style="display:inline;">
+                                    <form method="post" asp-action="UpdateOrderStatus" asp-controller="Staff" style="display:inline;">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@order.Id" />
-                                        @{
-                                            var nextStatus = order.Status switch {
-                                                "Pending"    => "Processing",
-                                                "Processing" => "Delivering",
-                                                "Delivering" => "Completed",
-                                                _ => ""
-                                            };
-                                            var nextLabel = nextStatus switch {
-                                                "Processing" => "Xác nhận",
-                                                "Delivering" => "Giao hàng",
-                                                "Completed"  => "Hoàn thành",
-                                                _ => ""
-                                            };
-                                        }
-                                        @if (!string.IsNullOrEmpty(nextStatus))
-                                        {
-                                            <input type="hidden" name="status" value="@nextStatus" />
-                                            <button type="submit" title="@nextLabel"
-                                                    style="background:#5c433b;color:#fff;border:none;border-radius:6px;padding:0.35rem 0.75rem;font-size:0.8rem;font-weight:600;cursor:pointer;">
-                                                @nextLabel
-                                            </button>
-                                        }
+                                        <input type="hidden" name="status" value="@nextStatus" />
+                                        <button type="submit" title="@nextLabel"
+                                                style="background:@btnColor;color:#fff;border:none;border-radius:6px;padding:0.35rem 0.75rem;font-size:0.8rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:0.3rem;">
+                                            <span class="material-symbols-outlined" style="font-size:0.9rem;">@nextIcon</span>
+                                            @nextLabel
+                                        </button>
                                     </form>
-                                    @if (order.Status == "Pending")
-                                    {
-                                        <form method="post" asp-action="OrderUpdateStatus" style="display:inline;">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@order.Id" />
-                                            <input type="hidden" name="status" value="Cancelled" />
-                                            <button type="submit" title="Hủy đơn"
-                                                    style="background:#fee2e2;color:#dc2626;border:none;border-radius:6px;padding:0.35rem 0.75rem;font-size:0.8rem;font-weight:600;cursor:pointer;"
-                                                    onclick="return confirm('Hủy đơn hàng này?')">
-                                                Hủy
-                                            </button>
-                                        </form>
-                                    }
+                                }
+                                @if (order.Status == "Pending" || order.Status == "Confirmed")
+                                {
+                                    <form method="post" asp-action="UpdateOrderStatus" asp-controller="Staff" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@order.Id" />
+                                        <input type="hidden" name="status" value="Cancelled" />
+                                        <button type="submit" title="Hủy đơn"
+                                                style="background:#fee2e2;color:#dc2626;border:none;border-radius:6px;padding:0.35rem 0.75rem;font-size:0.8rem;font-weight:600;cursor:pointer;"
+                                                onclick="return confirm('Hủy đơn hàng này?')">
+                                            Hủy
+                                        </button>
+                                    </form>
                                 }
                             </div>
                         </td>

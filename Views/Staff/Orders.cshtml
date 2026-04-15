@@ -8,22 +8,13 @@
 
     (string label, string bg, string color) GetStatus(string st) => st switch
     {
-        "Pending" => ("CHờ Xử LÝ", "#fee2e2", "#991b1b"),
-        "Chờ xử lý" => ("CHờ Xử LÝ", "#fee2e2", "#991b1b"),
-        
-        "Confirmed" => ("ĐÃ XÁC NHẬN", "#fef3c7", "#92400e"),
-        "Đã xác nhận" => ("ĐÃ XÁC NHẬN", "#fef3c7", "#92400e"),
-        
-        "Shipping" => ("ĐANG GIAO", "#e0e7ff", "#3730a3"),
-        "Đang giao hàng" => ("ĐANG GIAO", "#e0e7ff", "#3730a3"),
-        
-        "Completed" => ("HOÀN THÀNH", "#d1fae5", "#065f46"),
-        "Đã hoàn thành" => ("HOÀN THÀNH", "#d1fae5", "#065f46"),
-        
-        "Cancelled" => ("ĐÃ HỤY", "#ffe4e6", "#be123c"),
-        "Đã hủy" => ("ĐÃ HỤY", "#ffe4e6", "#be123c"),
-        
-        _ => (st.ToUpper(), "#f3f4f6", "#374151")
+        "Pending"    => ("CHỜ XỬ LÝ",    "#fee2e2", "#991b1b"),
+        "Confirmed"  => ("XÁC NHẬN",     "#ede9fe", "#6d28d9"),
+        "Processing" => ("ĐANG CHẾ BIẾN",  "#dbeafe", "#1d4ed8"),
+        "Shipping"   => ("ĐANG GIAO",    "#e0e7ff", "#3730a3"),
+        "Completed"  => ("HOÀN THÀNH",   "#d1fae5", "#065f46"),
+        "Cancelled"  => ("ĐÃ HỦY",       "#ffe4e6", "#be123c"),
+        _ => (st.ToUpper(),             "#f3f4f6", "#374151")
     };
 }
 
@@ -238,34 +229,55 @@
                                     <a href="/Staff/OrderDetail/@item.Id" class="action-item">
                                         <span class="material-symbols-outlined">visibility</span> Xem chi tiết
                                     </a>
-                                    
-                                    <form asp-action="UpdateOrderStatus" method="post" style="margin:0;">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@item.Id" />
-                                        
-                                        @if(item.Status == "Chờ xử lý" || item.Status == "Pending")
-                                        {
-                                            <input type="hidden" name="status" value="Đang giao hàng" />
+
+                                    @{
+                                        var nextSt = item.Status switch {
+                                            "Pending"    => "Confirmed",
+                                            "Confirmed"  => "Processing",
+                                            "Processing" => "Shipping",
+                                            "Shipping"   => "Completed",
+                                            _ => ""
+                                        };
+                                        var nextLbl = nextSt switch {
+                                            "Confirmed"  => "Đồng ý đơn",
+                                            "Processing" => "Đang chế biến",
+                                            "Shipping"   => "Giao hàng",
+                                            "Completed"  => "Hoàn thành",
+                                            _ => ""
+                                        };
+                                        var nextIco = nextSt switch {
+                                            "Confirmed"  => "check_circle",
+                                            "Processing" => "local_fire_department",
+                                            "Shipping"   => "local_shipping",
+                                            "Completed"  => "done_all",
+                                            _ => ""
+                                        };
+                                    }
+
+                                    @if (!string.IsNullOrEmpty(nextSt))
+                                    {
+                                        <form asp-action="UpdateOrderStatus" method="post" style="margin:0;">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <input type="hidden" name="status" value="@nextSt" />
                                             <button type="submit" class="action-item">
-                                                <span class="material-symbols-outlined">local_shipping</span> Giao hàng ngay
+                                                <span class="material-symbols-outlined">@nextIco</span> @nextLbl
                                             </button>
-                                        }
-                                        else if (item.Status == "Đang giao hàng" || item.Status == "Shipping")
-                                        {
-                                            <input type="hidden" name="status" value="Đã hoàn thành" />
-                                            <button type="submit" class="action-item">
-                                                <span class="material-symbols-outlined">check_circle</span> Hoàn tất đơn
-                                            </button>
-                                        }
-                                        
-                                        @if(item.Status != "Đã hủy" && item.Status != "Cancelled" && item.Status != "Đã hoàn thành" && item.Status != "Completed")
-                                        {
-                                            <input type="hidden" name="status" value="Đã hủy" />
-                                            <button type="submit" class="action-item" style="color:#ef4444;">
+                                        </form>
+                                    }
+
+                                    @if (item.Status == "Pending" || item.Status == "Confirmed")
+                                    {
+                                        <form asp-action="UpdateOrderStatus" method="post" style="margin:0;">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <input type="hidden" name="status" value="Cancelled" />
+                                            <button type="submit" class="action-item" style="color:#ef4444;"
+                                                    onclick="return confirm('Hủy đơn hàng này?')">
                                                 <span class="material-symbols-outlined" style="color:#ef4444;">cancel</span> Hủy đơn hàng
                                             </button>
-                                        }
-                                    </form>
+                                        </form>
+                                    }
                                 </div>
                             </div>
                         </td>

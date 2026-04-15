@@ -227,4 +227,4 @@ C:\Users\Admin\Desktop\Lamnhom-net\bin\Debug\net9.0\AiService\venv\Lib\site-pack
 C:\Users\Admin\Desktop\Lamnhom-net\bin\Debug\net9.0\AiService\venv\Lib\site-packages\setuptools\config\setuptools.schema.json
 C:\Users\Admin\Desktop\Lamnhom-net\bin\Debug\net9.0\AiService\venv\Lib\site-packages\torch\_dynamo\graph_break_registry.json
 C:\Users\Admin\Desktop\Lamnhom-net\obj\Debug\net9.0\compressed\kzfjzmpyqt-7r0peq0iph.gz
-C:\Users\Admin\Desktop\Lamnhom-net\obj\Debug\net9.0\compressed\d9j9xcaa3y-437r2g5n2g.gz
+C:\Users\Admin\Desktop\Lamnhom-net\obj\Debug\net9.0\compressed\d9j9xcaa3y-vdf9191yv1.gz

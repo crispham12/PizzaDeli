@@ -186,24 +186,33 @@
                     <div id="step-shipping-content">
                         <!-- Section 1: Shipping Info -->
                         <div class="checkout-section">
-                            <h3 class="section-title">
-                                <span class="material-symbols-outlined">location_on</span>
-                                Thông tin giao hàng
-                            </h3>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                                <h3 class="section-title" style="margin-bottom:0;">
+                                    <span class="material-symbols-outlined">location_on</span>
+                                    Thông tin giao hàng
+                                </h3>
+                                @if (!string.IsNullOrEmpty(ViewBag.UserFullName as string))
+                                {
+                                    <button type="button" onclick="autofillFromProfile()" style="display:flex; align-items:center; gap:0.4rem; background:#f0fdf4; color:#16a34a; border:1.5px solid #bbf7d0; border-radius:999px; padding:0.4rem 1rem; font-size:0.8rem; font-weight:700; cursor:pointer; transition:all 0.2s;">
+                                        <span class="material-symbols-outlined" style="font-size:1rem;">person</span>
+                                        Dùng thông tin hồ sơ
+                                    </button>
+                                }
+                            </div>
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label>Họ và tên</label>
-                                    <input type="text" name="fullName" id="fullName" class="form-control" placeholder="Nguyễn Văn A" required>
+                                    <input type="text" name="fullName" id="fullName" class="form-control" placeholder="Nguyễn Văn A" value="@ViewBag.UserFullName" required>
                                     <span class="field-error" id="err-fullName"></span>
                                 </div>
                                 <div class="form-group">
                                     <label>Số điện thoại</label>
-                                    <input type="tel" name="phone" id="phone" class="form-control" placeholder="0901234567" required>
+                                    <input type="tel" name="phone" id="phone" class="form-control" placeholder="0901234567" value="@ViewBag.UserPhone" required>
                                     <span class="field-error" id="err-phone"></span>
                                 </div>
                                 <div class="form-group full-width">
                                     <label>Địa chỉ</label>
-                                    <input type="text" name="address" id="address" class="form-control" placeholder="123 Đường Pizza, Quận 1, TP HCM" required>
+                                    <input type="text" name="address" id="address" class="form-control" placeholder="123 Đường Pizza, Quận 1, TP HCM" value="@ViewBag.UserAddress" required>
                                     <span class="field-error" id="err-address"></span>
                                 </div>
                                 <div class="form-group full-width">
@@ -255,8 +264,7 @@
                             <!-- Custom Tabs Ngang -->
                             <div class="payment-tabs">
                                 <div class="payment-tab active" data-target="panel-card">Thẻ tín dụng/ghi nợ</div>
-                                <div class="payment-tab" data-target="panel-ewallet">Ví điện tử</div>
-                                <div class="payment-tab" data-target="panel-bank">Chuyển khoản</div>
+                                <div class="payment-tab" data-target="panel-bank">Chuyển khoản QR</div>
                                 <div class="payment-tab" data-target="panel-cod">Tiền mặt (COD)</div>
                             </div>
 
@@ -299,168 +307,39 @@
                                     </div>
                                 </div>
 
-                                <!-- Panel: E-wallet -->
-                                <div class="payment-panel" id="panel-ewallet">
-                                    <p style="font-weight: 600; margin-bottom: 1rem;">Chọn ví của bạn:</p>
-                                    <div class="other-ways-grid" id="ewalletSelector">
-                                        <label class="way-card selected" onclick="selectEwallet('momo', this)">
-                                            <span class="material-symbols-outlined" style="color: #a82fa2; font-size: 2rem;">wallet</span>
-                                            <span>Momo</span>
-                                        </label>
-                                        <label class="way-card" onclick="selectEwallet('zalopay', this)">
-                                            <span class="material-symbols-outlined" style="color: #0068ff; font-size: 2rem;">qr_code_2</span>
-                                            <span>ZaloPay</span>
-                                        </label>
-                                    </div>
-
-                                    <!-- Momo Payment Info Box -->
-                                    <div id="momo-info-box" style="display:none; margin-top:1.5rem; border:1.5px solid #a82fa222; border-radius:16px; background:linear-gradient(135deg,#fff0fa 0%,#fae8f5 100%); overflow:hidden; animation: fadeIn 0.3s ease;">
-                                        <div style="background:#a82fa2; padding:0.75rem 1.25rem; display:flex; align-items:center; gap:0.6rem;">
-                                            <span class="material-symbols-outlined" style="color:#fff; font-size:1.25rem;">wallet</span>
-                                            <span style="color:#fff; font-weight:700; font-size:0.95rem;">Thanh toán qua Momo</span>
-                                        </div>
-                                        <div style="padding:1.5rem; display:flex; flex-wrap:wrap; gap:1.5rem; align-items:flex-start;">
-                                            <!-- QR Code -->
-                                            <div style="flex-shrink:0; text-align:center;">
-                                                <div style="width:140px; height:140px; background:#fff; border-radius:12px; border:1px solid #fbcfe8; display:flex; align-items:center; justify-content:center; overflow:hidden; box-shadow:0 2px 8px rgba(168,47,162,0.10);">
-                                                    <img src="/images/zalopay_qr.png"
-                                                         alt="Momo QR" style="width:128px;height:128px;object-fit:contain;"
-                                                         onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=&quot;material-symbols-outlined&quot; style=&quot;font-size:3rem;color:#a82fa2;&quot;>wallet</span>'" />
-                                                </div>
-                                                <p style="font-size:0.72rem; color:#64748b; margin-top:0.5rem; font-weight:600;">Quét mã để thanh toán</p>
-                                            </div>
-                                            <!-- Account Info -->
-                                            <div style="flex:1; min-width:180px; display:flex; flex-direction:column; gap:0.75rem;">
-                                                <div>
-                                                    <div style="font-size:0.72rem; font-weight:700; color:#a82fa2; letter-spacing:0.05em; margin-bottom:0.25rem;">SỐ ĐIỆN THOẠI MOMO</div>
-                                                    <div style="display:flex; align-items:center; gap:0.5rem;">
-                                                        <span id="momo-account-number" style="font-size:1.2rem; font-weight:800; color:#1e293b; letter-spacing:0.04em;">0778 118 984</span>
-                                                        <button type="button" onclick="copyMomoAccount()" title="Sao chép" style="background:none;border:none;cursor:pointer;color:#a82fa2;padding:0;display:flex;align-items:center;">
-                                                            <span class="material-symbols-outlined" style="font-size:1.1rem;">content_copy</span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <div style="font-size:0.72rem; font-weight:700; color:#64748b; letter-spacing:0.05em; margin-bottom:0.25rem;">TÊN TÀI KHOẢN</div>
-                                                    <div style="font-weight:700; color:#1e293b;">PIZZA DELI VN</div>
-                                                </div>
-                                                <div>
-                                                    <div style="font-size:0.72rem; font-weight:700; color:#64748b; letter-spacing:0.05em; margin-bottom:0.25rem;">SỐ TIỀN</div>
-                                                    <div id="momo-amount" style="font-weight:800; color:#a82fa2; font-size:1.05rem;">—</div>
-                                                </div>
-                                                <div>
-                                                    <div style="font-size:0.72rem; font-weight:700; color:#64748b; letter-spacing:0.05em; margin-bottom:0.25rem;">NỘI DUNG CHUYỂN KHOẢN</div>
-                                                    <div style="font-size:0.85rem; font-weight:600; color:#475569; background:#fff; border:1px solid #fbcfe8; border-radius:8px; padding:0.4rem 0.75rem; display:flex; align-items:center; gap:0.4rem;">
-                                                        <span id="momo-content">MOMO PIZZADELI</span>
-                                                        <button type="button" onclick="copyMomoContent()" title="Sao chép" style="background:none;border:none;cursor:pointer;color:#a82fa2;padding:0;display:flex;align-items:center;margin-left:auto;">
-                                                            <span class="material-symbols-outlined" style="font-size:1rem;">content_copy</span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <div style="background:#fef9c3; border-radius:8px; padding:0.5rem 0.75rem; display:flex; gap:0.4rem; align-items:flex-start;">
-                                                    <span class="material-symbols-outlined" style="font-size:1rem; color:#ca8a04; flex-shrink:0; margin-top:1px;">info</span>
-                                                    <span style="font-size:0.78rem; color:#78350f; font-weight:600;">Đơn hàng sẽ được xác nhận sau khi chúng tôi nhận được thanh toán.</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- ZaloPay Payment Info Box -->
-                                    <div id="zalopay-info-box" style="display:none; margin-top:1.5rem; border:1.5px solid #0068ff22; border-radius:16px; background:linear-gradient(135deg,#f0f7ff 0%,#e8f3ff 100%); overflow:hidden; animation: fadeIn 0.3s ease;">
-                                        <div style="background:#0068ff; padding:0.75rem 1.25rem; display:flex; align-items:center; gap:0.6rem;">
-                                            <span class="material-symbols-outlined" style="color:#fff; font-size:1.25rem;">qr_code_2</span>
-                                            <span style="color:#fff; font-weight:700; font-size:0.95rem;">Thanh toán qua TP bank</span>
-                                        </div>
-                                        <div style="padding:1.5rem; display:flex; flex-wrap:wrap; gap:1.5rem; align-items:flex-start;">
-                                            <!-- QR Code -->
-                                            <div style="flex-shrink:0; text-align:center;">
-                                                <div style="width:140px; height:140px; background:#fff; border-radius:12px; border:1px solid #dbeafe; display:flex; align-items:center; justify-content:center; overflow:hidden; box-shadow:0 2px 8px rgba(0,104,255,0.10);">
-                                                    <img src="/images/zalopay_qr.png"
-                                                         alt="ZaloPay QR" style="width:128px;height:128px;object-fit:contain;"
-                                                         onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=&quot;material-symbols-outlined&quot; style=&quot;font-size:3rem;color:#0068ff;&quot;>qr_code_2</span>'" />
-                                                </div>
-                                                <p style="font-size:0.72rem; color:#64748b; margin-top:0.5rem; font-weight:600;">Quét mã để thanh toán</p>
-                                            </div>
-                                            <!-- Account Info -->
-                                            <div style="flex:1; min-width:180px; display:flex; flex-direction:column; gap:0.75rem;">
-                                                <div>
-                                                    <div style="font-size:0.72rem; font-weight:700; color:#0068ff; letter-spacing:0.05em; margin-bottom:0.25rem;">SỐ TÀI KHOẢN ZALOPAY</div>
-                                                    <div style="display:flex; align-items:center; gap:0.5rem;">
-                                                        <span id="zalo-account-number" style="font-size:1.2rem; font-weight:800; color:#1e293b; letter-spacing:0.04em;">0346 765 950</span>
-                                                        <button type="button" onclick="copyZaloAccount()" title="Sao chép" style="background:none;border:none;cursor:pointer;color:#0068ff;padding:0;display:flex;align-items:center;">
-                                                            <span class="material-symbols-outlined" style="font-size:1.1rem;">content_copy</span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <div style="font-size:0.72rem; font-weight:700; color:#64748b; letter-spacing:0.05em; margin-bottom:0.25rem;">TÊN TÀI KHOẢN</div>
-                                                    <div style="font-weight:700; color:#1e293b;">PIZZA DELI VN</div>
-                                                </div>
-                                                <div>
-                                                    <div style="font-size:0.72rem; font-weight:700; color:#64748b; letter-spacing:0.05em; margin-bottom:0.25rem;">SỐ TIỀN</div>
-                                                    <div id="zalo-amount" style="font-weight:800; color:#0068ff; font-size:1.05rem;">—</div>
-                                                </div>
-                                                <div>
-                                                    <div style="font-size:0.72rem; font-weight:700; color:#64748b; letter-spacing:0.05em; margin-bottom:0.25rem;">NỘI DUNG CHUYỂN KHOẢN</div>
-                                                    <div style="font-size:0.85rem; font-weight:600; color:#475569; background:#fff; border:1px solid #dbeafe; border-radius:8px; padding:0.4rem 0.75rem; display:flex; align-items:center; gap:0.4rem;">
-                                                        <span id="zalo-content">ZALOPAY PIZZADELI</span>
-                                                        <button type="button" onclick="copyZaloContent()" title="Sao chép" style="background:none;border:none;cursor:pointer;color:#0068ff;padding:0;display:flex;align-items:center;margin-left:auto;">
-                                                            <span class="material-symbols-outlined" style="font-size:1rem;">content_copy</span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <div style="background:#fef9c3; border-radius:8px; padding:0.5rem 0.75rem; display:flex; gap:0.4rem; align-items:flex-start;">
-                                                    <span class="material-symbols-outlined" style="font-size:1rem; color:#ca8a04; flex-shrink:0; margin-top:1px;">info</span>
-                                                    <span style="font-size:0.78rem; color:#78350f; font-weight:600;">Đơn hàng sẽ được xác nhận sau khi chúng tôi nhận được thanh toán.</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Panel: Bank -->
+                                <!-- Panel: Bank / QR SePay -->
                                 <div class="payment-panel" id="panel-bank">
-                                    <div style="border:1.5px solid #a855f722; border-radius:16px; background:linear-gradient(135deg,#fcf4ff 0%,#f3e8ff 100%); overflow:hidden;">
-                                        <div style="background:#7e22ce; padding:0.75rem 1.25rem; display:flex; align-items:center; gap:0.6rem;">
-                                            <span class="material-symbols-outlined" style="color:#fff; font-size:1.25rem;">account_balance</span>
-                                            <span style="color:#fff; font-weight:700; font-size:0.95rem;">Chuyển khoản TP Bank</span>
+                                    <div style="border:1.5px solid #5C3D2E33; border-radius:16px; background:linear-gradient(135deg,#fdf6f0 0%,#f5ebe0 100%); overflow:hidden;">
+                                        <div style="background:#5C3D2E; padding:0.75rem 1.25rem; display:flex; align-items:center; gap:0.6rem;">
+                                            <span class="material-symbols-outlined" style="color:#fff; font-size:1.25rem;">qr_code_2</span>
+                                            <span style="color:#fff; font-weight:700; font-size:0.95rem;">Thanh toán QR — Tự động xác nhận</span>
+                                            <span style="margin-left:auto; background:rgba(255,255,255,0.2); color:#fff; font-size:0.65rem; font-weight:700; padding:0.15rem 0.6rem; border-radius:20px; letter-spacing:0.05em;">SePay</span>
                                         </div>
-                                        <div style="padding:1.5rem; display:flex; flex-wrap:wrap; gap:1.5rem; align-items:flex-start;">
-                                            <!-- QR Code -->
-                                            <div style="flex-shrink:0; text-align:center;">
-                                                <div style="width:140px; height:140px; background:#fff; border-radius:12px; border:1px solid #d8b4fe; display:flex; align-items:center; justify-content:center; overflow:hidden; box-shadow:0 2px 8px rgba(126,34,206,0.10);">
-                                                    <img id="bank-qr-img" src="" alt="TP Bank QR" style="width:128px;height:128px;object-fit:contain;" />
-                                                </div>
-                                                <p style="font-size:0.72rem; color:#64748b; margin-top:0.5rem; font-weight:600;">Quét mã VietQR</p>
+                                        <div style="padding:1.75rem; display:flex; flex-direction:column; align-items:center; gap:1rem; text-align:center;">
+                                            <div style="width:72px; height:72px; border-radius:50%; background:#f5ebe0; display:flex; align-items:center; justify-content:center;">
+                                                <span class="material-symbols-outlined" style="font-size:2.25rem; color:#5C3D2E;">qr_code_scanner</span>
                                             </div>
-                                            <!-- Account Info -->
-                                            <div style="flex:1; min-width:180px; display:flex; flex-direction:column; gap:0.75rem;">
-                                                <div>
-                                                    <div style="font-size:0.72rem; font-weight:700; color:#7e22ce; letter-spacing:0.05em; margin-bottom:0.25rem;">SỐ TÀI KHOẢN TP BANK</div>
-                                                    <div style="display:flex; align-items:center; gap:0.5rem;">
-                                                        <span id="bank-account-number" style="font-size:1.2rem; font-weight:800; color:#1e293b; letter-spacing:0.04em;">0346 765 950</span>
-                                                        <button type="button" onclick="copyBankAccount()" title="Sao chép" style="background:none;border:none;cursor:pointer;color:#7e22ce;padding:0;display:flex;align-items:center;">
-                                                            <span class="material-symbols-outlined" style="font-size:1.1rem;">content_copy</span>
-                                                        </button>
-                                                    </div>
+                                            <div>
+                                                <div style="font-weight:700; color:#1e293b; font-size:1rem; margin-bottom:0.25rem;">Mã QR sẽ được tạo sau khi xác nhận</div>
+                                                <div style="font-size:0.82rem; color:#64748b;">Nhấn nút <b>Xác nhận</b> bên phải → quét mã QR → chuyển khoản</div>
+                                            </div>
+                                            <div style="display:flex; flex-direction:column; gap:0.4rem; width:100%; max-width:280px; text-align:left;">
+                                                <div style="display:flex; justify-content:space-between; font-size:0.82rem;">
+                                                    <span style="color:#64748b; font-weight:600;">Ngân hàng</span>
+                                                    <span style="font-weight:700; color:#1e293b;">TP Bank</span>
                                                 </div>
-                                                <div>
-                                                    <div style="font-size:0.72rem; font-weight:700; color:#64748b; letter-spacing:0.05em; margin-bottom:0.25rem;">TÊN TÀI KHOẢN</div>
-                                                    <div style="font-weight:700; color:#1e293b;">PIZZA DELI VN</div>
+                                                <div style="display:flex; justify-content:space-between; font-size:0.82rem;">
+                                                    <span style="color:#64748b; font-weight:600;">Số tài khoản</span>
+                                                    <span style="font-weight:700; color:#1e293b;">82632628888</span>
                                                 </div>
-                                                <div>
-                                                    <div style="font-size:0.72rem; font-weight:700; color:#64748b; letter-spacing:0.05em; margin-bottom:0.25rem;">SỐ TIỀN</div>
-                                                    <div id="bank-amount" style="font-weight:800; color:#7e22ce; font-size:1.05rem;">—</div>
+                                                <div style="display:flex; justify-content:space-between; font-size:0.82rem;">
+                                                    <span style="color:#64748b; font-weight:600;">Chủ tài khoản</span>
+                                                    <span style="font-weight:700; color:#1e293b;">PIZZA DELI VN</span>
                                                 </div>
-                                                <div>
-                                                    <div style="font-size:0.72rem; font-weight:700; color:#64748b; letter-spacing:0.05em; margin-bottom:0.25rem;">NỘI DUNG CHUYỂN KHOẢN</div>
-                                                    <div style="font-size:0.85rem; font-weight:600; color:#475569; background:#fff; border:1px solid #d8b4fe; border-radius:8px; padding:0.4rem 0.75rem; display:flex; align-items:center; gap:0.4rem;">
-                                                        <span id="bank-content">CK PIZZADELI</span>
-                                                        <button type="button" onclick="copyBankContent()" title="Sao chép" style="background:none;border:none;cursor:pointer;color:#7e22ce;padding:0;display:flex;align-items:center;margin-left:auto;">
-                                                            <span class="material-symbols-outlined" style="font-size:1rem;">content_copy</span>
-                                                        </button>
-                                                    </div>
-                                                </div>
+                                            </div>
+                                            <div style="background:#fef9c3; border-radius:8px; padding:0.5rem 0.75rem; display:flex; gap:0.4rem; align-items:flex-start; width:100%; max-width:280px;">
+                                                <span class="material-symbols-outlined" style="font-size:1rem; color:#ca8a04; flex-shrink:0; margin-top:1px;">bolt</span>
+                                                <span style="font-size:0.78rem; color:#78350f; font-weight:600;">SePay sẽ tự động xác nhận. Không cần gửi ảnh chụp màn hình!</span>
                                             </div>
                                         </div>
                                     </div>
@@ -599,6 +478,54 @@
                             <a href="/Customer/Orders" style="display:block;margin-top:1rem;color:#64748b;font-size:0.875rem;font-weight:600;text-decoration:none;">Xem đơn hàng của tôi →</a>
                         </div>
                     </div>
+
+                    <!-- QR Payment Waiting Modal - hiện sau khi đặt hàng thành công -->
+                    <div id="qrWaitingModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); z-index:9998; align-items:center; justify-content:center;">
+                        <div style="background:#fff; border-radius:24px; padding:2rem 1.75rem; max-width:420px; width:92%; box-shadow:0 25px 60px rgba(0,0,0,0.3); overflow-y:auto; max-height:95vh;">
+                            <!-- Header -->
+                            <div style="text-align:center; margin-bottom:1.25rem;">
+                                <div style="display:inline-flex; align-items:center; gap:0.4rem; background:#5C3D2E; color:#fff; border-radius:999px; padding:0.3rem 0.9rem; font-size:0.72rem; font-weight:700; letter-spacing:0.05em; margin-bottom:0.75rem;">SePay — Tự động xác nhận</div>
+                                <h3 style="font-size:1.2rem; font-weight:800; color:#1e293b; margin-bottom:0.25rem;">Đang chờ thanh toán...</h3>
+                                <p style="color:#64748b; font-size:0.82rem;">Quét mã QR hoặc chuyển khoản theo thông tin bên dưới</p>
+                            </div>
+
+                            <!-- QR Image -->
+                            <div style="display:flex; justify-content:center; margin-bottom:1.25rem;">
+                                <div style="width:200px; height:200px; background:#f8fafc; border-radius:16px; border:2px solid #e8c9b0; display:flex; align-items:center; justify-content:center; overflow:hidden; box-shadow:0 4px 16px rgba(92,61,46,0.1);">
+                                    <img id="qrModalQrImg" src="" alt="VietQR" style="width:192px; height:192px; object-fit:contain;" />
+                                </div>
+                            </div>
+
+                            <!-- Thông tin chuyển khoản -->
+                            <div style="background:#f8fafc; border-radius:14px; padding:1rem 1.25rem; margin-bottom:1rem; display:flex; flex-direction:column; gap:0.6rem;">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span style="font-size:0.75rem; font-weight:700; color:#64748b;">NGÂN HÀNG</span>
+                                    <span style="font-weight:700; color:#1e293b; font-size:0.875rem;">TP Bank — 82632628888</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span style="font-size:0.75rem; font-weight:700; color:#64748b;">SỐ TIỀN</span>
+                                    <span id="qrModalAmount" style="font-weight:800; color:#5C3D2E; font-size:1rem;">—</span>
+                                </div>
+                                <div style="border-top:1px solid #e2e8f0; padding-top:0.6rem; display:flex; justify-content:space-between; align-items:center;">
+                                    <span style="font-size:0.75rem; font-weight:700; color:#64748b;">NỘI DUNG CK</span>
+                                    <div style="display:flex; align-items:center; gap:0.4rem;">
+                                        <span id="qrModalContent" style="font-size:1rem; font-weight:800; color:#5C3D2E; letter-spacing:0.06em;">DH...</span>
+                                        <button onclick="copyQrContent()" type="button" style="background:none;border:none;cursor:pointer;color:#5C3D2E;padding:0;display:flex;align-items:center;" title="Sao chép">
+                                            <span class="material-symbols-outlined" style="font-size:1rem;">content_copy</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Status + spinner -->
+                            <div style="display:flex; align-items:center; justify-content:center; gap:0.5rem; margin-bottom:1rem;">
+                                <span class="material-symbols-outlined" style="font-size:1.2rem; color:#5C3D2E; animation:spin 2s linear infinite;">progress_activity</span>
+                                <span id="qrPollingStatus" style="font-size:0.8rem; color:#64748b; font-weight:600;">Đang kiểm tra giao dịch...</span>
+                            </div>
+
+                            <button onclick="cancelQrPolling()" style="width:100%; background:#f1f5f9; color:#64748b; border:none; border-radius:10px; padding:0.65rem; font-weight:600; cursor:pointer; font-size:0.875rem;">Huỷ / Chọn phương thức khác</button>
+                        </div>
+                    </div>
                     
                     <p class="secure-text" style="margin-top: 1rem;">
                         <span class="material-symbols-outlined" style="vertical-align: middle; font-size: 0.85rem;">lock</span>
@@ -620,6 +547,36 @@
             'standard': 15000,
             'express': 35000
         };
+
+        // Dữ liệu hồ sơ người dùng (từ server)
+        const USER_PROFILE = {
+            fullName : '@Html.Raw(ViewBag.UserFullName ?? "")',
+            phone    : '@Html.Raw(ViewBag.UserPhone    ?? "")',
+            address  : '@Html.Raw(ViewBag.UserAddress  ?? "")'
+        };
+
+        function autofillFromProfile() {
+            const fields = [
+                { id: 'fullName', val: USER_PROFILE.fullName },
+                { id: 'phone',    val: USER_PROFILE.phone    },
+                { id: 'address',  val: USER_PROFILE.address  }
+            ];
+            fields.forEach(f => {
+                const el = document.getElementById(f.id);
+                if (el && f.val) {
+                    el.value = f.val;
+                    // Hiệu ứng highlight xanh lá
+                    el.style.transition = 'border-color 0.3s, box-shadow 0.3s';
+                    el.style.borderColor = '#16a34a';
+                    el.style.boxShadow   = '0 0 0 3px rgba(22,163,74,0.15)';
+                    setTimeout(() => {
+                        el.style.borderColor = '';
+                        el.style.boxShadow   = '';
+                    }, 1500);
+                }
+            });
+            showCopyToast('✓ Đã điền thông tin từ hồ sơ!');
+        }
 
         const urlParams = new URLSearchParams(window.location.search);
         const isBuyNowCheckout = urlParams.get('mode') === 'buynow';
@@ -648,118 +605,20 @@
                 tab.addEventListener('click', () => {
                     tabs.forEach(t => t.classList.remove('active'));
                     panels.forEach(p => p.classList.remove('active'));
-                    
+
                     tab.classList.add('active');
                     const target = tab.dataset.target;
                     document.getElementById(target).classList.add('active');
 
-                    // Map logic cho server
-                    if(target === 'panel-card') mainPaymentInput.value = 'card';
-                    if(target === 'panel-ewallet') mainPaymentInput.value = 'momo'; // Default
-                    if(target === 'panel-bank') mainPaymentInput.value = 'bank';
-                    if(target === 'panel-cod') mainPaymentInput.value = 'cod';
-
-                    // Ẩn box khi chuyển khỏi tab ví điện tử
-                    const momoBox = document.getElementById('momo-info-box');
-                    const zaloBox = document.getElementById('zalopay-info-box');
-                    if (target !== 'panel-ewallet') {
-                        if (momoBox) momoBox.style.display = 'none';
-                        if (zaloBox) zaloBox.style.display = 'none';
-                    }
-                    // Khi vào lại tab ví: hiển thị mặc định
-                    if (target === 'panel-ewallet') {
-                        const momoCard = document.querySelector('#ewalletSelector .way-card');
-                        if (momoCard) selectEwallet('momo', momoCard);
-                    }
-                    // Cập nhật tab Bank nếu được chọn
-                    if (target === 'panel-bank') {
-                        updateBankPanel();
-                    }
+                    // Map giá trị gửi lên server
+                    if (target === 'panel-card') mainPaymentInput.value = 'card';
+                    if (target === 'panel-bank') mainPaymentInput.value = 'bank';
+                    if (target === 'panel-cod')  mainPaymentInput.value = 'cod';
                 });
-            });
-
-            // Gắn sự kiện khi sửa SĐT sẽ tự động cập nhật Nội dung CK ở các tab hiện tại
-            document.getElementById('phone')?.addEventListener('input', function() {
-                const val = mainPaymentInput.value;
-                if (val === 'bank') updateBankPanel();
-                else if (val === 'momo' || val === 'zalopay') {
-                    const activeWallet = document.querySelector('#ewalletSelector .way-card.selected');
-                    if (activeWallet) selectEwallet(val, activeWallet);
-                }
             });
         });
 
-        function selectEwallet(wallet, el) {
-            document.querySelectorAll('#ewalletSelector .way-card').forEach(c => c.classList.remove('selected'));
-            if(el) el.classList.add('selected');
-            document.getElementById('mainPaymentMethod').value = wallet;
 
-            const momoBox = document.getElementById('momo-info-box');
-            const zaloBox = document.getElementById('zalopay-info-box');
-            
-            const totalEl = document.getElementById('checkoutGrandTotal');
-            const phone = document.getElementById('phone')?.value.trim();
-
-            if (wallet === 'zalopay') {
-                if (zaloBox) {
-                    document.getElementById('zalo-amount').textContent = totalEl ? totalEl.textContent : '—';
-                    document.getElementById('zalo-content').textContent = phone ? 'ZALOPAY ' + phone : 'ZALOPAY PIZZADELI';
-                    zaloBox.style.display = 'block'; 
-                    //zaloBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-                if (momoBox) momoBox.style.display = 'none';
-            } else if (wallet === 'momo') {
-                if (momoBox) {
-                    document.getElementById('momo-amount').textContent = totalEl ? totalEl.textContent : '—';
-                    document.getElementById('momo-content').textContent = phone ? 'MOMO ' + phone : 'MOMO PIZZADELI';
-                    momoBox.style.display = 'block';
-                    //momoBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-                if (zaloBox) zaloBox.style.display = 'none';
-            } else {
-                if (zaloBox) zaloBox.style.display = 'none';
-                if (momoBox) momoBox.style.display = 'none';
-            }
-        }
-
-        function copyMomoAccount() {
-            navigator.clipboard.writeText('0778118984').then(() => showCopyToast('Đã sao chép số điện thoại!'));
-        }
-        function copyMomoContent() {
-            const txt = document.getElementById('momo-content')?.textContent || '';
-            navigator.clipboard.writeText(txt).then(() => showCopyToast('Đã sao chép nội dung CK!'));
-        }
-        function copyZaloAccount() {
-            navigator.clipboard.writeText('0346765950').then(() => showCopyToast('Đã sao chép số tài khoản!'));
-        }
-        function copyZaloContent() {
-            const txt = document.getElementById('zalo-content')?.textContent || '';
-            navigator.clipboard.writeText(txt).then(() => showCopyToast('Đã sao chép nội dung CK!'));
-        }
-
-        function updateBankPanel() {
-            const totalText = document.getElementById('checkoutGrandTotal')?.textContent || '0';
-            const totalNumber = totalText.replace(/\D/g, ''); // Extract only digits
-            const phone = document.getElementById('phone')?.value.trim();
-            const content = phone ? 'CK ' + phone : 'CK PIZZADELI';
-            
-            // Cập nhật text UI
-            document.getElementById('bank-amount').textContent = totalText;
-            document.getElementById('bank-content').textContent = content;
-            
-            // Link VietQR form động: tpbank-0346765950
-            const qrUrl = `https://img.vietqr.io/image/tpbank-0346765950-compact2.png?amount=${totalNumber}&addInfo=${encodeURIComponent(content)}&accountName=PIZZADELIVN`;
-            const qrImg = document.getElementById('bank-qr-img');
-            if (qrImg) qrImg.src = qrUrl;
-        }
-
-        function copyBankAccount() {
-            navigator.clipboard.writeText('0346765950').then(() => showCopyToast('Đã sao chép số tài khoản!'));
-        }
-        function copyBankContent() {
-            const txt = document.getElementById('bank-content')?.textContent || '';
-            navigator.clipboard.writeText(txt).then(() => showCopyToast('Đã sao chép nội dung CK!'));
-        }
 
         function showCopyToast(msg) {
             let t = document.getElementById('copy-toast');
@@ -1063,13 +922,21 @@
         }
 
         async function applyCheckoutVoucher() {
-            const code = document.getElementById('voucherCode').value;
-            if(!code) return;
-            
-            // Tính subtotal hiện tại từ giỏ hàng để check min order value
-            const cart = window.PizzaCart ? window.PizzaCart.getCart() : [];
+            const code = document.getElementById('voucherCode').value?.trim();
+            const msgEl = document.getElementById('voucherMessage');
+            msgEl.style.display = 'block';
+
+            if (!code) {
+                msgEl.textContent = 'Vui lòng nhập mã giảm giá.';
+                msgEl.style.color = '#ef4444';
+                return;
+            }
+
+            // Lấy subtotal từ CHECKOUT_ITEMS (hoạt động cả chế độ cart lẫn buynow)
             let subtotal = 0;
-            cart.forEach(item => {
+            const srcItems = CHECKOUT_ITEMS.length > 0 ? CHECKOUT_ITEMS
+                           : (window.PizzaCart ? window.PizzaCart.getCart() : []);
+            srcItems.forEach(item => {
                 subtotal += (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1);
             });
 
@@ -1077,28 +944,24 @@
                 const response = await fetch('/Customer/ApplyVoucher', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({ code: code, currentSubtotal: subtotal })
+                    body: new URLSearchParams({ code: code, currentSubtotal: Math.round(subtotal).toString() })
                 });
-                
+
                 const data = await response.json();
-                const msgEl = document.getElementById('voucherMessage');
-                msgEl.style.display = 'block';
                 if (data.success) {
                     currentDiscount = data.discount;
-                    document.getElementById('hiddenVoucherCode').value = code; // Send to backend when Complete
+                    document.getElementById('hiddenVoucherCode').value = code;
                     msgEl.textContent = '✓ ' + data.message;
                     msgEl.style.color = '#16a34a';
-                    renderCheckoutItems(); // Re-render to update
+                    renderCheckoutItems();
                 } else {
-                    msgEl.textContent = data.message;
+                    msgEl.textContent = '✗ ' + (data.message || 'Mã không hợp lệ.');
                     msgEl.style.color = '#ef4444';
                     currentDiscount = 0;
                     document.getElementById('hiddenVoucherCode').value = '';
                     renderCheckoutItems();
                 }
             } catch(e) {
-                const msgEl = document.getElementById('voucherMessage');
-                msgEl.style.display = 'block';
                 msgEl.textContent = 'Lỗi kết nối khi áp dụng mã giảm giá.';
                 msgEl.style.color = '#ef4444';
                 console.error(e);
@@ -1186,19 +1049,23 @@
                 const data = await res.json();
 
                 if (data.success) {
+                    const placedOrderId = data.orderId || '';
+
                     if (isBuyNowCheckout) {
-                        // Chế độ mua ngay: chỉ xóa buynow_item
                         sessionStorage.removeItem('buynow_item');
                     } else {
-                        // Xóa giỏ hàng localStorage
                         window.localStorage.removeItem('pizzadeli_cart');
                         if(window.PizzaCart && window.PizzaCart.clearCart) window.PizzaCart.clearCart();
                     }
 
-                    // Hiện popup thành công
-                    document.getElementById('successOrderCode').textContent = 'Mã đơn: #' + data.orderId;
-                    const modal = document.getElementById('orderSuccessModal');
-                    modal.style.display = 'flex';
+                    // Nếu thanh toán bằng QR/bank → hiện modal chờ & polling
+                    if (paymentMethod === 'bank') {
+                        startQrPolling(placedOrderId);
+                    } else {
+                        // COD / Card / ví điện tử → hiện popup thành công ngay
+                        document.getElementById('successOrderCode').textContent = 'Mã đơn: #' + placedOrderId.substring(0,8).toUpperCase();
+                        document.getElementById('orderSuccessModal').style.display = 'flex';
+                    }
                 } else {
                     if (orderMsg) {
                         orderMsg.textContent = data.message || 'Đặt hàng thất bại. Vui lòng thử lại!';
@@ -1217,6 +1084,77 @@
                 btn.innerHTML = 'Xác nhận <span class="material-symbols-outlined">check_circle</span>';
             }
         }
+
+        // ===== QR POLLING LOGIC =====
+        let _pollingTimer = null;
+        let _pollingCount = 0;
+
+        function startQrPolling(orderId) {
+            if (!orderId) return;
+            const shortId    = orderId.substring(0, 8).toUpperCase();
+            const dhContent  = 'DH' + shortId;
+            const amountText = document.getElementById('checkoutGrandTotal')?.textContent || '';
+            const amountNum  = amountText.replace(/\D/g, '');
+
+            // === Cập nhật modal với QR thật ===
+            document.getElementById('qrModalContent').textContent = dhContent;
+            document.getElementById('qrModalAmount').textContent  = amountText;
+
+            // Generate VietQR động với nội dung đúng
+            const qrUrl = `https://img.vietqr.io/image/tpbank-82632628888-compact2.png`
+                        + `?amount=${amountNum}`
+                        + `&addInfo=${encodeURIComponent(dhContent)}`
+                        + `&accountName=PIZZADELIVN`;
+            const qrImg = document.getElementById('qrModalQrImg');
+            if (qrImg) qrImg.src = qrUrl;
+
+            document.getElementById('qrPollingStatus').textContent = 'Đang chờ xác nhận từ SePay...';
+            document.getElementById('qrWaitingModal').style.display = 'flex';
+            _pollingCount = 0;
+
+            _pollingTimer = setInterval(async () => {
+                _pollingCount++;
+                try {
+                    const res  = await fetch(`/api/sepay/order-status/${shortId}`);
+                    const info = await res.json();
+
+                    document.getElementById('qrPollingStatus').textContent =
+                        `Đang kiểm tra giao dịch... (${_pollingCount * 5}s)`;
+
+                    if (info.isPaid) {
+                        clearInterval(_pollingTimer);
+                        document.getElementById('qrWaitingModal').style.display = 'none';
+                        document.getElementById('successOrderCode').textContent = 'Mã đơn: #' + shortId;
+                        document.getElementById('orderSuccessModal').style.display = 'flex';
+                    }
+                } catch(e) {
+                    console.warn('Polling error:', e);
+                }
+
+                // Timeout sau 10 phút
+                if (_pollingCount >= 120) {
+                    clearInterval(_pollingTimer);
+                    document.getElementById('qrPollingStatus').textContent =
+                        '⏱ Hết thời gian chờ. Vui lòng vào Đơn hàng của tôi để kiểm tra.';
+                }
+            }, 5000);
+        }
+
+        function copyQrContent() {
+            const txt = document.getElementById('qrModalContent')?.textContent || '';
+            navigator.clipboard.writeText(txt).then(() => showCopyToast('✓ Đã sao chép nội dung CK!'));
+        }
+
+        function cancelQrPolling() {
+            if (_pollingTimer) clearInterval(_pollingTimer);
+            document.getElementById('qrWaitingModal').style.display = 'none';
+            const btn = document.getElementById('btnActionFlow');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = 'Xác nhận <span class="material-symbols-outlined">check_circle</span>';
+            }
+        }
+        // ===== END QR POLLING =====
 
         function goToReviews() {
             // Đóng Modal

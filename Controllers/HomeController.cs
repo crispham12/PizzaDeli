@@ -29,6 +29,8 @@ public class HomeController : BaseController
             .Include(c => c.Products.Where(p => p.IsAvailable))
                 .ThenInclude(p => p.ProductToppings)
                 .ThenInclude(pt => pt.Topping)
+            .Include(c => c.Products.Where(p => p.IsAvailable))
+                .ThenInclude(p => p.Reviews)
             .OrderBy(c => c.Id)
             .ToList();
 
@@ -42,6 +44,8 @@ public class HomeController : BaseController
             .Include(c => c.Products.Where(p => p.IsAvailable))
                 .ThenInclude(p => p.ProductToppings)
                 .ThenInclude(pt => pt.Topping)
+            .Include(c => c.Products.Where(p => p.IsAvailable))
+                .ThenInclude(p => p.Reviews)
             .OrderBy(c => c.Id)
             .ToList();
 
