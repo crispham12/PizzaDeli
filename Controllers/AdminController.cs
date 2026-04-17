@@ -634,12 +634,34 @@ public class AdminController : BaseController
     {
         var g = Guard(); if (g != null) return g;
 
-        var cat = await _db.Categories.FindAsync(id);
+        var cat = await _db.Categories
+            .Include(c => c.Products)
+                .ThenInclude(p => p.ProductToppings)
+            .Include(c => c.Products)
+                .ThenInclude(p => p.Reviews)
+            .Include(c => c.Products)
+                .ThenInclude(p => p.OrderDetails)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
         if (cat != null)
         {
+            // Xóa tất cả dữ liệu liên quan của từng sản phẩm trong danh mục
+            foreach (var product in cat.Products)
+            {
+                _db.ProductToppings.RemoveRange(product.ProductToppings);
+                _db.Reviews.RemoveRange(product.Reviews);
+                _db.OrderDetails.RemoveRange(product.OrderDetails);
+            }
+
+            // Xóa tất cả sản phẩm thuộc danh mục
+            _db.Products.RemoveRange(cat.Products);
+
+            // Xóa danh mục
             _db.Categories.Remove(cat);
             await _db.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Đã xóa danh mục!";
+
+            int deletedCount = cat.Products.Count;
+            TempData["SuccessMessage"] = $"Đã xóa danh mục và {deletedCount} sản phẩm bên trong!";
         }
         return RedirectToAction(nameof(Categories));
     }

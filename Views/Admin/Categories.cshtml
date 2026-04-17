@@ -101,10 +101,10 @@
                                 </a>
                                 <form asp-action="CategoryDelete" asp-route-id="@item.Id" method="post"
                                       style="display:inline;"
-                                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa danh mục này?');">
+                                      onsubmit="return confirm('Xóa danh mục &quot;@item.Name&quot;?\n\nThao tác này sẽ xóa VĨNH VIỄN @(item.Products?.Count ?? 0) sản phẩm bên trong và không thể hoàn tác!');">
                                     @Html.AntiForgeryToken()
                                     <button type="submit"
-                                            class="action-btn delete" title="Xóa"
+                                            class="action-btn delete" title="Xóa danh mục và toàn bộ sản phẩm"
                                             style="background: none; border: none; color: #9ca3af; padding: 0.375rem; cursor: pointer; border-radius: 6px; display: inline-flex; align-items: center; transition: color .2s;">
                                         <span class="material-symbols-outlined" style="font-size: 1.125rem;">delete</span>
                                     </button>
