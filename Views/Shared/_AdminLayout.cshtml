@@ -1,7 +1,6 @@
 @{
     var uname = Context.Session.GetString("USER_NAME") ?? "Admin";
     var uemail = Context.Session.GetString("USER_EMAIL") ?? "admin@pizzadeli.vn";
-
     // Determine active menu based on context
     var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
 }
@@ -38,6 +37,9 @@
             </a>
             <a asp-controller="Admin" asp-action="Toppings" class="dash-nav-item @(action == "Toppings" ? "active" : "")">
                 <span class="material-symbols-outlined">cookie</span> Topping
+            </a>
+            <a asp-controller="Admin" asp-action="CustomPizza" class="dash-nav-item @(action == "CustomPizza" ? "active" : "")">
+                <span class="material-symbols-outlined">bakery_dining</span> Pizza Tự Chọn
             </a>
             <a asp-controller="Admin" asp-action="Categories" class="dash-nav-item @(action == "Categories" ? "active" : "")">
                 <span class="material-symbols-outlined">category</span> Danh mục

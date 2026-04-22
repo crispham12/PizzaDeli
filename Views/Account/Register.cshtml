@@ -39,14 +39,15 @@
                 </div>
             }
 
-            <form method="post" asp-action="Register" asp-controller="Account">
+            <form method="post" asp-action="Register" asp-controller="Account" autocomplete="off">
                 @Html.AntiForgeryToken()
 
                 <div class="auth-field">
                     <label for="name-input">FULL NAME</label>
                     <div class="auth-input-wrap">
                         <span class="material-symbols-outlined" style="position: absolute; left: 1rem; color: #a3a3a3; font-size: 1.25rem;">person</span>
-                        <input id="name-input" type="text" name="FullName" value="@Model?.FullName"
+                        <input id="name-input" type="text" name="FullName"
+                               autocomplete="off"
                                placeholder="John Doe" style="padding-left: 2.75rem;" required />
                     </div>
                 </div>
@@ -55,8 +56,20 @@
                     <label for="email-input">EMAIL ADDRESS</label>
                     <div class="auth-input-wrap">
                         <span class="material-symbols-outlined" style="position: absolute; left: 1rem; color: #a3a3a3; font-size: 1.25rem;">mail</span>
-                        <input id="email-input" type="email" name="Email" value="@Model?.Email"
+                        <input id="email-input" type="email" name="Email"
+                               autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                                placeholder="hello@example.com" style="padding-left: 2.75rem;" required />
+                    </div>
+                </div>
+
+                <div class="auth-field">
+                    <label for="phone-input">PHONE NUMBER</label>
+                    <div class="auth-input-wrap">
+                        <span class="material-symbols-outlined" style="position: absolute; left: 1rem; color: #a3a3a3; font-size: 1.25rem;">call</span>
+                        <input id="phone-input" type="tel" name="Phone"
+                               autocomplete="off"
+                               placeholder="0901234567" style="padding-left: 2.75rem;" required
+                               pattern="0[0-9]{9}" maxlength="10" />
                     </div>
                 </div>
 
@@ -64,7 +77,7 @@
                     <label for="pwd-input">PASSWORD</label>
                     <div class="auth-input-wrap">
                         <span class="material-symbols-outlined" style="position: absolute; left: 1rem; color: #a3a3a3; font-size: 1.25rem;">lock</span>
-                        <input id="pwd-input" type="password" name="Password"
+                        <input id="pwd-input" type="password" name="Password" autocomplete="new-password"
                                placeholder="••••••••" style="padding-left: 2.75rem;" required minlength="6" />
                         <button type="button" class="pwd-toggle" onclick="togglePassword('pwd-input', this)" tabindex="-1">
                             <span class="material-symbols-outlined">visibility</span>
@@ -76,7 +89,7 @@
                     <label for="pwd-confirm">CONFIRM PASSWORD</label>
                     <div class="auth-input-wrap">
                         <span class="material-symbols-outlined" style="position: absolute; left: 1rem; color: #a3a3a3; font-size: 1.25rem;">history</span>
-                        <input id="pwd-confirm" type="password" name="ConfirmPassword"
+                        <input id="pwd-confirm" type="password" name="ConfirmPassword" autocomplete="new-password"
                                placeholder="••••••••" style="padding-left: 2.75rem;" required minlength="6" />
                     </div>
                 </div>

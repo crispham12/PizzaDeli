@@ -436,7 +436,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    background: #fafafb; /* Very light gray */
+    background: #fafafb;
     height: 100vh;
     overflow: hidden;
 }
@@ -1491,6 +1491,7 @@
     color: #111;
     transition: all 0.2s;
     outline: none;
+    box-sizing: border-box;
 }
 
 .fg-input:focus {

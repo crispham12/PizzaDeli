@@ -172,6 +172,12 @@
         var raw  = document.getElementById('discountValue').value.replace(/[.,]/g, '').trim() || '0';
         if (type === 'percent') {
             var pctRaw = document.getElementById('discountValue').value.replace(/[^\d.]/g, '').trim() || '0';
+            var pctVal = parseFloat(pctRaw);
+            if (isNaN(pctVal) || pctVal <= 0 || pctVal >= 100) {
+                e.preventDefault();
+                alert("Giá trị giảm giá theo phần trăm phải lớn hơn 0 và nhỏ hơn 100.");
+                return;
+            }
             document.getElementById('hPercent').value = pctRaw;
             document.getElementById('hAmount').value  = '';
         } else {

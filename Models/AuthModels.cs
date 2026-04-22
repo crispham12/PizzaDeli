@@ -1,4 +1,5 @@
 namespace PizzaDeli.Models;
+using System.ComponentModel.DataAnnotations;
 
 // ---------- Request DTOs ----------
 public class LoginRequest
@@ -9,9 +10,16 @@ public class LoginRequest
 
 public class RegisterRequest
 {
+    [Required]
     public string FullName { get; set; } = string.Empty;
+    [Required]
     public string Email { get; set; } = string.Empty;
+    [Required]
     public string Password { get; set; } = string.Empty;
+    [Required]
+    public string ConfirmPassword { get; set; } = string.Empty;
+    [Required]
+    [RegularExpression("^0\\d{9}$", ErrorMessage = "Số điện thoại không hợp lệ.")]
     public string Phone { get; set; } = string.Empty;
 }
 

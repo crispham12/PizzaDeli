@@ -734,21 +734,17 @@
         const statusFlow = [];
 
         // Determine next possible statuses
-        if (currentStatus === 'Pending' || currentStatus === 'Chờ xử lý') {
-            statusFlow.push({ status: 'Đã xác nhận', label: 'Xác nhận đơn', icon: 'verified', cls: 'btn-shipping' });
-            statusFlow.push({ status: 'Đang giao hàng', label: 'Giao hàng ngay', icon: 'local_shipping', cls: 'btn-shipping' });
-        }
-        if (currentStatus === 'Confirmed' || currentStatus === 'Đã xác nhận') {
-            statusFlow.push({ status: 'Đang giao hàng', label: 'Bắt đầu giao hàng', icon: 'local_shipping', cls: 'btn-shipping' });
+        if (currentStatus === 'Confirmed' || currentStatus === 'Đã xác nhận' || currentStatus === 'Processing' || currentStatus === 'Đang chế biến') {
+            statusFlow.push({ status: 'Shipping', label: 'Bắt đầu giao hàng', icon: 'local_shipping', cls: 'btn-shipping' });
         }
         if (currentStatus === 'Shipping' || currentStatus === 'Đang giao hàng') {
-            statusFlow.push({ status: 'Đã hoàn thành', label: 'Giao hàng thành công', icon: 'check_circle', cls: 'btn-complete' });
+            statusFlow.push({ status: 'Completed', label: 'Xác nhận thành công', icon: 'check_circle', cls: 'btn-complete' });
         }
 
         // Cancel option (if not already completed/cancelled)
         if (currentStatus !== 'Completed' && currentStatus !== 'Đã hoàn thành'
             && currentStatus !== 'Cancelled' && currentStatus !== 'Đã hủy') {
-            statusFlow.push({ status: 'Đã hủy', label: 'Hủy đơn hàng', icon: 'cancel', cls: 'btn-cancel' });
+            statusFlow.push({ status: 'Cancelled', label: 'Hủy đơn hàng', icon: 'cancel', cls: 'btn-cancel' });
         }
 
         statusFlow.forEach(item => {

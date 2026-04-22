@@ -160,18 +160,29 @@
                             <div style="display:flex; align-items:center; justify-content:flex-end; gap:0.5rem;">
                                 @if (!string.IsNullOrEmpty(nextStatus))
                                 {
-                                    <form method="post" asp-action="UpdateOrderStatus" asp-controller="Staff" style="display:inline;">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@order.Id" />
-                                        <input type="hidden" name="status" value="@nextStatus" />
-                                        <button type="submit" title="@nextLabel"
-                                                style="background:@btnColor;color:#fff;border:none;border-radius:6px;padding:0.35rem 0.75rem;font-size:0.8rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:0.3rem;">
+                                    @if (nextStatus == "Shipping")
+                                    {
+                                        <a href="@Url.Action("RedirectToDeliveryManagement", "Admin", new { id = order.Id })" title="Chuyển đến quản lý giao hàng"
+                                           style="background:@btnColor;color:#fff;border:none;border-radius:6px;padding:0.35rem 0.75rem;font-size:0.8rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:0.3rem;text-decoration:none;">
                                             <span class="material-symbols-outlined" style="font-size:0.9rem;">@nextIcon</span>
                                             @nextLabel
-                                        </button>
-                                    </form>
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <form method="post" asp-action="UpdateOrderStatus" asp-controller="Staff" style="display:inline;">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@order.Id" />
+                                            <input type="hidden" name="status" value="@nextStatus" />
+                                            <button type="submit" title="@nextLabel"
+                                                    style="background:@btnColor;color:#fff;border:none;border-radius:6px;padding:0.35rem 0.75rem;font-size:0.8rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:0.3rem;">
+                                                <span class="material-symbols-outlined" style="font-size:0.9rem;">@nextIcon</span>
+                                                @nextLabel
+                                            </button>
+                                        </form>
+                                    }
                                 }
-                                @if (order.Status == "Pending" || order.Status == "Confirmed")
+                                @if (order.Status == "Pending" || order.Status == "Chờ xử lý")
                                 {
                                     <form method="post" asp-action="UpdateOrderStatus" asp-controller="Staff" style="display:inline;">
                                         @Html.AntiForgeryToken()

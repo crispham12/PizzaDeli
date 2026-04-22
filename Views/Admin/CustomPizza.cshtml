@@ -1,0 +1,411 @@
+@model IEnumerable<PizzaDeli.Models.PizzaComponent>
+@{
+    ViewData["Title"] = "Custom Pizza Components";
+    Layout = "_AdminLayout";
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    var currentStatus = ViewBag.CurrentStatus as string ?? "all";
+}
+
+<style>
+    .cp-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 2rem;
+    }
+    .cp-title h2 {
+        font-family: 'Inter', sans-serif;
+        font-weight: 800;
+        font-size: 1.8rem;
+        color: #4a2c22;
+        margin-bottom: 0.5rem;
+    }
+    .cp-title p {
+        color: #8c837f;
+        font-size: 0.95rem;
+    }
+
+    .cp-card {
+        background: #ffffff;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.04);
+        padding: 1.5rem;
+    }
+    .cp-toolbar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        align-items: center;
+    }
+    .cp-search {
+        flex-grow: 1;
+        position: relative;
+    }
+    .cp-search input {
+        width: 100%;
+        box-sizing: border-box;
+        background-color: #f4f4f5;
+        border: none;
+        padding: 0.8rem 1rem 0.8rem 2.8rem;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        color: #1f2937;
+        outline: none;
+    }
+    .cp-search .material-symbols-outlined {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        font-size: 1.2rem;
+    }
+    .btn-filter {
+        background-color: #f4f4f5;
+        border: none;
+        padding: 0.8rem 1.2rem;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #4b5563;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+    }
+    .btn-filter:hover { background-color: #e5e7eb; color: #4b5563; }
+    
+    .cp-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .cp-table th {
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 1px;
+        color: #9ca3af;
+        padding: 1rem 0;
+        border-bottom: 1px solid #f3f4f6;
+        text-align: left;
+    }
+    .cp-table td {
+        padding: 1.2rem 0;
+        border-bottom: 1px solid #f9fafb;
+        vertical-align: middle;
+    }
+    .cp-id {
+        font-size: 0.8rem;
+        color: #9ca3af;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    .cp-id span { color: #6b7280; }
+    .cp-img {
+        width: 44px;
+        height: 44px;
+        background-color: #f0ede9;
+        border-radius: 50%;
+        background-size: cover;
+        background-position: center;
+    }
+    .cp-name {
+        font-weight: 700;
+        color: #4a2c22;
+        font-size: 0.95rem;
+    }
+    .cp-price {
+        font-weight: 700;
+        color: #6b7280;
+        font-size: 0.95rem;
+    }
+    
+    .inventory-bar {
+        width: 60px;
+        height: 6px;
+        background-color: #f3f4f6;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .inventory-fill {
+        height: 100%;
+        background-color: #4a2c22;
+        border-radius: 3px;
+    }
+    .inventory-fill.low { background-color: #ef4444; }
+    .inventory-fill.empty { background-color: #e5e7eb; width: 100% !important; }
+    
+    .status-active { 
+        color: #10b981; 
+        background-color: #d1fae5;
+        font-weight: 800; 
+        font-size: 0.75rem; 
+        padding: 0.4rem 1rem;
+        border-radius: 99px;
+        display: inline-block;
+    }
+    
+    .status-low { 
+        color: #ef4444; 
+        background-color: #fee2e2;
+        font-weight: 800; 
+        font-size: 0.75rem; 
+        padding: 0.4rem 1rem;
+        border-radius: 99px;
+        display: inline-block;
+    }
+    
+    .status-inactive { 
+        color: #4b5563; 
+        background-color: #f3f4f6;
+        font-weight: 800; 
+        font-size: 0.75rem; 
+        padding: 0.4rem 1rem;
+        border-radius: 99px;
+        display: inline-block;
+    }
+
+    .cp-actions {
+        position: relative;
+        display: inline-block;
+    }
+    .action-dots {
+        color: #9ca3af;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 50%;
+    }
+    .action-dots:hover { background: #f3f4f6; }
+    
+    .cp-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1.5rem;
+    }
+    .cp-info {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #6b7280;
+    }
+    .cp-pagination {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    .cp-page-btn {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #4b5563;
+        text-decoration: none;
+        background: transparent;
+    }
+    .cp-page-btn.active {
+        background: #5c3c31;
+        color: #ffffff;
+    }
+    .cp-page-btn:hover:not(.active) {
+        background: #f3f4f6;
+    }
+    
+    .dropdown-menu {
+        display: none;
+        position: absolute;
+        right: 0;
+        top: 100%;
+        background: #fff;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        z-index: 10;
+        min-width: 120px;
+        overflow: hidden;
+    }
+    .cp-actions:hover .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 15px;
+        color: #374151;
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    .dropdown-item:hover { background: #f9fafb; }
+    .dropdown-item.danger { color: #ef4444; }
+    .dropdown-item.danger:hover { background: #fef2f2; }
+</style>
+
+<div class="cp-header">
+    <div class="cp-title">
+        <h2>Thành Phần Pizza Tự Chọn</h2>
+        <p>Quản lý giá cả và trạng thái của các thành phần pizza tự chọn.</p>
+    </div>
+    <a asp-action="CustomPizzaCreate" class="btn-pill primary add-btn">
+        <span class="material-symbols-outlined">add_circle</span>
+        Thêm thành phần mới
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background: #dcfce7; color: #16a34a; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-weight: 600;">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+<div class="cp-card">
+    <div class="cp-toolbar">
+        <form method="get" asp-action="CustomPizza" class="cp-search">
+            <span class="material-symbols-outlined">search</span>
+            <input type="text" name="searchQuery" value="@ViewBag.SearchQuery" placeholder="Tìm kiếm thành phần theo tên hoặc ID..." onchange="this.form.submit()" />
+            <input type="hidden" name="status" value="@currentStatus" />
+        </form>
+        
+        <a href="@Url.Action("CustomPizza", new { searchQuery = ViewBag.SearchQuery, status = currentStatus == "active" ? "all" : "active" })" class="btn-filter" style="@(currentStatus == "active" ? "background:#e5e7eb;" : "")">
+            TRẠNG THÁI: HOẠT ĐỘNG
+        </a>
+        <a href="@Url.Action("CustomPizza")" class="btn-filter">
+            XÓA LỌC
+        </a>
+    </div>
+
+    <table class="cp-table">
+        <thead>
+            <tr>
+                <th style="width: 8%;">MÃ</th>
+                <th style="width: 10%;">HÌNH ẢNH</th>
+                <th style="width: 25%;">TÊN THÀNH PHẦN</th>
+                <th style="width: 15%;">GIÁ CƠ BẢN</th>
+                <th style="width: 15%;">TỒN KHO</th>
+                <th style="width: 15%;">TRẠNG THÁI</th>
+                <th style="width: 12%; text-align: center;">HÀNH ĐỘNG</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                int rowIdx = 0;
+            }
+            @foreach (var item in Model)
+            {
+                rowIdx++;
+                int maxStock = 200;
+                int invPercent = (int)((double)item.Stock / maxStock * 100);
+                if (invPercent > 100) invPercent = 100;
+                
+                string invClass = "";
+                string statusClass = "status-active";
+                string statusText = "HOẠT ĐỘNG";
+
+                if (!item.IsAvailable) {
+                    invClass = "empty";
+                    statusClass = "status-inactive";
+                    statusText = "NGỪNG BÁN";
+                } else if (item.Stock < 20) {
+                    invClass = "low";
+                    statusClass = "status-low";
+                    statusText = "SẮP HẾT";
+                }
+
+                <tr>
+                    <td>
+                        <div class="cp-id">
+                            #PZ-<br />
+                            <span>@item.Id.Substring(0, 3).ToUpper()</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="cp-img" style="background-image: url('@(string.IsNullOrEmpty(item.ImageUrl) ? "/images/placeholder.jpg" : item.ImageUrl)');"></div>
+                    </td>
+                    <td>
+                        <div class="cp-name">@item.Name</div>
+                    </td>
+                    <td>
+                        <div class="cp-price">@item.Price.ToString("N0")đ</div>
+                    </td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:0.5rem;">
+                            <div class="inventory-bar">
+                                <div class="inventory-fill @invClass" style="width: @(invPercent)%;"></div>
+                            </div>
+                            <span style="font-size:0.85rem; font-weight:700; color:#4b5563;">@item.Stock</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="@statusClass">
+                            @statusText
+                        </div>
+                    </td>
+                    <td style="text-align: center;">
+                        <div class="cp-actions">
+                            <button class="action-dots">
+                                <span class="material-symbols-outlined">more_vert</span>
+                            </button>
+                            <div class="dropdown-menu">
+                                <a asp-action="CustomPizzaEdit" asp-route-id="@item.Id" class="dropdown-item">
+                                    <span class="material-symbols-outlined" style="font-size:1.1rem;">edit</span> Sửa
+                                </a>
+                                <form asp-action="CustomPizzaDelete" asp-route-id="@item.Id" method="post" style="margin:0;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa thành phần này?');">
+                                    <button type="submit" class="dropdown-item danger" style="width:100%; border:none; background:none; cursor:pointer; text-align:left;">
+                                        <span class="material-symbols-outlined" style="font-size:1.1rem;">delete</span> Xóa
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            }
+            
+            @if(!Model.Any())
+            {
+                <tr>
+                    <td colspan="7" style="text-align: center; color: #9ca3af; padding: 3rem;">
+                        Không tìm thấy thành phần nào.
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="cp-footer">
+        <div class="cp-info">
+            Đang hiển thị @Model.Count() trong tổng số @ViewBag.TotalProducts thành phần
+        </div>
+        <div class="cp-pagination">
+            @if (currentPage > 1)
+            {
+                <a href="@Url.Action("CustomPizza", new { page = currentPage - 1, searchQuery = ViewBag.SearchQuery, status = currentStatus })" class="cp-page-btn">
+                    <span class="material-symbols-outlined" style="font-size:1.1rem;">chevron_left</span>
+                </a>
+            }
+            
+            @for (int i = 1; i <= totalPages; i++)
+            {
+                if (i == 1 || i == totalPages || Math.Abs(i - currentPage) <= 1)
+                {
+                     <a href="@Url.Action("CustomPizza", new { page = i, searchQuery = ViewBag.SearchQuery, status = currentStatus })" class="cp-page-btn @(i == currentPage ? "active" : "")">@i</a>
+                }
+                else if (Math.Abs(i - currentPage) == 2)
+                {
+                    <span style="color:#9ca3af; padding: 0 0.2rem;">...</span>
+                }
+            }
+
+            @if (currentPage < totalPages)
+            {
+                <a href="@Url.Action("CustomPizza", new { page = currentPage + 1, searchQuery = ViewBag.SearchQuery, status = currentStatus })" class="cp-page-btn">
+                    <span class="material-symbols-outlined" style="font-size:1.1rem;">chevron_right</span>
+                </a>
+            }
+        </div>
+    </div>
+</div>

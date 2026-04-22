@@ -1,0 +1,1065 @@
+@model IEnumerable<PizzaDeli.Models.PizzaComponent>
+@{
+    ViewData["Title"] = "Tự chọn Pizza";
+    var _role  = Context.Session.GetString("USER_ROLE");
+    var _name  = Context.Session.GetString("USER_NAME");
+    var _auth  = !string.IsNullOrEmpty(_role);
+}
+
+@section Styles {
+    <style>
+        .custom-page-wrap {
+            background-color: #ffffff;
+            padding: 4rem 1rem 6rem;
+            min-height: calc(100vh - 400px);
+            font-family: 'Inter', sans-serif;
+            color: #4a2c22;
+        }
+        .custom-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+        }
+        /* Left Column */
+        .preview-section {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        .receipt-card {
+            background: #ffffff;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            margin-bottom: 1.5rem;
+        }
+        .receipt-header {
+            background-color: #4a2c22;
+            color: #ffffff;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .rh-small {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+            color: #d1c4b8;
+            margin-bottom: 4px;
+        }
+        .rh-large {
+            font-size: 1.3rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+        .receipt-body {
+            padding: 1.5rem;
+        }
+        .r-row {
+            display: flex;
+            justify-content: space-between;
+        }
+        .r-col {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .text-right {
+            text-align: right;
+            align-items: flex-end;
+        }
+        .r-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #9ca3af;
+            font-weight: 700;
+        }
+        .r-val-bold {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #4a2c22;
+        }
+        .r-divider {
+            height: 1px;
+            background: #f0ede9;
+            margin: 1.2rem 0;
+        }
+        .r-section-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #9ca3af;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        .r-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.8rem;
+            font-size: 0.9rem;
+        }
+        .r-item-name {
+            color: #1f2937;
+            font-weight: 500;
+            font-style: italic;
+        }
+        .r-item-price {
+            font-weight: 700;
+            color: #4a2c22;
+        }
+        .receipt-footer {
+            background-color: #fcfbf9;
+            padding: 1.5rem;
+            border-top: 1px solid #f0ede9;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .r-total-price {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: #4a2c22;
+            line-height: 1;
+            margin-top: 5px;
+        }
+        .btn-cart-icon {
+            background-color: #f0ede9;
+            color: #5c3c31;
+            border: none;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-cart-icon:hover {
+            background-color: #e5e2de;
+            transform: translateY(-2px);
+        }
+        
+        .summary-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .tag {
+            background: #f4ede6;
+            color: #5b4636;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .btn-checkout {
+            background-color: #5c3c31;
+            color: #ffffff;
+            border: none;
+            padding: 1rem 1.8rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 20px rgba(92, 60, 49, 0.2);
+        }
+        .btn-checkout:hover {
+            background-color: #4a2c22;
+            transform: translateY(-2px);
+        }
+
+        /* Right Column */
+        .builder-section {
+            display: flex;
+            flex-direction: column;
+            padding-top: 1rem;
+        }
+        .page-title {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #5c3c31;
+            margin-bottom: 1rem;
+            line-height: 1.1;
+        }
+        .page-subtitle {
+            font-size: 1.1rem;
+            color: #7d7068;
+            line-height: 1.6;
+            margin-bottom: 3rem;
+        }
+
+        .step-group {
+            margin-bottom: 3rem;
+        }
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .step-number {
+            width: 32px;
+            height: 32px;
+            background-color: #5c3c31;
+            color: #ffffff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+        .step-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #5c3c31;
+        }
+
+        .size-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .size-card {
+            background: #ffffff;
+            border: 2px solid #f0ede9;
+            border-radius: 12px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .size-card.active {
+            background: #5c3c31;
+            border-color: #5c3c31;
+            color: #ffffff;
+        }
+        .size-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            color: #9ca3af;
+            margin-bottom: 4px;
+        }
+        .size-card.active .size-label {
+            color: rgba(255,255,255,0.7);
+        }
+        .size-name {
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+        .size-price {
+            font-size: 0.9rem;
+            color: #7d7068;
+        }
+        .size-card.active .size-price {
+            color: rgba(255,255,255,0.9);
+        }
+
+        .crust-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+            color: #9ca3af;
+            margin-bottom: 0.8rem;
+            display: block;
+        }
+        .crust-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .crust-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.2rem 1.5rem;
+            background: #ffffff;
+            border: 1px solid #f0ede9;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+        .crust-option-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .radio-circle {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .crust-option.active .radio-circle {
+            border-color: #5c3c31;
+        }
+        .crust-option.active .radio-circle::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background: #5c3c31;
+            border-radius: 50%;
+        }
+        .crust-name {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #1f2937;
+        }
+        .crust-price {
+            font-weight: 500;
+            color: #9ca3af;
+        }
+
+        .custom-select-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .custom-select-icon {
+            position: absolute;
+            left: 1.2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #5c3c31;
+            font-size: 1.5rem;
+            pointer-events: none;
+        }
+        .custom-select {
+            width: 100%;
+            padding: 1.2rem 1.5rem 1.2rem 3.5rem;
+            border: 2px solid #f0ede9;
+            border-radius: 12px;
+            background: #ffffff;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1f2937;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%235c3c31' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1.2rem center;
+            background-size: 1.4rem;
+            outline: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+        }
+        .custom-select:hover {
+            border-color: #d1d5db;
+        }
+        .custom-select:focus {
+            border-color: #5c3c31;
+            box-shadow: 0 0 0 4px rgba(92, 60, 49, 0.1);
+        }
+
+        .toppings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .topping-card {
+            display: flex;
+            align-items: center;
+            background: #ffffff;
+            border: 1px solid #f0ede9;
+            border-radius: 12px;
+            padding: 0.8rem;
+            gap: 1rem;
+            cursor: pointer;
+        }
+        .topping-img-wrap {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            background: #fdfaf6;
+            overflow: hidden;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .topping-img-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .topping-info {
+            flex-grow: 1;
+        }
+        .topping-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #1f2937;
+            margin-bottom: 2px;
+        }
+        .topping-desc {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #9ca3af;
+            font-weight: 700;
+        }
+        .topping-price {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #4a2c22;
+        }
+        .checkbox-circle {
+            width: 24px;
+            height: 24px;
+            border-radius: 8px;
+            border: 2px solid #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-left: 0.5rem;
+        }
+        .topping-card.active .checkbox-circle {
+            background: #5c3c31;
+            border-color: #5c3c31;
+        }
+        .topping-card.active .checkbox-circle::after {
+            content: '✓';
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .show-more-wrap {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+        .show-more-btn {
+            background: none;
+            border: none;
+            color: #5c3c31;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        @@media (max-width: 992px) {
+            .custom-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Nav Dropdown CSS */
+        .btn-profile-dropdown {
+            background-color: #f4ede6;
+            color: #1f2937;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 99px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn-profile-dropdown:hover { opacity: 0.9; }
+        .customer-dropdown-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            background: #ffffff;
+            color: #1f2937;
+            border-radius: 20px;
+            width: 300px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            z-index: 100;
+            overflow: hidden;
+            flex-direction: column;
+            padding: 0.5rem 0;
+        }
+        .customer-dropdown-menu.show { display: flex; animation: fadeIn 0.2s ease; }
+        @@keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .c-dropdown-item {
+            display: flex; align-items: center; gap: 16px;
+            padding: 12px 20px; text-decoration: none; color: #374151; transition: background 0.15s;
+        }
+        .c-dropdown-item.border-bt { border-bottom: 1px solid #f3f4f6; padding-bottom: 16px; margin-bottom: 4px; }
+        .c-dropdown-item:hover { background: #f9fafb; color: #1f2937; }
+        .c-item-icon-wrap {
+            width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .c-item-icon-wrap.primary { background: #e1d3c1; color: #533e38; }
+        .c-item-icon-wrap.danger-bg { background: #eabfb9; }
+        .c-item-text { display: flex; flex-direction: column; }
+        .c-item-title { font-weight: 700; font-size: 1.05rem; line-height: 1.2; color: #533e38; }
+        .c-item-desc { font-size: 0.85rem; color: #8c837f; margin-top: 4px; }
+        .nav-links a.active-nav { color: #c45c2e; font-weight: 800; }
+        .d-none { display: none !important; }
+    </style>
+}
+
+<div class="layout-container">
+
+    <!-- ===================== HEADER ===================== -->
+    <header class="site-header">
+        <div class="container nav-inner">
+
+            <!-- Left: Brand + Nav Links -->
+            <div class="nav-left">
+                <div class="brand">
+                    <span class="material-symbols-outlined">local_pizza</span>
+                    <a asp-controller="Home" asp-action="Index" style="text-decoration:none;">
+                        <h2 class="brand-name">PizzaDeli</h2>
+                    </a>
+                </div>
+                <nav class="nav-links">
+                    <a asp-controller="Home" asp-action="Menu">Thực đơn</a>
+                    <a asp-controller="Home" asp-action="Promotions">Khuyến mãi</a>
+                    <a asp-controller="Home" asp-action="Custom" class="active-nav">Tự chọn</a>
+                    <a asp-controller="Home" asp-action="Scan">Quét ảnh</a>
+                </nav>
+            </div>
+
+            <!-- Right: Actions -->
+            <div class="nav-actions">
+                @if (_auth)
+                {
+                    @if (_role == "Admin")
+                    {
+                        <a asp-controller="Admin" asp-action="Dashboard" class="btn-profile">
+                            <span class="material-symbols-outlined">admin_panel_settings</span>
+                            <span class="btn-profile-text">Admin</span>
+                        </a>
+                    }
+                    else if (_role == "Staff")
+                    {
+                        <a asp-controller="Staff" asp-action="Orders" class="btn-profile">
+                            <span class="material-symbols-outlined">badge</span>
+                            <span class="btn-profile-text">Nhân viên</span>
+                        </a>
+                    }
+                    else
+                    {
+                        <div style="position:relative;" id="customerDropdownWrapper">
+                            <button class="btn-profile-dropdown" onclick="toggleCustomerDropdown(event)">
+                                <span class="material-symbols-outlined">person</span>
+                                <span>@_name</span>
+                                <span class="material-symbols-outlined" style="font-size:1.1rem;">keyboard_arrow_down</span>
+                            </button>
+                            <div class="customer-dropdown-menu" id="customerDropdownMenu">
+                                <a href="/Customer/Orders" class="c-dropdown-item">
+                                    <div class="c-item-icon-wrap primary">
+                                        <span class="material-symbols-outlined">receipt_long</span>
+                                    </div>
+                                    <div class="c-item-text">
+                                        <div class="c-item-title">Đơn hàng của tôi</div>
+                                        <div class="c-item-desc">Theo dõi &amp; quản lý đơn hàng</div>
+                                    </div>
+                                </a>
+                                <a asp-controller="Customer" asp-action="Profile" class="c-dropdown-item">
+                                    <div class="c-item-icon-wrap primary">
+                                        <span class="material-symbols-outlined">person</span>
+                                    </div>
+                                    <div class="c-item-text">
+                                        <div class="c-item-title">Thông tin cá nhân</div>
+                                        <div class="c-item-desc">Quản lý tài khoản của bạn</div>
+                                    </div>
+                                </a>
+                                <a asp-controller="Customer" asp-action="ChangePassword" class="c-dropdown-item">
+                                    <div class="c-item-icon-wrap primary">
+                                        <span class="material-symbols-outlined">lock_reset</span>
+                                    </div>
+                                    <div class="c-item-text">
+                                        <div class="c-item-title">Đổi mật khẩu</div>
+                                        <div class="c-item-desc">Bảo mật tài khoản</div>
+                                    </div>
+                                </a>
+
+                                <a asp-controller="Account" asp-action="Logout" class="c-dropdown-item logout-item">
+                                    <div class="c-item-icon-wrap danger-bg">
+                                        <span class="material-symbols-outlined" style="color:#782a2a; transform: scaleX(-1);">logout</span>
+                                    </div>
+                                    <div class="c-item-text" style="display:flex; align-items:center;">
+                                        <div class="c-item-title" style="color:#782a2a; font-size: 1.1rem; margin:0;">Đăng xuất</div>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                        <a href="javascript:void(0)" onclick="window.PizzaCart && window.PizzaCart.openCartDrawer()" class="btn-cart" aria-label="Giỏ hàng">
+                            <span class="material-symbols-outlined">shopping_cart</span>
+                            <span class="cart-badge" id="cart-count">0</span>
+                        </a>
+                    }
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="Login" class="btn-profile">
+                        <span class="material-symbols-outlined">login</span>
+                        <span class="btn-profile-text">Đăng nhập</span>
+                    </a>
+                    <a asp-controller="Account" asp-action="Register" class="btn-register" style="text-decoration:none; padding: 0.5rem 1rem; font-size:0.875rem; font-weight:700;">
+                        Đăng ký
+                    </a>
+                }
+            </div>
+        </div>
+    </header>
+
+    <div class="custom-page-wrap">
+        <div class="custom-container">
+            <!-- Left Column -->
+            <div class="preview-section">
+                <div class="receipt-card">
+                    <div class="receipt-header">
+                        <div class="rh-left">
+                            <div class="rh-small">ĐƠN HÀNG BẾP</div>
+                            <div class="rh-large">BẢN GHI CỦA ĐẦU BẾP</div>
+                        </div>
+                        <div class="rh-right">
+                            <span class="material-symbols-outlined" style="font-size: 2rem;">menu_book</span>
+                        </div>
+                    </div>
+                    <div class="receipt-body">
+                        <div class="r-row r-meta">
+                            <div class="r-col">
+                                <span class="r-label">PHONG CÁCH</span>
+                                <span class="r-val-bold">Sự Lựa Chọn Nghệ Nhân</span>
+                            </div>
+                            <div class="r-col text-right">
+                                <span class="r-label">MÃ ĐƠN</span>
+                                <span class="r-val-bold">8291-04</span>
+                            </div>
+                        </div>
+                        
+                        <div class="r-divider"></div>
+                        
+                        <div class="r-row" style="margin-bottom: 1rem;">
+                            <div class="r-section-label" style="margin-bottom: 0;">LỰA CHỌN CƠ BẢN</div>
+                            <div class="r-section-label" style="margin-bottom: 0; text-align: right;">GIÁ TIỀN</div>
+                        </div>
+                        <div class="r-item">
+                            <span class="r-item-name" id="r-size-name">Kích cỡ: Lớn 30cm</span>
+                            <span class="r-item-price" id="r-size-price">180.000₫</span>
+                        </div>
+                        <div class="r-item">
+                            <span class="r-item-name" id="r-crust-name">Đế bánh: Đế dày</span>
+                            <span class="r-item-price" id="r-crust-price">35.000₫</span>
+                        </div>
+                        <div class="r-item">
+                            <span class="r-item-name" id="r-cheese-name">Phô mai: Mozzarella tươi</span>
+                            <span class="r-item-price">BAO GỒM</span>
+                        </div>
+                        
+                        <div class="r-divider"></div>
+                        
+                        <div class="r-section-label">TOPPING THỦ CÔNG</div>
+                        <div id="r-toppings-container">
+                            <!-- Toppings will be rendered here -->
+                        </div>
+                    </div>
+                    
+                    <div class="receipt-footer">
+                        <div class="rf-total">
+                            <div class="r-label">TỔNG TẠM TÍNH</div>
+                            <div class="r-total-price" id="r-total-price">245.000₫</div>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn-cart-icon">
+                                <span class="material-symbols-outlined">shopping_cart</span>
+                            </button>
+                            <button class="btn-checkout">
+                                Thanh toán
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="builder-section">
+                <h1 class="page-title">Tự Tạo Siêu Phẩm</h1>
+                <p class="page-subtitle">Đế bánh nhào thủ công, phô mai hảo hạng và topping tươi ngon. Tự thiết kế chiếc pizza hoàn hảo của bạn.</p>
+
+                <!-- Step 1 -->
+                <div class="step-group">
+                    <div class="step-header">
+                        <div class="step-number">1</div>
+                        <div class="step-title">Kích cỡ &amp; Đế bánh</div>
+                    </div>
+                    
+                    <div class="size-grid">
+                        <div class="size-card" data-name="Nhỏ 18cm" data-price="120000">
+                            <div class="size-label">NHỎ</div>
+                            <div class="size-name">18 cm</div>
+                            <div class="size-price">120.000₫</div>
+                        </div>
+                        <div class="size-card" data-name="Vừa 24cm" data-price="150000">
+                            <div class="size-label">VỪA</div>
+                            <div class="size-name">24 cm</div>
+                            <div class="size-price">150.000₫</div>
+                        </div>
+                        <div class="size-card active" data-name="Lớn 30cm" data-price="180000">
+                            <div class="size-label">LỚN</div>
+                            <div class="size-name">30 cm</div>
+                            <div class="size-price">180.000₫</div>
+                        </div>
+                    </div>
+
+                    <div class="crust-label">CHỌN KIỂU ĐẾ</div>
+                    <div class="crust-list">
+                        <div class="crust-option active" data-name="Đế mỏng" data-price="0">
+                            <div class="crust-option-left">
+                                <div class="radio-circle"></div>
+                                <span class="crust-name">Đế mỏng</span>
+                            </div>
+                            <span class="crust-price">+0₫</span>
+                        </div>
+                        <div class="crust-option" data-name="Đế vừa" data-price="15000">
+                            <div class="crust-option-left">
+                                <div class="radio-circle"></div>
+                                <span class="crust-name">Đế vừa</span>
+                            </div>
+                            <span class="crust-price">+15.000₫</span>
+                        </div>
+                        <div class="crust-option" data-name="Đế dày" data-price="35000">
+                            <div class="crust-option-left">
+                                <div class="radio-circle"></div>
+                                <span class="crust-name">Đế dày</span>
+                            </div>
+                            <span class="crust-price">+35.000₫</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="step-group">
+                    <div class="step-header">
+                        <div class="step-number">2</div>
+                        <div class="step-title">Phô mai chính</div>
+                    </div>
+                    <div class="custom-select-wrapper">
+                        <span class="material-symbols-outlined custom-select-icon">cookie</span>
+                        <select class="custom-select" id="cheeseSelect">
+                            <option value="Mozzarella tươi">Mozzarella tươi</option>
+                            <option value="Cheddar ủ lâu">Cheddar ủ lâu</option>
+                            <option value="Hỗn hợp Parmesan">Hỗn hợp Parmesan</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="step-group">
+                    <div class="step-header">
+                        <div class="step-number">3</div>
+                        <div class="step-title">Topping thủ công</div>
+                    </div>
+                    
+                    <div class="toppings-grid">
+                        @{
+                            int count = 0;
+                            foreach(var item in Model)
+                            {
+                                count++;
+                                <div class="topping-card @(count > 2 ? "d-none extra-topping" : "")" data-name="@item.Name" data-price="@item.Price">
+                                    <div class="topping-img-wrap">
+                                        <img src="@(string.IsNullOrEmpty(item.ImageUrl) ? "/images/placeholder.jpg" : item.ImageUrl)" alt="@item.Name" />
+                                    </div>
+                                    <div class="topping-info">
+                                        <div class="topping-name">@item.Name</div>
+                                        <div class="topping-desc">TOPPING</div>
+                                    </div>
+                                    <div class="topping-price">+@item.Price.ToString("N0", new System.Globalization.CultureInfo("vi-VN"))₫</div>
+                                    <div class="checkbox-circle"></div>
+                                </div>
+                            }
+                        }
+                    </div>
+                    @if(Model.Count() > 2)
+                    {
+                        <div class="show-more-wrap">
+                            <button class="show-more-btn" type="button" onclick="toggleToppings(this)">
+                                Xem thêm <span class="material-symbols-outlined" style="font-size:1.1rem;">expand_more</span>
+                            </button>
+                        </div>
+                    }
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== FOOTER ===================== -->
+    <footer class="site-footer" id="footer">
+        <div class="container">
+            <div class="footer-grid">
+
+                <!-- Brand -->
+                <div class="footer-brand">
+                    <div class="footer-brand-row">
+                        <span class="material-symbols-outlined">local_pizza</span>
+                        <span class="footer-brand-name">PizzaDeli</span>
+                    </div>
+                    <p class="footer-desc">
+                        Mang đến hương vị pizza nướng chính thống từ lò gỗ đến bàn ăn của bạn. Nguyên liệu chất lượng, chế biến với niềm đam mê.
+                    </p>
+                    <div class="social-links">
+                        <a href="#" class="social-link" aria-label="Share">
+                            <span class="material-symbols-outlined">share</span>
+                        </a>
+                        <a href="#" class="social-link" aria-label="Website">
+                            <span class="material-symbols-outlined">public</span>
+                        </a>
+                        <a href="#" class="social-link" aria-label="Instagram">
+                            <span class="material-symbols-outlined">camera</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="footer-col">
+                    <h4>Liên kết nhanh</h4>
+                    <ul>
+                        <li><a href="#">Về chúng tôi</a></li>
+                        <li><a href="#">Thực đơn</a></li>
+                        <li><a href="#">Thẻ quà</a></li>
+                        <li><a href="#">Tuyển dụng</a></li>
+                    </ul>
+                </div>
+
+                <!-- Support -->
+                <div class="footer-col">
+                    <h4>Hỗ trợ</h4>
+                    <ul>
+                        <li><a href="#">Hỏi đáp</a></li>
+                        <li><a href="#">Theo dõi đơn hàng</a></li>
+                        <li><a href="#">Chính sách riêng tư</a></li>
+                        <li><a href="#">Thỏa thuận dịch vụ</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact -->
+                <div class="footer-col">
+                    <h4>Liên hệ</h4>
+                    <ul>
+                        <li class="footer-contact-item">
+                            <span class="material-symbols-outlined">call</span>
+                            +84 346765950
+                        </li>
+                        <li class="footer-contact-item">
+                            <span class="material-symbols-outlined">mail</span>
+                            phamanhkhoa56789@gmail.com
+                        </li>
+                        <li class="footer-contact-item">
+                            <span class="material-symbols-outlined">location_on</span>
+                            137 Nguyễn Thị Thập
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <!-- Footer Bottom -->
+            <div class="footer-bottom">
+                <p>&copy; 2026 PizzaDeli. Toàn quyền bảo lưu.</p>
+                <div class="footer-bottom-links">
+                    <a href="#">Cookie</a>
+                    <a href="#">Bảo mật</a>
+                    <a href="#">Sơ đồ trang</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</div>
+
+@section Scripts {
+    <script>
+        function toggleCustomerDropdown(e) {
+            if(e) e.stopPropagation();
+            var menu = document.getElementById('customerDropdownMenu');
+            if (menu) menu.classList.toggle('show');
+        }
+        window.addEventListener('click', function(e) {
+            var menu = document.getElementById('customerDropdownMenu');
+            var wrapper = document.getElementById('customerDropdownWrapper');
+            if (menu && menu.classList.contains('show') && wrapper && !wrapper.contains(e.target)) {
+                menu.classList.remove('show');
+            }
+        });
+        
+        // Custom Builder Logic
+        const MAX_TOPPINGS = 4;
+        
+        function formatPrice(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + '₫';
+        }
+
+        function updateReceipt() {
+            // Get selected size
+            const activeSize = document.querySelector('.size-card.active');
+            const sizeName = activeSize ? activeSize.dataset.name : '';
+            const sizePrice = activeSize ? parseFloat(activeSize.dataset.price) : 0;
+
+            // Get selected crust
+            const activeCrust = document.querySelector('.crust-option.active');
+            const crustName = activeCrust ? activeCrust.dataset.name : '';
+            const crustPrice = activeCrust ? parseFloat(activeCrust.dataset.price) : 0;
+
+            // Get selected cheese
+            const cheeseName = document.getElementById('cheeseSelect').value;
+
+            // Get selected toppings
+            const activeToppings = document.querySelectorAll('.topping-card.active');
+            let toppingsHtml = '';
+            let toppingsTotal = 0;
+
+            activeToppings.forEach(t => {
+                const name = t.dataset.name;
+                const price = parseFloat(t.dataset.price);
+                toppingsTotal += price;
+                toppingsHtml += `
+                    <div class="r-item">
+                        <span class="r-item-name">+ ${name}</span>
+                        <span class="r-item-price">${formatPrice(price)}</span>
+                    </div>
+                `;
+            });
+
+            // Update DOM
+            document.getElementById('r-size-name').textContent = 'Kích cỡ: ' + sizeName;
+            document.getElementById('r-size-price').textContent = formatPrice(sizePrice);
+
+            document.getElementById('r-crust-name').textContent = 'Đế bánh: ' + crustName;
+            document.getElementById('r-crust-price').textContent = crustPrice > 0 ? '+' + formatPrice(crustPrice) : 'BAO GỒM';
+
+            document.getElementById('r-cheese-name').textContent = 'Phô mai: ' + cheeseName;
+
+            document.getElementById('r-toppings-container').innerHTML = toppingsHtml;
+
+            // Total
+            const total = sizePrice + crustPrice + toppingsTotal;
+            document.getElementById('r-total-price').textContent = formatPrice(total);
+        }
+
+        // Event listeners
+        document.querySelectorAll('.size-card').forEach(card => {
+            card.addEventListener('click', function() {
+                document.querySelectorAll('.size-card').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                updateReceipt();
+            });
+        });
+        
+        document.querySelectorAll('.crust-option').forEach(opt => {
+            opt.addEventListener('click', function() {
+                document.querySelectorAll('.crust-option').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                updateReceipt();
+            });
+        });
+
+        document.getElementById('cheeseSelect').addEventListener('change', updateReceipt);
+
+        document.querySelectorAll('.topping-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const isActive = this.classList.contains('active');
+                const currentActiveCount = document.querySelectorAll('.topping-card.active').length;
+
+                if (!isActive && currentActiveCount >= MAX_TOPPINGS) {
+                    alert('Bạn chỉ được chọn tối đa ' + MAX_TOPPINGS + ' topping thủ công!');
+                    return;
+                }
+
+                this.classList.toggle('active');
+                updateReceipt();
+            });
+        });
+
+        // Initial calculation
+        updateReceipt();
+
+        function toggleToppings(btn) {
+            const extraToppings = document.querySelectorAll('.extra-topping');
+            if (extraToppings.length === 0) return;
+            const isHidden = extraToppings[0].classList.contains('d-none');
+            if (isHidden) {
+                extraToppings.forEach(t => t.classList.remove('d-none'));
+                btn.innerHTML = `Thu gọn <span class="material-symbols-outlined" style="font-size:1.1rem;">expand_less</span>`;
+            } else {
+                extraToppings.forEach(t => t.classList.add('d-none'));
+                btn.innerHTML = `Xem thêm <span class="material-symbols-outlined" style="font-size:1.1rem;">expand_more</span>`;
+            }
+        }
+
+        function getCustomPizzaData() {
+            const activeSize = document.querySelector('.size-card.active');
+            const sizeName = activeSize ? activeSize.dataset.name : '';
+            const sizePrice = activeSize ? parseFloat(activeSize.dataset.price) : 0;
+
+            const activeCrust = document.querySelector('.crust-option.active');
+            const crustName = activeCrust ? activeCrust.dataset.name : '';
+            const crustPrice = activeCrust ? parseFloat(activeCrust.dataset.price) : 0;
+
+            const cheeseName = document.getElementById('cheeseSelect').value;
+
+            const activeToppings = document.querySelectorAll('.topping-card.active');
+            let toppingsTotal = 0;
+            const toppingNames = [];
+            activeToppings.forEach(t => {
+                toppingNames.push(t.dataset.name);
+                toppingsTotal += parseFloat(t.dataset.price);
+            });
+
+            const total = sizePrice + crustPrice + toppingsTotal;
+            let finalName = `Pizza Tự Chọn (${sizeName}, ${crustName}, ${cheeseName})`;
+            if(toppingNames.length > 0) finalName += ` + ${toppingNames.join(', ')}`;
+
+            return {
+                id: 'CUSTOM-' + Date.now(),
+                name: finalName,
+                price: total,
+                image: '/images/auth-bg.jpg', // Default image or fallback
+                quantity: 1
+            };
+        }
+
+        document.querySelector('.btn-cart-icon').addEventListener('click', function() {
+            const pizza = getCustomPizzaData();
+            if(window.PizzaCart) {
+                window.PizzaCart.addToCart(pizza);
+            }
+        });
+
+        document.querySelector('.btn-checkout').addEventListener('click', function() {
+            const pizza = getCustomPizzaData();
+            if(window.PizzaCart) {
+                const cart = window.PizzaCart.getCart();
+                cart.push(pizza);
+                window.PizzaCart.saveCart(cart);
+                window.location.href = '/Customer/Checkout';
+            }
+        });
+    </script>
+}

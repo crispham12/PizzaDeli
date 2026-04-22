@@ -14,13 +14,13 @@
     (string label, string cssClass) GetStatus(PizzaDeli.Models.Voucher v)
     {
         bool expired = v.ExpiryDate.HasValue && v.ExpiryDate < now;
-        if (!v.IsActive || expired) return ("Expired", "status-expired");
+        if (!v.IsActive || expired) return ("Hết hạn", "status-expired");
 
         // Còn trong vòng 7 ngày
         if (v.ExpiryDate.HasValue && (v.ExpiryDate.Value - now).TotalDays <= 7)
-            return ("Expiring soon", "status-expiring");
+            return ("Sắp hết hạn", "status-expiring");
 
-        return ("Active", "status-active");
+        return ("Hoạt động", "status-active");
     }
 
     string GetDiscountText(PizzaDeli.Models.Voucher v)
@@ -71,8 +71,8 @@
             @{
                 var tabs = new[] {
                     ("all",     "Tất cả"),
-                    ("active",  "Active"),
-                    ("expired", "Expired"),
+                    ("active",  "Hoạt động"),
+                    ("expired", "Hết hạn"),
                 };
             }
             @foreach (var (val, label) in tabs)

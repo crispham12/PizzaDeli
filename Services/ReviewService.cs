@@ -11,6 +11,10 @@ public class ReviewService
     public ReviewService(ApplicationDbContext db) => _db = db;
 
     // ---- Lấy bình luận theo sản phẩm ----
+    /// <summary>
+    /// Logic: Lấy danh sách bình luận của 1 sản phẩm
+    /// Cách hoạt động: Lấy các bình luận không bị ẩn (IsHidden = false), kèm theo thông tin User để hiển thị tên và avatar.
+    /// </summary>
     public async Task<List<Review>> GetByProductAsync(string productId)
         => await _db.Reviews
                     .Include(r => r.User)
@@ -25,6 +29,24 @@ public class ReviewService
                     .Include(r => r.Product)
                     .OrderByDescending(r => r.CreatedAt)
                     .ToListAsync();
+
+    public async Task<(List<Review> Reviews, int Total, double AverageRating, int PendingReplies)> GetStaffReviewsAsync(int ratingFilter)
+    {
+        var query = _db.Reviews.Include(r => r.User).Include(r => r.Product).AsQueryable();
+
+        var total = await query.CountAsync();
+        var average = total > 0 ? await query.AverageAsync(r => r.Rating) : 0.0;
+        var pending = await query.CountAsync(r => r.Rating <= 3 && string.IsNullOrEmpty(r.AdminReply));
+        
+        if (ratingFilter > 0)
+        {
+            if (ratingFilter == 2) query = query.Where(r => r.Rating <= 2);
+            else query = query.Where(r => r.Rating == ratingFilter);
+        }
+        
+        var reviews = await query.OrderByDescending(r => r.CreatedAt).ToListAsync();
+        return (reviews, total, average, pending);
+    }
 
     // ---- Customer: Thêm bình luận ----
     public async Task<Review> AddAsync(string userId, string productId, string comment, int rating)
@@ -43,12 +65,41 @@ public class ReviewService
         return review;
     }
 
-    // ---- Staff/Admin: Ẩn bình luận vi phạm ----
-    public async Task<bool> HideAsync(int reviewId)
+    /// <summary>
+    /// Logic: Lưu nhiều bình luận cùng lúc (Đánh giá sau khi mua hàng)
+    /// Cách hoạt động: Lặp qua mảng đánh giá được gửi từ Form để Add vào DbContext, sau đó SaveChanges 1 lần để tối ưu hiệu suất.
+    /// </summary>
+    public async Task<bool> AddMultipleAsync(string userId, IEnumerable<(string ProductId, int Rating, string Content)> reviews)
+    {
+        if (reviews == null || !reviews.Any()) return false;
+
+        foreach (var r in reviews)
+        {
+            var realId = r.ProductId.Contains("-") ? r.ProductId.Split('-')[0] : r.ProductId;
+            if (r.Rating < 1 || r.Rating > 5) continue;
+
+            var review = new Review
+            {
+                UserId = userId,
+                ProductId = realId,
+                Rating = r.Rating,
+                Comment = r.Content ?? "",
+                CreatedAt = DateTime.Now,
+                IsHidden = false
+            };
+            _db.Reviews.Add(review);
+        }
+
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    // ---- Staff/Admin: Toggle Ẩn/Hiện bình luận ----
+    public async Task<bool> ToggleVisibilityAsync(int reviewId)
     {
         var review = await _db.Reviews.FindAsync(reviewId);
         if (review == null) return false;
-        review.IsHidden = true;
+        review.IsHidden = !review.IsHidden;
         await _db.SaveChangesAsync();
         return true;
     }
@@ -59,6 +110,16 @@ public class ReviewService
         var review = await _db.Reviews.FindAsync(reviewId);
         if (review == null) return false;
         _db.Reviews.Remove(review);
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    // ---- Staff/Admin: Trả lời bình luận ----
+    public async Task<bool> ReplyAsync(int reviewId, string reply)
+    {
+        var review = await _db.Reviews.FindAsync(reviewId);
+        if (review == null) return false;
+        review.AdminReply = reply;
         await _db.SaveChangesAsync();
         return true;
     }

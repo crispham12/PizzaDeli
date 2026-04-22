@@ -1,0 +1,534 @@
+@model PizzaDeli.Models.PizzaComponent
+@{
+    ViewData["Title"] = "Chỉnh Sửa Thành Phần";
+    Layout = "_AdminLayout";
+}
+
+<style>
+    .cp-form-wrapper {
+        background-color: transparent;
+        min-height: calc(100vh - 80px);
+        padding: 0;
+        border-radius: 0;
+        font-family: 'Inter', sans-serif;
+    }
+    
+    .cp-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+    
+    .cp-header-left .subtitle {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #8c837f;zzz
+        font-weight: 800;
+        margin-bottom: 0.2rem;
+    }
+    
+    .cp-header-left h1 {
+        font-size: 2rem;
+        color: #4a2c22;
+        font-weight: 800;
+        margin: 0;
+        letter-spacing: -0.5px;
+    }
+    
+    .cp-header-right {
+        display: flex;
+        gap: 1rem;
+    }
+    
+    .cp-btn-cancel {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        color: #374151;
+        padding: 0.7rem 1.5rem;
+        border-radius: 99px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    
+    .cp-btn-cancel:hover {
+        background: #f9fafb;
+    }
+    
+    .cp-btn-save {
+        background: #4a2c22;
+        border: none;
+        color: #ffffff;
+        padding: 0.7rem 1.5rem;
+        border-radius: 99px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .cp-btn-save:hover {
+        background: #3e241c;
+    }
+    
+    .cp-grid {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 2rem;
+    }
+    
+    .cp-card {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+        margin-bottom: 2rem;
+    }
+    
+    .cp-card-title {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #1f2937;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .cp-card-title::before {
+        content: '';
+        display: inline-block;
+        width: 4px;
+        height: 16px;
+        background: #6b7280;
+        border-radius: 2px;
+    }
+    
+    .cp-form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .cp-label {
+        display: block;
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #6b7280;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+    }
+    
+    .cp-input {
+        width: 100%;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 1rem 1.2rem;
+        font-size: 0.95rem;
+        color: #1f2937;
+        font-weight: 500;
+        outline: none;
+        transition: all 0.2s;
+        box-sizing: border-box;
+    }
+    
+    .cp-input:focus {
+        background: #fff;
+        border-color: #5C3D2E;
+        box-shadow: 0 0 0 3px rgba(92, 61, 46, 0.1);
+    }
+    
+    .cp-input::placeholder {
+        color: #9ca3af;
+    }
+    
+    .cp-input:-webkit-autofill,
+    .cp-input:-webkit-autofill:hover, 
+    .cp-input:-webkit-autofill:focus, 
+    .cp-input:-webkit-autofill:active{
+        -webkit-box-shadow: 0 0 0 30px #f8f7f5 inset !important;
+        -webkit-text-fill-color: #1f2937 !important;
+        transition: background-color 5000s ease-in-out 0s;
+    }
+    
+    .input-with-icon {
+        position: relative;
+    }
+    
+    .input-with-icon .prefix {
+        position: absolute;
+        left: 1.2rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #4a2c22;
+        font-weight: 800;
+    }
+    
+    .input-with-icon .cp-input {
+        padding-left: 2.5rem;
+    }
+    
+    /* Inventory Slider Styles */
+    .inv-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .inv-badge {
+        background: #e5e7eb;
+        color: #374151;
+        padding: 0.3rem 0.8rem;
+        border-radius: 99px;
+        font-size: 0.75rem;
+        font-weight: 800;
+    }
+    
+    .inv-slider {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 6px;
+        border-radius: 3px;  
+        background: #f3f4f6;
+        outline: none;
+        margin-bottom: 0.5rem;
+    }
+    
+    .inv-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%; 
+        background: #6b7280;
+        cursor: pointer;
+        border: 2px solid #fff;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    .inv-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.65rem;
+        color: #9ca3af;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 2rem;
+    }
+    
+    .inv-boxes {
+        display: flex;
+        gap: 1rem;
+    }
+    
+    .inv-box {
+        flex: 1;
+        background: #f8f7f5;
+        border-radius: 12px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .inv-box-icon {
+        width: 36px;
+        height: 36px;
+        background: #ffffff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #4a2c22;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    
+    .inv-box-info .ib-label {
+        font-size: 0.6rem;
+        text-transform: uppercase;
+        color: #6b7280;
+        font-weight: 800;
+        margin-bottom: 0.2rem;
+    }
+    
+    .inv-box-info .ib-val {
+        font-size: 0.9rem;
+        font-weight: 800;
+        color: #111827;
+    }
+    
+    /* Publication Status */
+    .status-card {
+        padding: 2rem;
+    }
+    
+    .status-card .cp-label { text-align: center; margin-bottom: 1.5rem; }
+    
+    .status-option {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.5rem;
+        border-radius: 16px;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .status-option input[type="radio"] {
+        display: none;
+    }
+    
+    .status-option.active {
+        background: #4a2c22;
+        color: #ffffff;
+    }
+    
+    .status-option.inactive {
+        background: #f3f4f6;
+        color: #374151;
+    }
+    
+    .so-left {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+    
+    .so-left .material-symbols-outlined {
+        font-size: 1.2rem;
+    }
+    
+    .so-right {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #d1d5db;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .status-option.active .so-right {
+        background: #ffffff;
+        border-color: #ffffff;
+    }
+    
+    .status-hint {
+        font-size: 0.7rem;
+        color: #9ca3af;
+        text-align: center;
+        font-style: italic;
+        margin-top: 1.5rem;
+        line-height: 1.4;
+    }
+</style>
+
+<div class="cp-form-wrapper">
+    <form id="ingredientForm" asp-action="CustomPizzaEdit" method="post" enctype="multipart/form-data">
+        <input type="hidden" asp-for="Id" />
+        <div class="cp-header">
+            <div class="cp-header-left">
+                <div class="fph-breadcrumbs" style="margin-bottom: 0.5rem;">
+                    <a asp-action="Dashboard"><span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: text-bottom;">home</span> Trang chủ</a>
+                    <span>/</span>
+                    <a asp-action="CustomPizza">Thành phần pizza</a>
+                    <span>/</span>
+                    <span style="color: #111;">Chỉnh sửa thành phần</span>
+                </div>
+                <h1>Chỉnh Sửa Thành Phần</h1>
+            </div>
+            <div class="cp-header-right">
+                <a asp-action="CustomPizza" class="cp-btn-cancel">Hủy</a>
+                <button type="submit" class="cp-btn-save">Lưu Thay Đổi</button>
+            </div>
+        </div>
+
+        <div class="cp-grid">
+            <!-- Left Column -->
+            <div class="cp-col-left">
+                <!-- Core Details -->
+                <div class="cp-card">
+                    <div class="cp-card-title">Thông Tin Cơ Bản</div>
+                    
+                    <div class="cp-form-group">
+                        <label class="cp-label">TÊN THÀNH PHẦN</label>
+                        <input type="text" asp-for="Name" class="cp-input" placeholder="VD: Phô mai Mozzarella" required />
+                    </div>
+                    
+                    <div class="cp-form-group" style="display:none;">
+                        <!-- Thêm ComponentType ẩn tạm thời nếu không có trong thiết kế -->
+                        <select asp-for="ComponentType" class="cp-input">
+                            <option value="Base" selected="@(Model.ComponentType == "Base" ? "selected" : null)">Đế Pizza</option>
+                            <option value="Cheese" selected="@(Model.ComponentType == "Cheese" ? "selected" : null)">Phô mai</option>
+                            <option value="Topping" selected="@(Model.ComponentType == "Topping" ? "selected" : null)">Topping</option>
+                        </select>
+                    </div>
+
+                    <div class="cp-form-group">
+                        <label class="cp-label">GIÁ CƠ BẢN (VNĐ)</label>
+                        <div class="input-with-icon">
+                            <span class="prefix">₫</span>
+                            <input type="text" id="priceDisplay" class="cp-input" placeholder="0" inputmode="numeric" required value="@Model.Price.ToString("N0", new System.Globalization.CultureInfo("vi-VN"))" />
+                            <input type="hidden" name="Price" id="priceHidden" value="@Model.Price.ToString("0")" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inventory Management -->
+                <div class="cp-card">
+                    <div class="cp-card-title">Quản Lý Tồn Kho</div>
+                    
+                    <div class="inv-header">
+                        <label class="cp-label" style="margin:0;">SỐ LƯỢNG HIỆN TẠI</label>
+                        <div class="inv-badge" id="stockBadge">@Model.Stock Đơn vị</div>
+                    </div>
+                    
+                    <input type="range" name="Stock" class="inv-slider" min="0" max="200" value="@Model.Stock" id="stockSlider" />
+                    
+                    <div class="inv-labels">
+                        <span>SẮP HẾT</span>
+                        <span>DƯ THỪA</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="cp-col-right">
+                <!-- Publication Status -->
+                <div class="cp-card status-card">
+                    <label class="cp-label">TRẠNG THÁI HIỂN THỊ</label>
+                    
+                    <label class="status-option @(Model.IsAvailable ? "active" : "inactive")" id="optActive">
+                        <input type="radio" name="IsAvailable" value="true" @(Model.IsAvailable ? "checked" : "") onchange="updateStatusUI()" />
+                        <div class="so-left">
+                            <span class="material-symbols-outlined">check_circle</span> Hoạt động
+                        </div>
+                        <div class="so-right"></div>
+                    </label>
+                    
+                    <label class="status-option @(Model.IsAvailable ? "inactive" : "active")" id="optInactive">
+                        <input type="radio" name="IsAvailable" value="false" @(!Model.IsAvailable ? "checked" : "") onchange="updateStatusUI()" />
+                        <div class="so-left">
+                            <span class="material-symbols-outlined">pause_circle</span> Ngừng bán
+                        </div>
+                        <div class="so-right"></div>
+                    </label>
+                    
+                    <div class="status-hint">
+                        Thành phần ngừng bán sẽ bị ẩn khỏi giao diện chọn món của khách hàng.
+                    </div>
+                </div>
+
+                <!-- Hình Ảnh -->
+                <div class="cp-card">
+                    <div class="cp-card-title">Hình ảnh</div>
+                    
+                    <div class="img-dropzone" onclick="document.getElementById('uploadImage').click()">
+                        <span class="material-symbols-outlined dz-icon">cloud_upload</span>
+                        <h4>Click để tải ảnh lên</h4>
+                        <p>PNG, JPG (Tối đa 5MB)</p>
+                        <input type="file" id="uploadImage" name="uploadImage" accept="image/png, image/jpeg" style="display:none;" onchange="previewFile(this)" />
+                    </div>
+
+                    <div id="filePreviewArea" class="file-preview-card" style="@(!string.IsNullOrEmpty(Model.ImageUrl) ? "display:flex;" : "display:none;")">
+                        <div class="fpc-left">
+                            <img id="fpcThumb" src="@Model.ImageUrl" class="fpc-thumb" alt="Preview" />
+                            <div class="fpc-info">
+                                <span class="fpc-name" id="fpcName">@(string.IsNullOrEmpty(Model.ImageUrl) ? "preview.jpg" : System.IO.Path.GetFileName(Model.ImageUrl))</span>
+                                <span class="fpc-size" id="fpcSize"></span>
+                            </div>
+                        </div>
+                        <button type="button" class="fpc-del" onclick="removePreview()">
+                            <span class="material-symbols-outlined">delete</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+    // Price formatting
+    var priceDisplay = document.getElementById('priceDisplay');
+    var priceHidden  = document.getElementById('priceHidden');
+
+    priceDisplay.addEventListener('input', function () {
+        var raw = this.value.replace(/\D/g, '');
+        var formatted = raw.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        this.value = formatted;
+        priceHidden.value = raw || 0;
+    });
+
+    document.getElementById('ingredientForm').addEventListener('submit', function (e) {
+        var raw = priceDisplay.value.replace(/\D/g, '');
+        if (!raw) {
+            priceHidden.value = 0;
+        } else {
+            priceHidden.value = raw;
+        }
+    });
+
+    // Stock slider
+    var stockSlider = document.getElementById('stockSlider');
+    var stockBadge = document.getElementById('stockBadge');
+    stockSlider.addEventListener('input', function() {
+        stockBadge.textContent = this.value + ' Đơn vị';
+    });
+
+    // Publication Status UI
+    function updateStatusUI() {
+        var radios = document.getElementsByName('IsAvailable');
+        var optActive = document.getElementById('optActive');
+        var optInactive = document.getElementById('optInactive');
+        
+        for(var i = 0; i < radios.length; i++) {
+            if(radios[i].checked) {
+                if(radios[i].value === 'true') {
+                    optActive.className = "status-option active";
+                    optInactive.className = "status-option inactive";
+                } else {
+                    optActive.className = "status-option inactive";
+                    optInactive.className = "status-option active";
+                }
+            }
+        }
+    }
+
+    // Image Upload Preview
+    function previewFile(input) {
+        if (input.files && input.files[0]) {
+            var file = input.files[0];
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                document.getElementById('filePreviewArea').style.display = 'flex';
+                document.getElementById('fpcThumb').src = e.target.result;
+                document.getElementById('fpcName').textContent = file.name;
+                var sizeKB = file.size / 1024;
+                if (sizeKB > 1024) {
+                    document.getElementById('fpcSize').textContent = (sizeKB / 1024).toFixed(1) + ' MB';
+                } else {
+                    document.getElementById('fpcSize').textContent = sizeKB.toFixed(1) + ' KB';
+                }
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+    
+    function removePreview() {
+        document.getElementById('uploadImage').value = "";
+        document.getElementById('filePreviewArea').style.display = 'none';
+        document.getElementById('fpcThumb').src = "";
+    }
+</script>
+}

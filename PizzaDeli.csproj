@@ -18,6 +18,18 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="temp_backup\**" />
+    <Content Remove="temp_backup\**" />
+    <EmbeddedResource Remove="temp_backup\**" />
+    <None Remove="temp_backup\**" />
+    <Compile Remove="PizzaDeli.Tests\**" />
+    <Content Remove="PizzaDeli.Tests\**" />
+    <EmbeddedResource Remove="PizzaDeli.Tests\**" />
+    <None Remove="PizzaDeli.Tests\**" />
   </ItemGroup>
 
 </Project>

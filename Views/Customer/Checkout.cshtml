@@ -263,52 +263,17 @@
                             
                             <!-- Custom Tabs Ngang -->
                             <div class="payment-tabs">
-                                <div class="payment-tab active" data-target="panel-card">Thẻ tín dụng/ghi nợ</div>
-                                <div class="payment-tab" data-target="panel-bank">Chuyển khoản QR</div>
+                                <div class="payment-tab active" data-target="panel-bank">Chuyển khoản QR</div>
                                 <div class="payment-tab" data-target="panel-cod">Tiền mặt (COD)</div>
                             </div>
 
                             <!-- Input Ẩn Giá Trị Thực Để Gửi Lên Server -->
-                            <input type="hidden" name="paymentMethod" id="mainPaymentMethod" value="card">
+                            <input type="hidden" name="paymentMethod" id="mainPaymentMethod" value="bank">
 
                             <!-- Form Tabs (Giả Lập) -->
                             <div class="payment-panels">
-                                <!-- Panel: Card -->
-                                <div class="payment-panel active" id="panel-card">
-                                    <div class="form-grid">
-                                        <div class="form-group full-width">
-                                            <label>Tên chủ thẻ</label>
-                                            <input type="text" id="card-name" class="form-control" placeholder="VD: NGUYEN VAN A">
-                                            <span class="field-error" id="err-card-name"></span>
-                                        </div>
-                                        <div class="form-group full-width">
-                                            <label>Số thẻ</label>
-                                            <!-- Icon input fake -->
-                                            <div style="position: relative;">
-                                                <input type="text" id="card-number" class="form-control" placeholder="0000 0000 0000 0000">
-                                                <span class="material-symbols-outlined" style="position:absolute; right: 1rem; top:0.75rem; color:#94a3b8;">credit_card</span>
-                                            </div>
-                                            <span class="field-error" id="err-card-number"></span>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Ngày hết hạn</label>
-                                            <input type="text" id="card-expiry" class="form-control" placeholder="MM / YY">
-                                            <span class="field-error" id="err-card-expiry"></span>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Mã CVV</label>
-                                            <input type="text" id="card-cvv" class="form-control" placeholder="123">
-                                            <span class="field-error" id="err-card-cvv"></span>
-                                        </div>
-                                    </div>
-                                    <div style="margin-top:2rem; padding: 1rem; background: #f8fafc; border-radius: var(--radius); display:flex; gap: 1rem; color: var(--slate-500); font-size:0.75rem;">
-                                        <span class="material-symbols-outlined" style="color:#64748b;">shield</span>
-                                        <p>Thông tin thẻ của bạn được mã hóa và xử lý qua cổng thanh toán bảo mật. Chúng tôi không lưu trữ thông tin thẻ đầy đủ trên hệ thống.</p>
-                                    </div>
-                                </div>
-
                                 <!-- Panel: Bank / QR SePay -->
-                                <div class="payment-panel" id="panel-bank">
+                                <div class="payment-panel active" id="panel-bank">
                                     <div style="border:1.5px solid #5C3D2E33; border-radius:16px; background:linear-gradient(135deg,#fdf6f0 0%,#f5ebe0 100%); overflow:hidden;">
                                         <div style="background:#5C3D2E; padding:0.75rem 1.25rem; display:flex; align-items:center; gap:0.6rem;">
                                             <span class="material-symbols-outlined" style="color:#fff; font-size:1.25rem;">qr_code_2</span>
@@ -550,9 +515,9 @@
 
         // Dữ liệu hồ sơ người dùng (từ server)
         const USER_PROFILE = {
-            fullName : '@Html.Raw(ViewBag.UserFullName ?? "")',
-            phone    : '@Html.Raw(ViewBag.UserPhone    ?? "")',
-            address  : '@Html.Raw(ViewBag.UserAddress  ?? "")'
+            fullName : @Html.Raw(System.Text.Json.JsonSerializer.Serialize((string?)ViewBag.UserFullName ?? "")),
+            phone    : @Html.Raw(System.Text.Json.JsonSerializer.Serialize((string?)ViewBag.UserPhone ?? "")),
+            address  : @Html.Raw(System.Text.Json.JsonSerializer.Serialize((string?)ViewBag.UserAddress ?? ""))
         };
 
         function autofillFromProfile() {
@@ -595,6 +560,7 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             renderCheckoutItems();
+            setTimeout(renderCheckoutItems, 150);
 
             // Tabs Logic
             const tabs = document.querySelectorAll('.payment-tab');
@@ -608,15 +574,16 @@
 
                     tab.classList.add('active');
                     const target = tab.dataset.target;
-                    document.getElementById(target).classList.add('active');
+                    const targetPanel = document.getElementById(target);
+                    if (targetPanel) targetPanel.classList.add('active');
 
                     // Map giá trị gửi lên server
-                    if (target === 'panel-card') mainPaymentInput.value = 'card';
                     if (target === 'panel-bank') mainPaymentInput.value = 'bank';
                     if (target === 'panel-cod')  mainPaymentInput.value = 'cod';
                 });
             });
         });
+        window.addEventListener('load', renderCheckoutItems);
 
 
 
@@ -855,16 +822,26 @@
             window.location.href = '/?addmore=1' + modeQuery;
         }
 
+        function getClientCartItems() {
+            if (window.PizzaCart && typeof window.PizzaCart.getCart === 'function') {
+                return window.PizzaCart.getCart() || [];
+            }
+            try {
+                const raw = window.localStorage.getItem('pizzadeli_cart');
+                const parsed = raw ? JSON.parse(raw) : [];
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
+        }
+
         function renderCheckoutItems() {
             const container = document.getElementById('checkoutItemsList');
+            if (!container) return;
 
             // Load items from cart
             if (!isBuyNowCheckout) {
-                if(!window.PizzaCart) {
-                    container.innerHTML = '<p>Không thể tải giỏ hàng.</p>';
-                    return;
-                }
-                CHECKOUT_ITEMS = window.PizzaCart.getCart();
+                CHECKOUT_ITEMS = getClientCartItems();
             }
 
             if (CHECKOUT_ITEMS.length === 0) {
@@ -935,7 +912,7 @@
             // Lấy subtotal từ CHECKOUT_ITEMS (hoạt động cả chế độ cart lẫn buynow)
             let subtotal = 0;
             const srcItems = CHECKOUT_ITEMS.length > 0 ? CHECKOUT_ITEMS
-                           : (window.PizzaCart ? window.PizzaCart.getCart() : []);
+                           : getClientCartItems();
             srcItems.forEach(item => {
                 subtotal += (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1);
             });
@@ -969,8 +946,6 @@
         }
 
         async function submitOrder() {
-            if(!window.PizzaCart) return;
-
             // Lấy items theo mode
             const cart = CHECKOUT_ITEMS;
             const orderMsg = document.getElementById('orderSubmitMessage');
@@ -985,36 +960,6 @@
             }
             tempReviewItems = [...cart]; // Lưu lại cho bước 3
 
-
-            // Validate card fields nếu đang ở tab Card
-            const paymentMode = document.getElementById('mainPaymentMethod')?.value || '';
-            if (paymentMode === 'card') {
-                const cardFields = [
-                    { id: 'card-name',   errId: 'err-card-name',   msg: 'Vui lòng nhập tên chủ thẻ.' },
-                    { id: 'card-number', errId: 'err-card-number', msg: 'Vui lòng nhập số thẻ.' },
-                    { id: 'card-expiry', errId: 'err-card-expiry', msg: 'Vui lòng nhập ngày hết hạn.' },
-                    { id: 'card-cvv',    errId: 'err-card-cvv',    msg: 'Vui lòng nhập CVV.' },
-                ];
-                let cardError = false;
-                // Xóa lỗi cũ trước
-                cardFields.forEach(f => {
-                    const el = document.getElementById(f.id);
-                    if (el) clearFieldError(el, f.errId);
-                });
-                // Validate ngược lại để lỗi đầu tiên được focus
-                [...cardFields].reverse().forEach(f => {
-                    const el = document.getElementById(f.id);
-                    if (el && !el.value.trim()) {
-                        showFieldError(el, f.errId, f.msg);
-                        cardError = true;
-                    }
-                });
-                if (cardError) {
-                    const firstErr = document.querySelector('#panel-card .input-error');
-                    if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    return;
-                }
-            }
 
             // Gom địa chỉ giao hàng
             const fullName = document.getElementById('fullName')?.value || '';

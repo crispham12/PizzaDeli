@@ -20,8 +20,9 @@
 
     var st = GetStatus(Model.Status);
     var shortId = "#ORD-" + Model.Id.Substring(0, 8).ToUpper();
-    var canConfirm = Model.Status == "Pending" || Model.Status == "Chờ xử lý" || Model.Status == "Confirmed" || Model.Status == "Đã xác nhận";
-    var canCancel  = Model.Status != "Đã hủy" && Model.Status != "Cancelled" && Model.Status != "Đã hoàn thành" && Model.Status != "Completed";
+    var canConfirm = Model.Status == "Pending" || Model.Status == "Chờ xử lý";
+    var canStartProcessing = Model.Status == "Confirmed" || Model.Status == "Đã xác nhận";
+    var canCancel  = Model.Status == "Pending" || Model.Status == "Chờ xử lý";
 }
 
 <style>
@@ -329,9 +330,20 @@
                 <form asp-action="UpdateOrderStatus" method="post" style="margin:0;">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="id" value="@Model.Id" />
-                    <input type="hidden" name="status" value="Đang giao hàng" />
+                    <input type="hidden" name="status" value="Confirmed" />
                     <button type="submit" class="od-btn od-btn-primary">
-                        <span class="material-symbols-outlined" style="font-size:18px;">local_shipping</span> Xác nhận giao hàng
+                        <span class="material-symbols-outlined" style="font-size:18px;">check_circle</span> Xác nhận đơn hàng
+                    </button>
+                </form>
+            }
+            @if (canStartProcessing)
+            {
+                <form asp-action="UpdateOrderStatus" method="post" style="margin:0;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="status" value="Processing" />
+                    <button type="submit" class="od-btn od-btn-primary">
+                        <span class="material-symbols-outlined" style="font-size:18px;">restaurant</span> Chuyển sang chế biến
                     </button>
                 </form>
             }

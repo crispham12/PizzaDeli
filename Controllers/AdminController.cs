@@ -10,13 +10,15 @@ namespace PizzaDeli.Controllers;
 /// <summary>Admin: Thống kê, Quản lý sản phẩm/đơn hàng/danh mục/tài khoản/nhân viên/khuyến mãi</summary>
 public class AdminController : BaseController
 {
-    private readonly ApplicationDbContext _db;
+    private readonly DashboardService _dashboard;
+    private readonly AdminService _admin;
     private readonly IWebHostEnvironment _webHostEnvironment;
     private readonly AiIntegratorService _aiService;
 
-    public AdminController(ApplicationDbContext db, IWebHostEnvironment webHostEnvironment, AiIntegratorService aiService)
+    public AdminController(DashboardService dashboard, AdminService admin, IWebHostEnvironment webHostEnvironment, AiIntegratorService aiService)
     {
-        _db = db;
+        _dashboard = dashboard;
+        _admin = admin;
         _webHostEnvironment = webHostEnvironment;
         _aiService = aiService;
     }
@@ -29,50 +31,22 @@ public class AdminController : BaseController
     {
         var g = Guard(); if (g != null) return g;
 
-        var today = DateTime.Today;
-        var thisMonth = new DateTime(today.Year, today.Month, 1);
-        var now = DateTime.Now;
-
-        // Stat cards
-        ViewBag.TotalOrders   = await _db.Orders.CountAsync();
-        ViewBag.RevenueToday  = await _db.Orders
-            .Where(o => o.OrderDate.Date == today && o.Status == "Completed")
-            .SumAsync(o => (decimal?)o.FinalAmount) ?? 0;
-        ViewBag.TotalProducts = await _db.Products.CountAsync();
-        ViewBag.TotalCustomers = await _db.Users.CountAsync(u => u.Role == UserRole.Customer);
-
-        // Tổng quan - Đơn hàng tháng này
-        ViewBag.OrdersThisMonth = await _db.Orders
-            .CountAsync(o => o.OrderDate >= thisMonth);
-
-        // Doanh thu tháng này
-        ViewBag.RevenueThisMonth = await _db.Orders
-            .Where(o => o.OrderDate >= thisMonth && o.Status == "Completed")
-            .SumAsync(o => (decimal?)o.FinalAmount) ?? 0;
-
-        // Trạng thái đơn hàng
-        ViewBag.OrdersPending   = await _db.Orders.CountAsync(o => o.Status == "Pending");
-        ViewBag.OrdersDelivering = await _db.Orders.CountAsync(o => o.Status == "Delivering");
-        ViewBag.OrdersCompleted = await _db.Orders.CountAsync(o => o.Status == "Completed");
-
-        // Sản phẩm theo danh mục
-        ViewBag.Categories = await _db.Categories
-            .Where(c => c.IsActive)
-            .Select(c => new { c.Name, Count = c.Products.Count })
-            .Take(3)
-            .ToListAsync();
-
-        // Nhân viên theo role  
-        ViewBag.AdminCount = await _db.Users.CountAsync(u => u.Role == UserRole.Admin);
-        ViewBag.StaffCount = await _db.Users.CountAsync(u => u.Role == UserRole.Staff);
-
-        // Voucher đang chạy
-        ViewBag.ActiveVouchers = await _db.Vouchers
-            .Where(v => v.IsActive && (v.ExpiryDate == null || v.ExpiryDate >= now))
-            .OrderByDescending(v => v.Id)
-            .ToListAsync();
-        // Giữ lại ActiveVoucher để tương thích ngược (lấy cái đầu tiên)
-        ViewBag.ActiveVoucher = (ViewBag.ActiveVouchers as IEnumerable<PizzaDeli.Models.Voucher>)?.FirstOrDefault();
+        var stats = await _dashboard.GetDashboardStatsAsync();
+        
+        ViewBag.TotalOrders = stats.totalOrders;
+        ViewBag.RevenueToday = stats.revenueToday;
+        ViewBag.TotalProducts = stats.totalProducts;
+        ViewBag.TotalCustomers = stats.totalCustomers;
+        ViewBag.OrdersThisMonth = stats.ordersThisMonth;
+        ViewBag.RevenueThisMonth = stats.revenueThisMonth;
+        ViewBag.OrdersPending = stats.ordersPending;
+        ViewBag.OrdersDelivering = stats.ordersDelivering;
+        ViewBag.OrdersCompleted = stats.ordersCompleted;
+        ViewBag.Categories = stats.categories;
+        ViewBag.AdminCount = stats.adminCount;
+        ViewBag.StaffCount = stats.staffCount;
+        ViewBag.ActiveVouchers = stats.activeVouchers;
+        ViewBag.ActiveVoucher = stats.activeVoucher;
 
         return View();
     }
@@ -82,99 +56,21 @@ public class AdminController : BaseController
     {
         var g = Guard(); if (g != null) return g;
 
-        var today = DateTime.Today;
-        var thisMonthStart = new DateTime(today.Year, today.Month, 1);
-        var lastMonthStart = thisMonthStart.AddMonths(-1);
-        var lastMonthEnd   = thisMonthStart; // exclusive
+        var stats = await _dashboard.GetStatisticsAsync();
 
-        // Hàm tính % thay đổi
-        static decimal CalcPct(decimal current, decimal prev)
-            => prev == 0 ? (current > 0 ? 100m : 0m) : Math.Round((current - prev) / prev * 100, 1);
-
-        // ---- Doanh thu ----
-        decimal revThis = await _db.Orders
-            .Where(o => o.Status == "Completed" && o.OrderDate >= thisMonthStart)
-            .SumAsync(o => (decimal?)o.FinalAmount) ?? 0;
-        decimal revLast = await _db.Orders
-            .Where(o => o.Status == "Completed" && o.OrderDate >= lastMonthStart && o.OrderDate < lastMonthEnd)
-            .SumAsync(o => (decimal?)o.FinalAmount) ?? 0;
-        decimal revTotal = await _db.Orders
-            .Where(o => o.Status == "Completed")
-            .SumAsync(o => (decimal?)o.FinalAmount) ?? 0;
-        ViewBag.StatsRevenue    = revTotal;
-        ViewBag.StatRevenuePct  = CalcPct(revThis, revLast);
-
-        // ---- Đơn hàng ----
-        int ordThis  = await _db.Orders.CountAsync(o => o.OrderDate >= thisMonthStart);
-        int ordLast  = await _db.Orders.CountAsync(o => o.OrderDate >= lastMonthStart && o.OrderDate < lastMonthEnd);
-        int ordTotal = await _db.Orders.CountAsync();
-        ViewBag.StatsOrders    = ordTotal;
-        ViewBag.StatOrdersPct  = CalcPct(ordThis, ordLast);
-
-        // ---- AOV (Giá trị TB đơn) ----
-        decimal aovThis = ordThis > 0
-            ? (await _db.Orders.Where(o => o.Status == "Completed" && o.OrderDate >= thisMonthStart).SumAsync(o => (decimal?)o.FinalAmount) ?? 0) / ordThis
-            : 0;
-        decimal aovLast = ordLast > 0
-            ? revLast / ordLast
-            : 0;
-        ViewBag.StatsAOV    = ordTotal > 0 ? (revTotal / ordTotal) : 0;
-        ViewBag.StatAOVPct  = CalcPct(aovThis, aovLast);
-
-        // ---- Khách hàng ----
-        int cusThis  = await _db.Users.CountAsync(u => u.Role == UserRole.Customer && u.CreatedAt >= thisMonthStart);
-        int cusLast  = await _db.Users.CountAsync(u => u.Role == UserRole.Customer && u.CreatedAt >= lastMonthStart && u.CreatedAt < lastMonthEnd);
-        int cusTotal = await _db.Users.CountAsync(u => u.Role == UserRole.Customer);
-        ViewBag.StatsCustomers   = cusTotal;
-        ViewBag.StatCustomersPct = CalcPct(cusThis, cusLast);
-
-        // Doanh thu 7 ngày qua (cho line chart)
-        var last7Days = Enumerable.Range(0, 7)
-            .Select(i => today.AddDays(-6 + i))
-            .ToList();
-        var revenueRaw = await _db.Orders
-            .Where(o => o.Status == "Completed" && o.OrderDate.Date >= today.AddDays(-6))
-            .GroupBy(o => o.OrderDate.Date)
-            .Select(g => new { Date = g.Key, Total = g.Sum(o => o.FinalAmount) })
-            .ToListAsync();
-        var revenueByDay = last7Days.Select(d => new {
-            Label = d.DayOfWeek == DayOfWeek.Sunday ? "CN" : "Thứ " + ((int)d.DayOfWeek + 1),
-            Value = revenueRaw.FirstOrDefault(r => r.Date == d)?.Total ?? 0
-        }).ToList();
-        ViewBag.ChartLabels = System.Text.Json.JsonSerializer.Serialize(revenueByDay.Select(r => r.Label).ToList());
-        ViewBag.ChartValues = System.Text.Json.JsonSerializer.Serialize(revenueByDay.Select(r => r.Value).ToList());
-
-        // Doanh thu theo danh mục (donut chart)
-        var catRevenue = await _db.OrderDetails
-            .Where(od => od.Order!.Status == "Completed")
-            .GroupBy(od => od.Product!.Category!.Name)
-            .Select(g => new { Name = g.Key ?? "Khác", Total = g.Sum(od => od.UnitPrice * od.Quantity) })
-            .OrderByDescending(x => x.Total)
-            .Take(5)
-            .ToListAsync();
-        ViewBag.DonutLabels = System.Text.Json.JsonSerializer.Serialize(catRevenue.Select(c => c.Name).ToList());
-        ViewBag.DonutValues = System.Text.Json.JsonSerializer.Serialize(catRevenue.Select(c => c.Total).ToList());
-
-        // Sản phẩm bán chạy
-        ViewBag.TopProducts = await _db.OrderDetails
-            .Where(od => od.Order!.Status == "Completed")
-            .GroupBy(od => new { 
-                od.ProductId, 
-                ProductName = od.Product!.Name, 
-                od.Product.ImageUrl, 
-                CategoryName = od.Product.Category!.Name 
-            })
-            .Select(g => new {
-                g.Key.ProductId,
-                Name     = g.Key.ProductName,
-                g.Key.ImageUrl,
-                Category = g.Key.CategoryName,
-                Sold     = g.Sum(x => x.Quantity),
-                Revenue  = g.Sum(x => x.UnitPrice * x.Quantity)
-            })
-            .OrderByDescending(x => x.Sold)
-            .Take(5)
-            .ToListAsync();
+        ViewBag.StatsRevenue = stats.StatsRevenue;
+        ViewBag.StatRevenuePct = stats.StatRevenuePct;
+        ViewBag.StatsOrders = stats.StatsOrders;
+        ViewBag.StatOrdersPct = stats.StatOrdersPct;
+        ViewBag.StatsAOV = stats.StatsAOV;
+        ViewBag.StatAOVPct = stats.StatAOVPct;
+        ViewBag.StatsCustomers = stats.StatsCustomers;
+        ViewBag.StatCustomersPct = stats.StatCustomersPct;
+        ViewBag.ChartLabels = stats.ChartLabels;
+        ViewBag.ChartValues = stats.ChartValues;
+        ViewBag.DonutLabels = stats.DonutLabels;
+        ViewBag.DonutValues = stats.DonutValues;
+        ViewBag.TopProducts = stats.TopProducts;
 
         return View();
     }
@@ -187,38 +83,16 @@ public class AdminController : BaseController
     {
         var g = Guard(); if (g != null) return g;
 
-        var query = _db.Products
-            .Include(p => p.Category)
-            .Where(p => p.Category != null && p.Category.IsActive)  // Ẩn sản phẩm thuộc danh mục inactive
-            .AsQueryable();
-
-        // Lọc theo từ khóa
-        if (!string.IsNullOrEmpty(searchQuery))
-        {
-            query = query.Where(p => p.Name.Contains(searchQuery) || p.Id.Contains(searchQuery));
-            ViewBag.SearchQuery = searchQuery;
-        }
-
-        // Lọc theo danh mục
-        if (categoryId.HasValue)
-        {
-            query = query.Where(p => p.CategoryId == categoryId.Value);
-            ViewBag.CurrentCategory = categoryId.Value;
-        }
-
-        // Phân trang đơn giản
         int pageSize = 10;
-        int totalProducts = await query.CountAsync();
-        var products = await query.OrderByDescending(p => p.CreatedAt)
-                                  .Skip((page - 1) * pageSize)
-                                  .Take(pageSize)
-                                  .ToListAsync();
+        var (products, totalProducts, categories) = await _admin.GetProductsPagedAsync(searchQuery, categoryId, page, pageSize);
+
+        if (!string.IsNullOrEmpty(searchQuery)) ViewBag.SearchQuery = searchQuery;
+        if (categoryId.HasValue) ViewBag.CurrentCategory = categoryId.Value;
 
         ViewBag.TotalProducts = totalProducts;
         ViewBag.CurrentPage = page;
         ViewBag.TotalPages = (int)Math.Ceiling(totalProducts / (double)pageSize);
-        // Chỉ lấy danh mục active cho tabs lọc
-        ViewBag.Categories = await _db.Categories.Where(c => c.IsActive).ToListAsync();
+        ViewBag.Categories = categories;
 
         return View(products);
     }
@@ -228,28 +102,11 @@ public class AdminController : BaseController
     {
         var g = Guard(); if (g != null) return g;
 
-        var query = _db.Toppings.AsQueryable();
-
-        // Lọc theo từ khóa
-        if (!string.IsNullOrEmpty(searchQuery))
-        {
-            query = query.Where(p => p.Name.Contains(searchQuery) || p.Id.Contains(searchQuery));
-            ViewBag.SearchQuery = searchQuery;
-        }
-
-        // Lọc theo trạng thái
-        if (status == "active") query = query.Where(p => p.IsAvailable);
-        else if (status == "inactive") query = query.Where(p => !p.IsAvailable);
-        ViewBag.CurrentStatus = status;
-
-        // Phân trang đơn giản
         int pageSize = 10;
-        int totalProducts = await query.CountAsync();
-        var products = await query.OrderByDescending(p => p.CreatedAt)
-                                  .Skip((page - 1) * pageSize)
-                                  .Take(pageSize)
-                                  .ToListAsync();
+        var (products, totalProducts) = await _admin.GetToppingsPagedAsync(searchQuery, status, page, pageSize);
 
+        if (!string.IsNullOrEmpty(searchQuery)) ViewBag.SearchQuery = searchQuery;
+        ViewBag.CurrentStatus = status;
         ViewBag.TotalProducts = totalProducts;
         ViewBag.CurrentPage = page;
         ViewBag.TotalPages = (int)Math.Ceiling(totalProducts / (double)pageSize);
@@ -257,12 +114,139 @@ public class AdminController : BaseController
         return View(products);
     }
 
+    // 1.2 Quản lý Custom Pizza Components
+    public async Task<IActionResult> CustomPizza(string searchQuery = "", string status = "all", int page = 1)
+    {
+        var g = Guard(); if (g != null) return g;
+
+        int pageSize = 10;
+        var (products, totalProducts) = await _admin.GetComponentsPagedAsync(searchQuery, status, page, pageSize);
+
+        if (!string.IsNullOrEmpty(searchQuery)) ViewBag.SearchQuery = searchQuery;
+        ViewBag.CurrentStatus = status;
+        ViewBag.TotalProducts = totalProducts;
+        ViewBag.CurrentPage = page;
+        ViewBag.TotalPages = (int)Math.Ceiling(totalProducts / (double)pageSize);
+
+        return View(products);
+    }
+
+    public IActionResult CustomPizzaCreate()  
+    { 
+        var g = Guard(); if (g != null) return g; 
+        return View(new PizzaComponent()); 
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CustomPizzaCreate(PizzaComponent model, IFormFile? uploadImage)
+    {
+        var g = Guard(); if (g != null) return g;
+
+        if (ModelState.IsValid)
+        {
+            if (uploadImage != null && uploadImage.Length > 0)
+            {
+                string uploadDir = Path.Combine(_webHostEnvironment.WebRootPath, "images", "components");
+                Directory.CreateDirectory(uploadDir);
+
+                string fileName = Guid.NewGuid().ToString() + Path.GetExtension(uploadImage.FileName);
+                string filePath = Path.Combine(uploadDir, fileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await uploadImage.CopyToAsync(fileStream);
+                }
+                model.ImageUrl = "/images/components/" + fileName;
+            }
+
+            model.CreatedAt = DateTime.Now;
+            if (string.IsNullOrEmpty(model.Id)) model.Id = Guid.NewGuid().ToString("N");
+            _admin.Add(model);
+            await _admin.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Thành phần đã được tạo thành công!";
+            return RedirectToAction(nameof(CustomPizza));
+        }
+
+        return View(model);
+    }
+
+    public async Task<IActionResult> CustomPizzaEdit(string id) 
+    { 
+        var g = Guard(); if (g != null) return g; 
+
+        var comp = await _admin.FindAsync<PizzaComponent>(id);
+        if (comp == null) return NotFound();
+
+        return View(comp); 
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CustomPizzaEdit(PizzaComponent model, IFormFile? uploadImage)
+    {
+        var g = Guard(); if (g != null) return g;
+
+        if (ModelState.IsValid)
+        {
+            var p = await _admin.FindAsync<PizzaComponent>(model.Id);
+            if (p == null) return NotFound();
+
+            p.Name = model.Name;
+            p.Price = model.Price;
+            p.ComponentType = model.ComponentType;
+            p.IsAvailable = model.IsAvailable;
+            p.Stock = model.Stock;
+            p.UpdatedAt = DateTime.UtcNow;
+            
+            if (uploadImage != null && uploadImage.Length > 0)
+            {
+                string uploadDir = Path.Combine(_webHostEnvironment.WebRootPath, "images", "components");
+                Directory.CreateDirectory(uploadDir);
+
+                string fileName = Guid.NewGuid().ToString() + Path.GetExtension(uploadImage.FileName);
+                string filePath = Path.Combine(uploadDir, fileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await uploadImage.CopyToAsync(fileStream);
+                }
+                p.ImageUrl = "/images/components/" + fileName;
+            }
+
+            _admin.Update(p);
+            await _admin.SaveChangesAsync();
+            
+            TempData["SuccessMessage"] = "Cập nhật thành phần thành công!";
+            return RedirectToAction(nameof(CustomPizza));
+        }
+        
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CustomPizzaDelete(string id)
+    {
+        var g = Guard(); if (g != null) return g;
+
+        var comp = await _admin.FindAsync<PizzaComponent>(id);
+        if (comp != null)
+        {
+            _admin.Remove(comp);
+            await _admin.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Đã xóa thành phần!";
+        }
+        return RedirectToAction(nameof(CustomPizza));
+    }
+
     // 2. Tải Form tạo sản phẩm
     public async Task<IActionResult> ProductCreate()  
     { 
         var g = Guard(); if (g != null) return g; 
-        ViewBag.Categories = await _db.Categories.Where(c => c.IsActive).ToListAsync(); // Chỉ danh mục active
-        ViewBag.Toppings = await _db.Toppings.Where(t => t.IsAvailable).ToListAsync();
+        ViewBag.Categories = await _admin.GetActiveCategoriesAsync(); // Chỉ danh mục active
+        ViewBag.Toppings = await _admin.GetActiveToppingsAsync();
         return View(new Product()); 
     }
 
@@ -317,15 +301,15 @@ public class AdminController : BaseController
                 }
             }
             
-            _db.Products.Add(model);
-            await _db.SaveChangesAsync();
+            _admin.Add(model);
+            await _admin.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Đã thêm sản phẩm thành công!";
             return RedirectToAction(nameof(Products));
         }
 
-        ViewBag.Categories = await _db.Categories.Where(c => c.IsActive).ToListAsync();
-        ViewBag.Toppings = await _db.Toppings.Where(t => t.IsAvailable).ToListAsync();
+        ViewBag.Categories = await _admin.GetActiveCategoriesAsync();
+        ViewBag.Toppings = await _admin.GetActiveToppingsAsync();
         return View(model);
     }
 
@@ -334,14 +318,14 @@ public class AdminController : BaseController
     { 
         var g = Guard(); if (g != null) return g; 
 
-        var product = await _db.Products.Include(p => p.ProductToppings).FirstOrDefaultAsync(p => p.Id == id);
+        var product = await _admin.GetProductWithToppingsAsync(id);
         if (product == null) return NotFound();
 
         // Load danh sách topping đã chọn
         product.SelectedToppings = product.ProductToppings.Select(pt => pt.ToppingId).ToList();
 
-        ViewBag.Categories = await _db.Categories.Where(c => c.IsActive).ToListAsync(); // Chỉ danh mục active
-        ViewBag.Toppings = await _db.Toppings.Where(t => t.IsAvailable).ToListAsync();
+        ViewBag.Categories = await _admin.GetActiveCategoriesAsync(); // Chỉ danh mục active
+        ViewBag.Toppings = await _admin.GetActiveToppingsAsync();
         return View(product); 
     }
 
@@ -354,7 +338,7 @@ public class AdminController : BaseController
 
         if (ModelState.IsValid)
         {
-            var p = await _db.Products.FindAsync(model.Id);
+            var p = await _admin.FindAsync<Product>(model.Id);
             if (p == null) return NotFound();
 
             p.Name = model.Name;
@@ -391,28 +375,28 @@ public class AdminController : BaseController
                 }
             }
 
-            _db.Products.Update(p);
+            _admin.Update(p);
 
             // Cập nhật quan hệ Toppings
-            var existingTops = await _db.ProductToppings.Where(pt => pt.ProductId == p.Id).ToListAsync();
-            _db.ProductToppings.RemoveRange(existingTops);
+            var existingTops = await _admin.GetProductToppingsAsync(p.Id);
+            _admin.RemoveRange(existingTops);
 
             if (model.SelectedToppings != null && model.SelectedToppings.Any())
             {
                 foreach (var tId in model.SelectedToppings)
                 {
-                    _db.ProductToppings.Add(new ProductTopping { ProductId = p.Id, ToppingId = tId });
+                    _admin.Add(new ProductTopping { ProductId = p.Id, ToppingId = tId });
                 }
             }
 
-            await _db.SaveChangesAsync();
+            await _admin.SaveChangesAsync();
             
             TempData["SuccessMessage"] = "Đã cập nhật sản phẩm thành công!";
             return RedirectToAction(nameof(Products));
         }
         
-        ViewBag.Categories = await _db.Categories.Where(c => c.IsActive).ToListAsync();
-        ViewBag.Toppings = await _db.Toppings.Where(t => t.IsAvailable).ToListAsync();
+        ViewBag.Categories = await _admin.GetActiveCategoriesAsync();
+        ViewBag.Toppings = await _admin.GetActiveToppingsAsync();
         return View(model);
     }
 
@@ -423,11 +407,11 @@ public class AdminController : BaseController
     {
         var g = Guard(); if (g != null) return g;
 
-        var product = await _db.Products.FindAsync(id);
+        var product = await _admin.FindAsync<Product>(id);
         if (product != null)
         {
-            _db.Products.Remove(product);
-            await _db.SaveChangesAsync();
+            _admin.Remove(product);
+            await _admin.SaveChangesAsync();
             TempData["SuccessMessage"] = "Đã xóa sản phẩm!";
         }
         return RedirectToAction(nameof(Products));
@@ -471,8 +455,8 @@ public class AdminController : BaseController
             model.CreatedAt = DateTime.Now;
             if (string.IsNullOrEmpty(model.Id)) model.Id = Guid.NewGuid().ToString("N");
             
-            _db.Toppings.Add(model);
-            await _db.SaveChangesAsync();
+            _admin.Add(model);
+            await _admin.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Đã thêm topping thành công!";
             return RedirectToAction(nameof(Toppings));
@@ -485,7 +469,7 @@ public class AdminController : BaseController
     { 
         var g = Guard(); if (g != null) return g; 
 
-        var product = await _db.Toppings.FindAsync(id);
+        var product = await _admin.FindAsync<Topping>(id);
         if (product == null) return NotFound();
 
         return View(product); 
@@ -499,7 +483,7 @@ public class AdminController : BaseController
 
         if (ModelState.IsValid)
         {
-            var p = await _db.Toppings.FindAsync(model.Id);
+            var p = await _admin.FindAsync<Topping>(model.Id);
             if (p == null) return NotFound();
 
             p.Name = model.Name;
@@ -522,8 +506,8 @@ public class AdminController : BaseController
                 p.ImageUrl = "/images/products/" + fileName;
             }
 
-            _db.Toppings.Update(p);
-            await _db.SaveChangesAsync();
+            _admin.Update(p);
+            await _admin.SaveChangesAsync();
             
             TempData["SuccessMessage"] = "Đã cập nhật topping thành công!";
             return RedirectToAction(nameof(Toppings));
@@ -538,11 +522,11 @@ public class AdminController : BaseController
     {
         var g = Guard(); if (g != null) return g;
 
-        var product = await _db.Toppings.FindAsync(id);
+        var product = await _admin.FindAsync<Topping>(id);
         if (product != null)
         {
-            _db.Toppings.Remove(product);
-            await _db.SaveChangesAsync();
+            _admin.Remove(product);
+            await _admin.SaveChangesAsync();
             TempData["SuccessMessage"] = "Đã xóa topping thành công!";
         }
         return RedirectToAction(nameof(Toppings));
@@ -553,26 +537,11 @@ public class AdminController : BaseController
     {
         var g = Guard(); if (g != null) return g;
 
-        var query = _db.Categories.Include(c => c.Products).AsQueryable();
+        var categories = await _admin.GetCategoriesAsync(searchQuery, status);
 
-        if (!string.IsNullOrEmpty(searchQuery))
-        {
-            query = query.Where(c => c.Name.Contains(searchQuery));
-            ViewBag.SearchQuery = searchQuery;
-        }
-
-        if (status == "active")
-        {
-            query = query.Where(c => c.IsActive);
-        }
-        else if (status == "inactive")
-        {
-            query = query.Where(c => !c.IsActive);
-        }
-
+        if (!string.IsNullOrEmpty(searchQuery)) ViewBag.SearchQuery = searchQuery;
         ViewBag.CurrentStatus = status;
 
-        var categories = await query.ToListAsync();
         return View(categories);
     }
 
@@ -586,8 +555,8 @@ public class AdminController : BaseController
 
         if (ModelState.IsValid)
         {
-            _db.Categories.Add(model);
-            await _db.SaveChangesAsync();
+            _admin.Add(model);
+            await _admin.SaveChangesAsync();
             TempData["SuccessMessage"] = "Đã thêm danh mục thành công!";
             return RedirectToAction(nameof(Categories));
         }
@@ -598,7 +567,7 @@ public class AdminController : BaseController
     public async Task<IActionResult> CategoryEdit(int id) 
     { 
         var g = Guard(); if (g != null) return g; 
-        var cat = await _db.Categories.FindAsync(id);
+        var cat = await _admin.FindAsync<Category>(id);
         if (cat == null) return NotFound();
         return View(cat); 
     }
@@ -611,15 +580,15 @@ public class AdminController : BaseController
 
         if (ModelState.IsValid)
         {
-            var cat = await _db.Categories.FindAsync(model.Id);
+            var cat = await _admin.FindAsync<Category>(model.Id);
             if (cat == null) return NotFound();
 
             cat.Name = model.Name;
             cat.Description = model.Description;
             cat.IsActive = model.IsActive;
 
-            _db.Categories.Update(cat);
-            await _db.SaveChangesAsync();
+            _admin.Update(cat);
+            await _admin.SaveChangesAsync();
             
             TempData["SuccessMessage"] = "Đã cập nhật danh mục thành công!";
             return RedirectToAction(nameof(Categories));
@@ -634,31 +603,24 @@ public class AdminController : BaseController
     {
         var g = Guard(); if (g != null) return g;
 
-        var cat = await _db.Categories
-            .Include(c => c.Products)
-                .ThenInclude(p => p.ProductToppings)
-            .Include(c => c.Products)
-                .ThenInclude(p => p.Reviews)
-            .Include(c => c.Products)
-                .ThenInclude(p => p.OrderDetails)
-            .FirstOrDefaultAsync(c => c.Id == id);
+        var cat = await _admin.GetCategoryWithProductsAsync(id);
 
         if (cat != null)
         {
             // Xóa tất cả dữ liệu liên quan của từng sản phẩm trong danh mục
             foreach (var product in cat.Products)
             {
-                _db.ProductToppings.RemoveRange(product.ProductToppings);
-                _db.Reviews.RemoveRange(product.Reviews);
-                _db.OrderDetails.RemoveRange(product.OrderDetails);
+                _admin.RemoveRange(product.ProductToppings);
+                _admin.RemoveRange(product.Reviews);
+                _admin.RemoveRange(product.OrderDetails);
             }
 
             // Xóa tất cả sản phẩm thuộc danh mục
-            _db.Products.RemoveRange(cat.Products);
+            _admin.RemoveRange(cat.Products);
 
             // Xóa danh mục
-            _db.Categories.Remove(cat);
-            await _db.SaveChangesAsync();
+            _admin.Remove(cat);
+            await _admin.SaveChangesAsync();
 
             int deletedCount = cat.Products.Count;
             TempData["SuccessMessage"] = $"Đã xóa danh mục và {deletedCount} sản phẩm bên trong!";
@@ -671,31 +633,11 @@ public class AdminController : BaseController
     {
         var g = Guard(); if (g != null) return g;
 
-        var query = _db.Orders.Include(o => o.User).AsQueryable();
-
-        // Tìm kiếm theo mã đơn hoặc tên khách hàng
-        if (!string.IsNullOrEmpty(searchQuery))
-        {
-            query = query.Where(o =>
-                o.Id.Contains(searchQuery) ||
-                (o.User != null && o.User.FullName.Contains(searchQuery)));
-            ViewBag.SearchQuery = searchQuery;
-        }
-
-        // Lọc theo trạng thái
-        if (status != "all")
-        {
-            query = query.Where(o => o.Status == status);
-        }
-        ViewBag.CurrentStatus = status;
-
-        // Phân trang
         int pageSize = 10;
-        int totalOrders = await query.CountAsync();
-        var orders = await query.OrderByDescending(o => o.OrderDate)
-                                .Skip((page - 1) * pageSize)
-                                .Take(pageSize)
-                                .ToListAsync();
+        var (orders, totalOrders) = await _admin.GetOrdersPagedAsync(searchQuery, status, page, pageSize);
+
+        if (!string.IsNullOrEmpty(searchQuery)) ViewBag.SearchQuery = searchQuery;
+        ViewBag.CurrentStatus = status;
 
         ViewBag.TotalOrders = totalOrders;
         ViewBag.CurrentPage = page;
@@ -705,16 +647,24 @@ public class AdminController : BaseController
     }
     public IActionResult OrderDetail(string id) { var g = Guard(); if (g != null) return g; ViewBag.Id = id; return View(); }
 
+    [HttpGet]
+    public IActionResult RedirectToDeliveryManagement(string id)
+    {
+        var g = Guard(); if (g != null) return g;
+        TempData["Error"] = "Chỉ nhân viên giao hàng mới được cập nhật trạng thái giao hàng. Vui lòng xử lý tại trang Quản lý giao hàng.";
+        return RedirectToAction("Deliveries", "Staff", new { filter = "pending" });
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> OrderUpdateStatus(string id, string status)
     {
         var g = Guard(); if (g != null) return g;
-        var order = await _db.Orders.FindAsync(id);
+        var order = await _admin.FindAsync<Order>(id);
         if (order != null)
         {
             order.Status = status;
-            await _db.SaveChangesAsync();
+            await _admin.SaveChangesAsync();
             TempData["SuccessMessage"] = $"Đã cập nhật trạng thái đơn #{id.Substring(0, 8).ToUpper()} → {status}.";
         }
         return RedirectToAction(nameof(Orders));
@@ -725,32 +675,12 @@ public class AdminController : BaseController
     {
         var g = Guard(); if (g != null) return g;
 
-        var query = _db.Users.AsQueryable();
-
-        // Tìm kiếm theo tên, email
-        if (!string.IsNullOrEmpty(searchQuery))
-        {
-            query = query.Where(u => u.FullName.Contains(searchQuery)
-                                  || u.Email.Contains(searchQuery)
-                                  || u.Id.Contains(searchQuery));
-            ViewBag.SearchQuery = searchQuery;
-        }
-
-        // Lọc trạng thái
-        if (status == "active")   query = query.Where(u => u.IsActive);
-        if (status == "locked")   query = query.Where(u => !u.IsActive);
-        ViewBag.CurrentStatus = status;
-
-        // Lọc vai trò
-        if (role != "all" && Enum.TryParse<UserRole>(role, out var parsedRole)) query = query.Where(u => u.Role == parsedRole);
-        ViewBag.CurrentRole = role;
-
         int pageSize = 10;
-        int total = await query.CountAsync();
-        var users = await query.OrderByDescending(u => u.CreatedAt)
-                               .Skip((page - 1) * pageSize)
-                               .Take(pageSize)
-                               .ToListAsync();
+        var (users, total) = await _admin.GetAccountsPagedAsync(searchQuery, status, role, page, pageSize);
+
+        if (!string.IsNullOrEmpty(searchQuery)) ViewBag.SearchQuery = searchQuery;
+        ViewBag.CurrentStatus = status;
+        ViewBag.CurrentRole = role;
 
         ViewBag.TotalUsers  = total;
         ViewBag.CurrentPage = page;
@@ -765,8 +695,8 @@ public class AdminController : BaseController
     public async Task<IActionResult> AccountToggleLock(string id)
     {
         var g = Guard(); if (g != null) return g;
-        var u = await _db.Users.FindAsync(id);
-        if (u != null) { u.IsActive = !u.IsActive; await _db.SaveChangesAsync(); }
+        var u = await _admin.FindAsync<User>(id);
+        if (u != null) { u.IsActive = !u.IsActive; await _admin.SaveChangesAsync(); }
         return RedirectToAction(nameof(Accounts));
     }
 
@@ -775,28 +705,15 @@ public class AdminController : BaseController
     {
         var g = Guard(); if (g != null) return g;
 
-        var query = _db.Users.Where(u => u.Role != UserRole.Customer).AsQueryable();
+        int pageSize = 10;
+        var (staffList, totalStaff, workingStaff, leaveStaff) = await _admin.GetStaffPagedAsync(searchQuery, status, page, pageSize);
 
-        if (!string.IsNullOrEmpty(searchQuery))
-        {
-            query = query.Where(u => u.FullName.Contains(searchQuery) || u.Id.Contains(searchQuery));
-            ViewBag.SearchQuery = searchQuery;
-        }
-
-        if (status == "active") query = query.Where(u => u.IsActive);
-        if (status == "inactive") query = query.Where(u => !u.IsActive);
+        if (!string.IsNullOrEmpty(searchQuery)) ViewBag.SearchQuery = searchQuery;
         ViewBag.CurrentStatus = status;
 
-        int pageSize = 10;
-        int totalStaff = await query.CountAsync();
-        var staffList = await query.OrderByDescending(u => u.CreatedAt)
-                               .Skip((page - 1) * pageSize)
-                               .Take(pageSize)
-                               .ToListAsync();
-
         ViewBag.TotalStaff = totalStaff;
-        ViewBag.WorkingStaff = await _db.Users.CountAsync(u => u.Role != UserRole.Customer && u.IsActive);
-        ViewBag.LeaveStaff = await _db.Users.CountAsync(u => u.Role != UserRole.Customer && !u.IsActive);
+        ViewBag.WorkingStaff = workingStaff;
+        ViewBag.LeaveStaff = leaveStaff;
         ViewBag.CurrentPage = page;
         ViewBag.TotalPages = (int)Math.Ceiling(totalStaff / (double)pageSize);
 
@@ -830,8 +747,8 @@ public class AdminController : BaseController
 
             model.PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456");
 
-            _db.Users.Add(model);
-            await _db.SaveChangesAsync();
+            _admin.Add(model);
+            await _admin.SaveChangesAsync();
             TempData["SuccessMessage"] = $"Đã thêm nhân viên \"{model.FullName}\" thành công!";
             return RedirectToAction(nameof(Staff));
         }
@@ -843,7 +760,7 @@ public class AdminController : BaseController
     {
         var g = Guard(); if (g != null) return g;
 
-        var user = await _db.Users.FindAsync(id);
+        var user = await _admin.FindAsync<User>(id);
         if (user == null || user.Role == UserRole.Customer) return NotFound();
 
         return View(user);
@@ -855,13 +772,13 @@ public class AdminController : BaseController
     {
         var g = Guard(); if (g != null) return g;
 
-        var user = await _db.Users.FindAsync(id);
+        var user = await _admin.FindAsync<User>(id);
         if (user == null || user.Role == UserRole.Customer) return NotFound();
 
         if (Enum.TryParse<UserRole>(role, out var parsedRole) && (parsedRole == UserRole.Admin || parsedRole == UserRole.Staff))
         {
             user.Role = parsedRole;
-            await _db.SaveChangesAsync();
+            await _admin.SaveChangesAsync();
             TempData["SuccessMessage"] = $"Đã cập nhật chức vụ nhân viên \"{user.FullName}\" thành {parsedRole}!";
             return RedirectToAction(nameof(Staff));
         }
@@ -876,28 +793,11 @@ public class AdminController : BaseController
     { 
         var g = Guard(); if (g != null) return g; 
 
-        var query = _db.Vouchers.AsQueryable();
-
-        if (!string.IsNullOrEmpty(searchQuery))
-        {
-            query = query.Where(v => v.Code.Contains(searchQuery) || v.Name.Contains(searchQuery));
-            ViewBag.SearchQuery = searchQuery;
-        }
-
-        var now = DateTime.Now;
-        if (status == "active")
-            query = query.Where(v => v.IsActive && (v.ExpiryDate == null || v.ExpiryDate >= now));
-        else if (status == "expired")
-            query = query.Where(v => !v.IsActive || (v.ExpiryDate.HasValue && v.ExpiryDate < now));
-
-        ViewBag.CurrentStatus = status;
-
         int pageSize = 10;
-        int total = await query.CountAsync();
-        var vouchers = await query.OrderByDescending(v => v.Id)
-                                  .Skip((page - 1) * pageSize)
-                                  .Take(pageSize)
-                                  .ToListAsync();
+        var (vouchers, total) = await _admin.GetVouchersPagedAsync(searchQuery, status, page, pageSize);
+
+        if (!string.IsNullOrEmpty(searchQuery)) ViewBag.SearchQuery = searchQuery;
+        ViewBag.CurrentStatus = status;
 
         ViewBag.TotalVouchers = total;
         ViewBag.CurrentPage = page;
@@ -937,8 +837,8 @@ public class AdminController : BaseController
         // Đọc IsActive trực tiếp từ form
         model.IsActive = Request.Form["IsActiveCb"] == "true";
 
-        _db.Vouchers.Add(model);
-        await _db.SaveChangesAsync();
+        _admin.Add(model);
+        await _admin.SaveChangesAsync();
         TempData["SuccessMessage"] = $"Đã tạo voucher \"{model.Code}\" thành công!";
         return RedirectToAction(nameof(Promotions));
     }
@@ -948,7 +848,7 @@ public class AdminController : BaseController
     {
         var g = Guard(); if (g != null) return g;
 
-        var voucher = await _db.Vouchers.FindAsync(id);
+        var voucher = await _admin.FindAsync<Voucher>(id);
         if (voucher == null) return NotFound();
 
         return View(voucher);
@@ -961,7 +861,7 @@ public class AdminController : BaseController
     {
         var g = Guard(); if (g != null) return g;
 
-        var oldVoucher = await _db.Vouchers.FindAsync(model.Id);
+        var oldVoucher = await _admin.FindAsync<Voucher>(model.Id);
         if (oldVoucher == null) return NotFound();
 
         // Gán từng field thủ công để tránh bị lọc bởi ModelState
@@ -986,7 +886,7 @@ public class AdminController : BaseController
         oldVoucher.IsActive      = Request.Form["IsActiveCb"] == "true";
         oldVoucher.MaxUses       = model.MaxUses;
 
-        await _db.SaveChangesAsync();
+        await _admin.SaveChangesAsync();
         TempData["SuccessMessage"] = $"Đã cập nhật voucher \"{oldVoucher.Code}\" thành công!";
         return RedirectToAction(nameof(Promotions));
     }
@@ -997,16 +897,16 @@ public class AdminController : BaseController
     public async Task<IActionResult> VoucherDelete(int id)
     {
         var g = Guard(); if (g != null) return g;
-        var v = await _db.Vouchers.FindAsync(id);
+        var v = await _admin.FindAsync<Voucher>(id);
         if (v != null)
         {
             // Gỡ FK trước khi xóa: null hóa VoucherId ở các đơn hàng liên quan
-            var relatedOrders = await _db.Orders.Where(o => o.VoucherId == id).ToListAsync();
+            var relatedOrders = await _admin.GetOrdersByVoucherIdAsync(id);
             foreach (var order in relatedOrders)
                 order.VoucherId = null;
 
-            _db.Vouchers.Remove(v);
-            await _db.SaveChangesAsync();
+            _admin.Remove(v);
+            await _admin.SaveChangesAsync();
             TempData["SuccessMessage"] = "Đã xóa voucher!";
         }
         return RedirectToAction(nameof(Promotions));
@@ -1026,13 +926,7 @@ public class AdminController : BaseController
         var g = Guard(); if (g != null) return Json(new { success = false, message = "Không có quyền." });
 
         // Lấy danh sách sản phẩm cần sync
-        IQueryable<Product> query = _db.Products.Where(p => p.IsAvailable && !string.IsNullOrEmpty(p.ImageUrl));
-        if (!string.IsNullOrEmpty(productId))
-            query = query.Where(p => p.Id == productId);
-        else
-            query = query.Where(p => string.IsNullOrEmpty(p.ImageEmbedding)); // Chỉ những sản phẩm chưa có vector
-
-        var products = await query.ToListAsync();
+        var products = await _admin.GetProductsForSyncAsync(productId);
 
         if (!products.Any())
             return Json(new { success = true, synced = 0, failed = 0, message = "Tất cả sản phẩm đã có vector AI." });
@@ -1076,7 +970,7 @@ public class AdminController : BaseController
             }
         }
 
-        await _db.SaveChangesAsync();
+        await _admin.SaveChangesAsync();
 
         return Json(new
         {
