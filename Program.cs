@@ -105,7 +105,7 @@ using (var scope = app.Services.CreateScope())
 // ⚠️ Quan trọng: chỉ set port khi deploy (Render)
 if (!app.Environment.IsDevelopment())
 {
-    var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
     app.Urls.Add($"http://0.0.0.0:{port}");
 }
 
