@@ -11,14 +11,12 @@ public class HomeController : BaseController
     private readonly ILogger<HomeController> _logger;
     private readonly ApplicationDbContext _db;
     private readonly PizzaDeli.Services.AiIntegratorService _aiService;
-    private readonly PizzaDeli.Services.ContactRequestService _contactService;
 
-    public HomeController(ILogger<HomeController> logger, ApplicationDbContext db, PizzaDeli.Services.AiIntegratorService aiService, PizzaDeli.Services.ContactRequestService contactService)
+    public HomeController(ILogger<HomeController> logger, ApplicationDbContext db, PizzaDeli.Services.AiIntegratorService aiService)
     {
         _logger = logger;
         _db = db;
         _aiService = aiService;
-        _contactService = contactService;
     }
 
     public IActionResult Index()
@@ -61,41 +59,27 @@ public class HomeController : BaseController
         return View(vouchers);
     }
 
+    public IActionResult Custom()
+    {
+        var components = _db.PizzaComponents
+            .Where(c => c.IsAvailable)
+            .OrderBy(c => c.Name)
+            .ToList();
+        return View(components);
+    }
+
     public IActionResult Privacy() => View();
 
     public IActionResult Scan() => View();
     
-    public async Task<IActionResult> Support()
-    {
-        var lastTicket = await _db.ContactRequests.OrderByDescending(x => x.Id).FirstOrDefaultAsync();
-        int nextId = (lastTicket?.Id ?? 0) + 1;
-        ViewBag.NextCode = $"DELI-{nextId:D3}";
-        return View();
-    }
+    public IActionResult Support() => View();
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Support(string FullName, string IssueType, string Message, string? Phone, string? Address)
+    public IActionResult Support(string FullName, string IssueType, string Message)
     {
-        var lastTicket = await _db.ContactRequests.OrderByDescending(x => x.Id).FirstOrDefaultAsync();
-        int nextId = (lastTicket?.Id ?? 0) + 1;
-        string autoOrderCode = $"DELI-{nextId:D3}";
-
-        var userId = HttpContext.Session.GetString("USER_ID");
-        await _contactService.AddAsync(FullName, autoOrderCode, IssueType, Message, Phone, Address, userId);
         TempData["SuccessMessage"] = "Yêu cầu hỗ trợ của bạn đã được gửi. Chúng tôi sẽ phản hồi sớm nhất.";
         return RedirectToAction("Support");
-    }
-    
-    public async Task<IActionResult> Response()
-    {
-        var userId = HttpContext.Session.GetString("USER_ID");
-        // Lấy ticket của khách. Nếu chưa login thì tạm lấy 5 cái mới nhất để xem preview mẫu.
-        var tickets = string.IsNullOrEmpty(userId) 
-            ? await _db.ContactRequests.OrderByDescending(c => c.CreatedAt).Take(5).ToListAsync()
-            : await _db.ContactRequests.Where(c => c.UserId == userId).OrderByDescending(c => c.CreatedAt).ToListAsync();
-            
-        return View(tickets);
     }
 
     [HttpPost]

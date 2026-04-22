@@ -1014,30 +1014,37 @@
         }
 
         function getCustomPizzaData() {
+            // 1. Lấy thông tin Kích cỡ đã chọn (Size)
             const activeSize = document.querySelector('.size-card.active');
             const sizeName = activeSize ? activeSize.dataset.name : '';
             const sizePrice = activeSize ? parseFloat(activeSize.dataset.price) : 0;
 
+            // 2. Lấy thông tin Đế bánh đã chọn (Crust)
             const activeCrust = document.querySelector('.crust-option.active');
             const crustName = activeCrust ? activeCrust.dataset.name : '';
             const crustPrice = activeCrust ? parseFloat(activeCrust.dataset.price) : 0;
 
+            // 3. Lấy thông tin Phô mai đã chọn (Cheese)
             const cheeseName = document.getElementById('cheeseSelect').value;
 
+            // 4. Lấy danh sách Topping đã chọn
             const activeToppings = document.querySelectorAll('.topping-card.active');
             let toppingsTotal = 0;
             const toppingNames = [];
             activeToppings.forEach(t => {
                 toppingNames.push(t.dataset.name);
-                toppingsTotal += parseFloat(t.dataset.price);
+                toppingsTotal += parseFloat(t.dataset.price); // Cộng dồn giá topping
             });
 
+            // 5. Cộng tổng tiền của toàn bộ Pizza
             const total = sizePrice + crustPrice + toppingsTotal;
+            
+            // 6. Gộp tên thành chuỗi định dạng đặc biệt để Backend (OrderService) có thể parse và trừ tồn kho
             let finalName = `Pizza Tự Chọn (${sizeName}, ${crustName}, ${cheeseName})`;
             if(toppingNames.length > 0) finalName += ` + ${toppingNames.join(', ')}`;
 
             return {
-                id: 'CUSTOM-' + Date.now(),
+                id: 'CUSTOM-' + Date.now(), // Tiền tố CUSTOM- giúp backend nhận diện đây là sản phẩm ảo cần khởi tạo
                 name: finalName,
                 price: total,
                 image: '/images/auth-bg.jpg', // Default image or fallback
@@ -1045,20 +1052,22 @@
             };
         }
 
+        // Sự kiện: Thêm Pizza tự chọn vào giỏ hàng
         document.querySelector('.btn-cart-icon').addEventListener('click', function() {
             const pizza = getCustomPizzaData();
             if(window.PizzaCart) {
-                window.PizzaCart.addToCart(pizza);
+                window.PizzaCart.addToCart(pizza); // Lưu vào LocalStorage
             }
         });
 
+        // Sự kiện: Bấm thanh toán ngay
         document.querySelector('.btn-checkout').addEventListener('click', function() {
             const pizza = getCustomPizzaData();
             if(window.PizzaCart) {
                 const cart = window.PizzaCart.getCart();
                 cart.push(pizza);
-                window.PizzaCart.saveCart(cart);
-                window.location.href = '/Customer/Checkout';
+                window.PizzaCart.saveCart(cart); // Cập nhật LocalStorage
+                window.location.href = '/Customer/Checkout'; // Chuyển thẳng sang trang thanh toán
             }
         });
     </script>

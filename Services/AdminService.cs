@@ -109,9 +109,9 @@ public class AdminService
 
         int total = await query.CountAsync();
         var staff = await query.OrderByDescending(u => u.CreatedAt).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-        
         int working = await _db.Users.CountAsync(u => u.Role != UserRole.Customer && u.IsActive);
-        int leave = await _db.Users.CountAsync(u => u.Role != UserRole.Customer && !u.IsActive);
+        int leave = await _db.Users.CountAsync(u => u.Role != UserRole.Customer && !u
+        .IsActive);
         
         return (staff, total, working, leave);
     }

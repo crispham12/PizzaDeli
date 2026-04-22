@@ -14,7 +14,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(opt =>
 {
-    opt.IdleTimeout = TimeSpan.FromHours(8);
+    opt.IdleTimeout = TimeSpan.FromMinutes(15);
     opt.Cookie.HttpOnly = true;
     opt.Cookie.IsEssential = true;
     opt.Cookie.SameSite = SameSiteMode.Lax;
