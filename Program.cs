@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PizzaDeli.Data;
 using PizzaDeli.Services;
 using PizzaDeli.Models;
-
+using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // ---------------- MVC ----------------
