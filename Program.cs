@@ -38,9 +38,15 @@ builder.Services.AddSingleton<PizzaDeli.Services.AiIntegratorService>();
 builder.Services.AddScoped<AiIntegratorService>();
 
 // ---- Database ----
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    var conn = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? Environment.GetEnvironmentVariable("DB_CONNECTION");
 
+    if (string.IsNullOrEmpty(conn))
+    {
+        throw new Exception("Database connection string is missing!");
+    }
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(conn));
 var app = builder.Build();
 // ---- Middleware pipeline ----
 if (!app.Environment.IsDevelopment())
@@ -67,7 +73,14 @@ app.MapControllerRoute(
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.Migrate(); // Đảm bảo database đã được tạo
+    try
+    {
+        db.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Migration failed: " + ex.Message);
+    } 
 
     if (!db.Users.Any(u => u.Role == UserRole.Admin))
     {
@@ -100,13 +113,6 @@ using (var scope = app.Services.CreateScope())
     }
     
     db.SaveChanges();
-}
-
-// ⚠️ Quan trọng: chỉ set port khi deploy (Render)
-if (!app.Environment.IsDevelopment())
-{
-    var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-    app.Urls.Add($"http://0.0.0.0:{port}");
 }
 
 app.Run();

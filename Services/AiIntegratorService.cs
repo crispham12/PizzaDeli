@@ -5,7 +5,7 @@ namespace PizzaDeli.Services;
 public class AiIntegratorService
 {
     private readonly HttpClient _httpClient;
-    private readonly string _pythonApiUrl = "http://localhost:8000/embed";
+    private readonly string _pythonApiUrl = "https://your-ai-api.onrender.com/embed";
 
     public AiIntegratorService(HttpClient httpClient)
     {
