@@ -5,12 +5,12 @@ using PizzaDeli.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ---- MVC ----
+// ---------------- MVC ----------------
 builder.Services.AddControllersWithViews();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// ---- Session ----
+// ---------------- Session ----------------
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(opt =>
 {
@@ -20,40 +20,41 @@ builder.Services.AddSession(opt =>
     opt.Cookie.SameSite = SameSiteMode.Lax;
 });
 
-// ---- HttpClient for API ----
+// ---------------- HttpClient ----------------
 builder.Services.AddHttpClient("API");
+
+// ---------------- Services ----------------
+builder.Services.AddScoped<CategoryService>();
+builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<VoucherService>();
+builder.Services.AddScoped<OrderService>();
+builder.Services.AddScoped<ReviewService>();
+builder.Services.AddScoped<DashboardService>();
+builder.Services.AddScoped<AdminService>();
+builder.Services.AddSingleton<AiIntegratorService>();
 
-// Đăng ký các Service xử lý nghiệp vụ (Tuân thủ mô hình Controller -> Service -> DbContext)
-builder.Services.AddScoped<PizzaDeli.Services.CategoryService>();
-builder.Services.AddScoped<PizzaDeli.Services.ProductService>();
-builder.Services.AddScoped<PizzaDeli.Services.AuthService>();
-builder.Services.AddScoped<PizzaDeli.Services.UserService>();
-builder.Services.AddScoped<PizzaDeli.Services.VoucherService>();
-builder.Services.AddScoped<PizzaDeli.Services.OrderService>();
-builder.Services.AddScoped<PizzaDeli.Services.ReviewService>();
-builder.Services.AddScoped<PizzaDeli.Services.DashboardService>();
-builder.Services.AddScoped<PizzaDeli.Services.AdminService>();
-builder.Services.AddSingleton<PizzaDeli.Services.AiIntegratorService>();
-builder.Services.AddScoped<AiIntegratorService>();
+// ---------------- Database ----------------
+var conn =
+    builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("DB_CONNECTION");
 
-// ---- Database ----
-    var conn = builder.Configuration.GetConnectionString("DefaultConnection")
-        ?? Environment.GetEnvironmentVariable("DB_CONNECTION");
+if (string.IsNullOrEmpty(conn))
+    throw new Exception("Missing DB connection string");
 
-    if (string.IsNullOrEmpty(conn))
-    {
-        throw new Exception("Database connection string is missing!");
-    }
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(conn));
+
 var app = builder.Build();
-// ---- Middleware pipeline ----
+
+// ---------------- Middleware ----------------
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
@@ -61,26 +62,28 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
-app.UseSession();          // must be BEFORE Authorization & routing
+
+app.UseSession();
 app.UseAuthorization();
 
-// Route MVC
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-// ---- Database Seeding ----
+// ---------------- DB Init (SAFE VERSION) ----------------
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
     try
     {
+        // ⚠️ chỉ dùng khi chắc chắn DB OK
         db.Database.Migrate();
     }
     catch (Exception ex)
     {
-        Console.WriteLine("Migration failed: " + ex.Message);
-    } 
+        Console.WriteLine("DB Migration failed: " + ex.Message);
+    }
 
     if (!db.Users.Any(u => u.Role == UserRole.Admin))
     {
@@ -111,7 +114,7 @@ using (var scope = app.Services.CreateScope())
             CreatedAt = DateTime.Now
         });
     }
-    
+
     db.SaveChanges();
 }
 
