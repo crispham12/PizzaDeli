@@ -3,6 +3,9 @@ using PizzaDeli.Data;
 using PizzaDeli.Services;
 using PizzaDeli.Models;
 
+// Optional: Npgsql an toàn hơn khi xử lý DateTime (không strict-check DateTimeKind)
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // ---------------- MVC ----------------

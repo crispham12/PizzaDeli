@@ -2,6 +2,3 @@ services:
   - type: web
     name: pizzadeli
     env: docker
-    envVars:
-      - key: TZ
-        value: Asia/Ho_Chi_Minh
