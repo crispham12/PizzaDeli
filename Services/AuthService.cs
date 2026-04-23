@@ -46,7 +46,7 @@ public class AuthService
             return (false, null, null, "Sai mật khẩu.");
 
         // Tạo token giả (do chưa dùng JWT chính thức)
-        var fakeToken = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{user.Id}:{DateTime.Now.Ticks}"));
+        var fakeToken = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{user.Id}:{DateTime.UtcNow.Ticks}"));
 
         var userInfo = new UserInfo
         {
@@ -79,7 +79,7 @@ public class AuthService
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.Password),
             Role = UserRole.Customer, // Mặc định là Customer
             IsActive = true,
-            CreatedAt = DateTime.Now
+            CreatedAt = DateTime.UtcNow
         };
         
         _db.Users.Add(newUser);

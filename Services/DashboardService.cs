@@ -18,7 +18,7 @@ public class DashboardService
     {
         var today = DateTime.Today;
         var thisMonth = new DateTime(today.Year, today.Month, 1);
-        var now = DateTime.Now;
+        var now = DateTime.UtcNow;
 
         var totalOrders = await _db.Orders.CountAsync();
         var revenueToday = await _db.Orders

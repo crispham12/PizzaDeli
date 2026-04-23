@@ -152,7 +152,7 @@ public class OrderService
         var order = new Order
         {
             UserId        = userId,
-            OrderDate     = DateTime.Now,
+            OrderDate     = DateTime.UtcNow,
             TotalAmount   = totalAmount,
             DiscountAmount= discountAmount,
             FinalAmount   = finalAmount,
@@ -198,7 +198,7 @@ public class OrderService
                     CategoryId = pizzaCategoryId,
                     ImageUrl = item.Image ?? "/images/pizza/custom-pizza.png",
                     IsAvailable = false,
-                    CreatedAt = DateTime.Now
+                    CreatedAt = DateTime.UtcNow
                 };
                 _db.Products.Add(customProduct);
                 await _db.SaveChangesAsync();

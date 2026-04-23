@@ -254,8 +254,8 @@ public class CustomerController : BaseController
         var g = Guard(); if (g != null) return g;
         ViewBag.ActiveVouchers = _context.Vouchers
             .Where(v => v.IsActive && 
-                        (!v.StartDate.HasValue || v.StartDate <= DateTime.Now) && 
-                        (!v.ExpiryDate.HasValue || v.ExpiryDate >= DateTime.Now))
+                        (!v.StartDate.HasValue || v.StartDate <= DateTime.UtcNow) && 
+                        (!v.ExpiryDate.HasValue || v.ExpiryDate >= DateTime.UtcNow))
             .ToList();
 
         // Truyền thông tin profile để tự động điền form giao hàng
@@ -326,7 +326,7 @@ public class CustomerController : BaseController
         var order = new PizzaDeli.Models.Order
         {
             UserId        = CurrentUserId!,
-            OrderDate     = DateTime.Now,
+            OrderDate     = DateTime.UtcNow,
             TotalAmount   = totalAmount,
             DiscountAmount= discountAmount,
             FinalAmount   = finalAmount,
@@ -450,10 +450,10 @@ public class CustomerController : BaseController
             return Json(new { success = false, message = "Mã giảm giá không tồn tại hoặc đã bị khóa." });
 
         // Kiểm tra ngày
-        if (voucher.StartDate.HasValue && voucher.StartDate > DateTime.Now)
+        if (voucher.StartDate.HasValue && voucher.StartDate > DateTime.UtcNow)
             return Json(new { success = false, message = "Mã này chưa đến thời gian áp dụng." });
 
-        if (voucher.ExpiryDate.HasValue && voucher.ExpiryDate < DateTime.Now)
+        if (voucher.ExpiryDate.HasValue && voucher.ExpiryDate < DateTime.UtcNow)
             return Json(new { success = false, message = "Mã giảm giá đã quá hạn." });
 
         // Kiểm tra giá trị đơn tối thiểu
@@ -490,7 +490,7 @@ public class CustomerController : BaseController
             ProductId = realId,
             Rating = rating,
             Comment = content ?? "",
-            CreatedAt = DateTime.Now,
+            CreatedAt = DateTime.UtcNow,
             IsHidden = false
         };
         _context.Reviews.Add(review);
@@ -519,7 +519,7 @@ public class CustomerController : BaseController
                 ProductId = realId,
                 Rating = r.Rating,
                 Comment = r.Content ?? "",
-                CreatedAt = DateTime.Now,
+                CreatedAt = DateTime.UtcNow,
                 IsHidden = false
             };
             _context.Reviews.Add(review);

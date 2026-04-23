@@ -30,7 +30,7 @@ public class VoucherServiceTests
             DiscountAmount = 100000,
             MinOrderValue  = 300000,
             IsActive       = true,
-            ExpiryDate     = DateTime.Now.AddDays(7)
+            ExpiryDate     = DateTime.UtcNow.AddDays(7)
         });
         await db.SaveChangesAsync();
 
@@ -54,7 +54,7 @@ public class VoucherServiceTests
             DiscountAmount = 200000,
             MinOrderValue  = 500000,
             IsActive       = true,
-            ExpiryDate     = DateTime.Now.AddDays(7)
+            ExpiryDate     = DateTime.UtcNow.AddDays(7)
         });
         await db.SaveChangesAsync();
 
@@ -77,7 +77,7 @@ public class VoucherServiceTests
             DiscountAmount = 50000,
             MinOrderValue  = 0,
             IsActive       = true,
-            ExpiryDate     = DateTime.Now.AddDays(-1) // Hết hạn hôm qua
+            ExpiryDate     = DateTime.UtcNow.AddDays(-1) // Hết hạn hôm qua
         });
         await db.SaveChangesAsync();
 
@@ -172,7 +172,7 @@ public class VoucherServiceTests
             Code          = "DISABLED",
             DiscountAmount = 100000,
             IsActive       = false, // Đã bị tắt
-            ExpiryDate     = DateTime.Now.AddDays(10)
+            ExpiryDate     = DateTime.UtcNow.AddDays(10)
         });
         await db.SaveChangesAsync();
 

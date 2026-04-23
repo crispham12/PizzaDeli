@@ -123,7 +123,7 @@ public class UserService
             Phone        = phone,
             Role         = UserRole.Staff,
             IsActive     = true,
-            CreatedAt    = DateTime.Now
+            CreatedAt    = DateTime.UtcNow
         };
         _db.Users.Add(user);
         await _db.SaveChangesAsync();

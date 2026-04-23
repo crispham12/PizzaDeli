@@ -160,7 +160,7 @@ public class AdminController : BaseController
                 model.ImageUrl = "/images/components/" + fileName;
             }
 
-            model.CreatedAt = DateTime.Now;
+            model.CreatedAt = DateTime.UtcNow;
             if (string.IsNullOrEmpty(model.Id)) model.Id = Guid.NewGuid().ToString("N");
             _admin.Add(model);
             await _admin.SaveChangesAsync();
@@ -289,7 +289,7 @@ public class AdminController : BaseController
                 }
             }
 
-            model.CreatedAt = DateTime.Now;
+            model.CreatedAt = DateTime.UtcNow;
             if (string.IsNullOrEmpty(model.Id)) model.Id = Guid.NewGuid().ToString("N");
 
             // Xử lý chọn topping thêm cho Product
@@ -452,7 +452,7 @@ public class AdminController : BaseController
                 model.ImageUrl = "/images/products/" + fileName;
             }
 
-            model.CreatedAt = DateTime.Now;
+            model.CreatedAt = DateTime.UtcNow;
             if (string.IsNullOrEmpty(model.Id)) model.Id = Guid.NewGuid().ToString("N");
             
             _admin.Add(model);

@@ -17,7 +17,7 @@ public class Order
     [ForeignKey("UserId")]
     public virtual User? User { get; set; }
 
-    public DateTime OrderDate { get; set; } = DateTime.Now;
+    public DateTime OrderDate { get; set; } = DateTime.UtcNow;
 
     [Column(TypeName = "decimal(18,2)")]
     public decimal TotalAmount { get; set; }

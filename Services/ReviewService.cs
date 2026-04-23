@@ -58,7 +58,7 @@ public class ReviewService
             Comment   = comment,
             Rating    = Math.Clamp(rating, 1, 5),
             IsHidden  = false,
-            CreatedAt = DateTime.Now
+            CreatedAt = DateTime.UtcNow
         };
         _db.Reviews.Add(review);
         await _db.SaveChangesAsync();
@@ -84,7 +84,7 @@ public class ReviewService
                 ProductId = realId,
                 Rating = r.Rating,
                 Comment = r.Content ?? "",
-                CreatedAt = DateTime.Now,
+                CreatedAt = DateTime.UtcNow,
                 IsHidden = false
             };
             _db.Reviews.Add(review);

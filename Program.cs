@@ -98,7 +98,7 @@ using (var scope = app.Services.CreateScope())
             Role = UserRole.Admin,
             Phone = "0999999999",
             IsActive = true,
-            CreatedAt = DateTime.Now
+            CreatedAt = DateTime.UtcNow
         });
     }
 
@@ -113,7 +113,7 @@ using (var scope = app.Services.CreateScope())
             Role = UserRole.Staff,
             Phone = "0888888888",
             IsActive = true,
-            CreatedAt = DateTime.Now
+            CreatedAt = DateTime.UtcNow
         });
     }
 

@@ -23,8 +23,8 @@ public class VoucherService
     public async Task<List<Voucher>> GetValidVouchersAsync()
         => await _db.Vouchers
             .Where(v => v.IsActive && 
-                        (!v.StartDate.HasValue || v.StartDate <= DateTime.Now) && 
-                        (!v.ExpiryDate.HasValue || v.ExpiryDate >= DateTime.Now))
+                        (!v.StartDate.HasValue || v.StartDate <= DateTime.UtcNow) && 
+                        (!v.ExpiryDate.HasValue || v.ExpiryDate >= DateTime.UtcNow))
             .ToListAsync();
 
     // ---- Kiểm tra và áp dụng voucher (Customer) ----
@@ -33,7 +33,7 @@ public class VoucherService
         var voucher = await _db.Vouchers
                                .FirstOrDefaultAsync(v => v.Code == code && v.IsActive);
         if (voucher == null) return null;
-        if (voucher.ExpiryDate.HasValue && voucher.ExpiryDate < DateTime.Now) return null;
+        if (voucher.ExpiryDate.HasValue && voucher.ExpiryDate < DateTime.UtcNow) return null;
         if (orderTotal < voucher.MinOrderValue) return null;
         return voucher;
     }

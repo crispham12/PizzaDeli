@@ -118,7 +118,7 @@ public class AdminService
 
     /// <summary>
     /// Logic: Quản lý Mã giảm giá (Phân trang)
-    /// Cách hoạt động: Kiểm tra ngày hết hạn so với thời gian thực (DateTime.Now) để phân loại Voucher còn hạn (active) hay đã hết hạn (expired).
+    /// Cách hoạt động: Kiểm tra ngày hết hạn so với thời gian thực (DateTime.UtcNow) để phân loại Voucher còn hạn (active) hay đã hết hạn (expired).
     /// </summary>
     public async Task<(List<Voucher> Vouchers, int Total)> GetVouchersPagedAsync(string searchQuery, string status, int page, int pageSize)
     {
@@ -126,7 +126,7 @@ public class AdminService
         if (!string.IsNullOrEmpty(searchQuery))
             query = query.Where(v => v.Code.Contains(searchQuery) || v.Name.Contains(searchQuery));
 
-        var now = DateTime.Now;
+        var now = DateTime.UtcNow;
         if (status == "active") query = query.Where(v => v.IsActive && (v.ExpiryDate == null || v.ExpiryDate >= now));
         else if (status == "expired") query = query.Where(v => !v.IsActive || (v.ExpiryDate.HasValue && v.ExpiryDate < now));
 
