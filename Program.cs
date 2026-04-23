@@ -44,7 +44,7 @@ if (string.IsNullOrEmpty(conn))
     throw new Exception("Missing DB connection string");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(conn));
+    options.UseNpgsql(conn));
 
 var app = builder.Build();
 
