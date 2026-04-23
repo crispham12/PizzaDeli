@@ -152,3 +152,5 @@ C:\Users\Admin\Desktop\Lamnhom-net\obj\Debug\net8.0\refint\PizzaDeli.dll
 C:\Users\Admin\Desktop\Lamnhom-net\obj\Debug\net8.0\PizzaDeli.pdb
 C:\Users\Admin\Desktop\Lamnhom-net\obj\Debug\net8.0\PizzaDeli.genruntimeconfig.cache
 C:\Users\Admin\Desktop\Lamnhom-net\obj\Debug\net8.0\ref\PizzaDeli.dll
+C:\Users\Admin\Desktop\Lamnhom-net\bin\Debug\net8.0\Npgsql.dll
+C:\Users\Admin\Desktop\Lamnhom-net\bin\Debug\net8.0\Npgsql.EntityFrameworkCore.PostgreSQL.dll

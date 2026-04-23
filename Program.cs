@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PizzaDeli.Data;
 using PizzaDeli.Services;
 using PizzaDeli.Models;
-using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // ---------------- MVC ----------------
@@ -77,12 +77,14 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
-        // ⚠️ chỉ dùng khi chắc chắn DB OK
-        db.Database.Migrate();
+        if (db.Database.GetPendingMigrations().Any())
+        {
+            db.Database.Migrate();
+        }
     }
     catch (Exception ex)
     {
-        Console.WriteLine("DB Migration failed: " + ex.Message);
+        Console.WriteLine("DB Migration skipped: " + ex.Message);
     }
 
     if (!db.Users.Any(u => u.Role == UserRole.Admin))
